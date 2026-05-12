@@ -220,6 +220,15 @@ body {
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
+  transition: transform 0.25s;
+}
+
+.primary-btn:hover{
+  transform: scale(1.05);
+}
+
+.primary-btn:active{
+  transform: scale(0.95);
 }
 
 .secondary-btn {
@@ -230,6 +239,15 @@ body {
   padding: 12px 18px;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.25s;
+}
+
+.secondary-btn:hover{
+  transform: scale(1.05);
+}
+
+.secondary-btn:active{
+  transform: scale(0.95);
 }
 
 .kpi-grid {
@@ -341,12 +359,33 @@ body {
   color: var(--warning-text);
 }
 
-.badge--confirmed {
+.filter-pill.active {
+  transform: scale(1.05);
+}
+
+.filter-pill--all.active,
+.filter-pill--all:hover { 
+  background: black; 
+  color:white
+}
+
+.badge--pending.active,
+.filter-pill--pending:hover,
+.filter-pill--pending.active {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.badge--confirmed,
+.filter-pill--confirmed:hover,
+.filter-pill--confirmed.active {
   background: var(--success-bg);
   color: var(--success-text);
 }
 
-.badge--paid {
+.badge--paid,
+.filter-pill--paid:hover,
+.filter-pill--paid.active{
   background: var(--paid-bg);
   color: var(--paid-text);
 }
@@ -517,7 +556,6 @@ body {
 }
 
 .filter-pill:hover {
-  background: #f8fafc;
   cursor: pointer;
 }
 
@@ -609,4 +647,16 @@ body {
 .danger-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+
+.bg-edit:hover {
+  background-color: #fef3c7;
+}
+.bg-cancel:hover {
+  background-color: #f1f5f9;
+}
+.bg-delete:hover {
+  background-color: #b91c1c;
+  color:white;
 }

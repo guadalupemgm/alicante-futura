@@ -277,7 +277,7 @@ export default function BookingsClient({
         <section className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Nueva reserva</h3>
-            <button type="button" className="secondary-btn" onClick={closeCreateForm}>
+            <button type="button" className="secondary-btn bg-cancel" onClick={closeCreateForm}>
               Cancelar
             </button>
           </div>
@@ -356,7 +356,7 @@ export default function BookingsClient({
         <section className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Editar reserva #{editingBookingId}</h3>
-            <button type="button" className="secondary-btn" onClick={closeEditForm}>
+            <button type="button" className="secondary-btn bg-cancel" onClick={closeEditForm}>
               Cancelar
             </button>
           </div>
@@ -453,7 +453,7 @@ export default function BookingsClient({
             <div className="modal-actions">
               <button
                 type="button"
-                className="secondary-btn"
+                className="secondary-btn bg-cancel"
                 onClick={closeDeleteModal}
               >
                 Cancelar
@@ -475,10 +475,10 @@ export default function BookingsClient({
         <div className="panel-title-row">
           <h3 className="panel-title">Reservas registradas</h3>
           <div className="filter-row">
-            <button type="button" className="filter-pill" onClick={() => setStatusFilter("all")}>Todas</button>
-            <button type="button" className="filter-pill" onClick={() => setStatusFilter("pending")}>Pendientes</button>
-            <button type="button" className="filter-pill" onClick={() => setStatusFilter("confirmed")}>Confirmadas</button>
-            <button type="button" className="filter-pill" onClick={() => setStatusFilter("paid")}>Pagadas</button>
+            <button type="button" className={`filter-pill filter-pill--all ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>Todas</button>
+            <button type="button" className={`filter-pill filter-pill--pending ${statusFilter === "pending" ? "active" : ""}`} onClick={() => setStatusFilter("pending")}>Pendientes</button>
+            <button type="button" className={`filter-pill filter-pill--confirmed ${statusFilter === "confirmed" ? "active" : ""}`} onClick={() => setStatusFilter("confirmed")}>Confirmadas</button>
+            <button type="button" className={`filter-pill filter-pill--paid ${statusFilter === "paid" ? "active" : ""}`} onClick={() => setStatusFilter("paid")}>Pagadas</button>
           </div>
         </div>
 
@@ -510,10 +510,10 @@ export default function BookingsClient({
                 <td><StatusBadge status={booking.status} /></td>
                 <td>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" className="secondary-btn" onClick={() => openEditForm(booking)}>
+                    <button type="button" className="secondary-btn bg-edit" onClick={() => openEditForm(booking)}>
                       Editar
                     </button>
-                    <button type="button" className="secondary-btn" onClick={() => openDeleteModal(booking.id)}>
+                    <button type="button" className="secondary-btn bg-delete" onClick={() => openDeleteModal(booking.id)}>
                       Eliminar
                     </button>
                   </div>
