@@ -1,6 +1,5 @@
 type DashboardBookingStatus = "pending" | "confirmed" | "paid";
-import ExportButton from "./ExportButton";
-import Link from "next/link";
+
 type DashboardBooking = {
   time: string;
   client: string;
@@ -83,7 +82,9 @@ export default function DashboardPage() {
           <p>Control diario de reservas, actividad y pagos.</p>
         </div>
 
-        <ExportButton />
+        <button className="primary-btn" type="button">
+          Export report
+        </button>
       </section>
 
       <section className="kpi-grid">
@@ -107,9 +108,9 @@ export default function DashboardPage() {
         <div className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Próximas reservas</h3>
-            <Link href="/bookings" className="panel-subtle-link">
-            Ver todas
-            </Link>
+            <button className="panel-subtle-link" type="button">
+              Ver todas
+            </button>
           </div>
 
           <table className="data-table">
