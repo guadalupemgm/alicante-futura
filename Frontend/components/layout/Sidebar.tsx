@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: "◫" },
-  { label: "Bookings", href: "/bookings", icon: "☰" },
-  { label: "Customers", href: "/customers", icon: "◎" },
-  { label: "Payments", href: "/payments", icon: "◌" },
+  { label: "Bookings", href: "/bookings", icon: "📅" },
+  { label: "Customers", href: "/customers", icon: "👥" },
+  { label: "Payments", href: "/payments", icon: "💳" },
 ];
 
 export default function Sidebar() {
