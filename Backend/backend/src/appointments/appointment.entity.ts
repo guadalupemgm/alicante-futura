@@ -1,4 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Customer } from '../customers/entities/customer.entity';
+import { Business } from '../business/entities/business.entity';
+import { Payment } from '../payments/entities/payment.entity';
 
 export enum AppointmentStatus {
   PENDING = 'pending',
@@ -9,26 +12,38 @@ export enum AppointmentStatus {
 @Entity()
 export class Appointment {
   @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column({ type: 'date' })
-  date: string;
+  id!: number;
 
   @Column()
-  time: string;
+  date!: string;
+
+  @Column()
+  time!: string;
 
   @Column({
     type: 'text',
+    enum: AppointmentStatus,
     default: AppointmentStatus.PENDING,
   })
-  status: AppointmentStatus;
+  status!: AppointmentStatus;
 
   @Column()
-  customerId: number;
+  serviceName!: string;
+
+  @ManyToOne(() => Customer, (customer) => customer.appointments)
+  @JoinColumn({ name: 'customerId' })
+  customer!: Customer;
 
   @Column()
-  businessId: number;
+  customerId!: number;
+
+  @ManyToOne(() => Business, (business) => business.appointments)
+  @JoinColumn({ name: 'businessId' })
+  business!: Business;
 
   @Column()
-  serviceName: string;
+  businessId!: number;
+
+  @OneToMany(() => Payment, (payment) => payment.appointment)
+  payments!: Payment[];
 }
