@@ -28,7 +28,7 @@ export interface UpdateBookingDto {
   serviceName?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export async function getAppointments(): Promise<Booking[]> {
   const res = await fetch(`${API_URL}/appointments`, {
@@ -43,6 +43,9 @@ export async function getAppointments(): Promise<Booking[]> {
 }
 
 export async function createAppointment(data: CreateBookingDto): Promise<Booking> {
+  console.log('URL que se usa:', API_URL);
+  console.log('Datos que se envían:', data);
+
   const res = await fetch(`${API_URL}/appointments`, {
     method: "POST",
     headers: {
@@ -51,7 +54,11 @@ export async function createAppointment(data: CreateBookingDto): Promise<Booking
     body: JSON.stringify(data),
   });
 
+  console.log('Status de respuesta:', res.status);
+
   if (!res.ok) {
+    const errorText = await res.text();
+    console.error('Error del backend:', errorText);
     throw new Error("Error al crear la reserva");
   }
 
