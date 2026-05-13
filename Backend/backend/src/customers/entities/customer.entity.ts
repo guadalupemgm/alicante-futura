@@ -15,6 +15,9 @@ export class Customer {
   @Column()
   phone!: string;
 
+  @Column({ nullable: true })
+  business!: string;
+
   @OneToMany(() => Appointment, (appointment) => appointment.customer)
   appointments!: Appointment[];
 }
