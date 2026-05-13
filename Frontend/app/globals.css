@@ -930,9 +930,3 @@ html.dark .filter-pill--paid:hover {
   color: #111111;
   border-color: #ffffff;
 }
-html.dark .modal-card,
-html.dark [style*="background: white"],
-html.dark [style*="background:white"] {
-  background: #1a1a1a !important;
-  color: #ffffff !important;
-}

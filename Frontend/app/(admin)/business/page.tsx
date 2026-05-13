@@ -103,7 +103,7 @@ export default function BusinessesPage() {
       <section className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Listado de negocios</h3>
-          <span style={{ color: "var(--muted)", fontSize: 14 }}>{businesses.length} resultados</span>
+          <span style={{ color: "#6b7280", fontSize: 14 }}>{businesses.length} resultados</span>
         </div>
 
         <table className="data-table">
@@ -135,10 +135,14 @@ export default function BusinessesPage() {
       </section>
 
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3 className="modal-title">Añadir negocio</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
+        }}>
+          <div style={{ background: "white", padding: "2rem", borderRadius: "8px", minWidth: "360px" }}>
+            <h3 style={{ marginBottom: "1rem" }}>Añadir negocio</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+
               <input
                 className="input"
                 type="text"
@@ -146,6 +150,7 @@ export default function BusinessesPage() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
+
               <input
                 className="input"
                 type="text"
@@ -153,6 +158,7 @@ export default function BusinessesPage() {
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
+
               <input
                 className="input"
                 type="email"
@@ -160,6 +166,7 @@ export default function BusinessesPage() {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
+
               <input
                 className="input"
                 type="tel"
@@ -167,6 +174,7 @@ export default function BusinessesPage() {
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />
+
               <input
                 className="input"
                 type="text"
@@ -174,6 +182,7 @@ export default function BusinessesPage() {
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
+
               <select
                 className="input"
                 value={form.status}
@@ -182,10 +191,11 @@ export default function BusinessesPage() {
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
               </select>
+
             </div>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
               <button className="primary-btn" onClick={handleCreate}>Guardar</button>
+              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
             </div>
           </div>
         </div>

@@ -128,10 +128,13 @@ export default function CustomersClient() {
       </section>
 
       {showModal && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3 className="modal-title">Nuevo cliente</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100
+        }}>
+          <div style={{ background: "white", padding: "2rem", borderRadius: "8px", minWidth: "360px" }}>
+            <h3 style={{ marginBottom: "1rem" }}>Nuevo cliente</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <input className="input" placeholder="Nombre" value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
               {errors.name && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.name}</p>}
@@ -148,9 +151,9 @@ export default function CustomersClient() {
                 onChange={(e) => setForm({ ...form, business: e.target.value })} />
               {errors.business && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.business}</p>}
             </div>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
+            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
               <button className="primary-btn" onClick={handleCreate}>Guardar</button>
+              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
             </div>
           </div>
         </div>
