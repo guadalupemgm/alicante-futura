@@ -8,6 +8,7 @@ const menuItems = [
   { label: "Bookings", href: "/bookings", icon: "📅" },
   { label: "Customers", href: "/customers", icon: "👥" },
   { label: "Payments", href: "/payments", icon: "💳" },
+  { label: "Business", href: "/business", icon: "💼" }
 ];
 
 export default function Sidebar() {
