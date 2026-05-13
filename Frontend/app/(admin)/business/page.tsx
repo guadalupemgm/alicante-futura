@@ -38,13 +38,13 @@ export default function BusinessesPage() {
   });
 
   useEffect(() => {
-    fetch(`${API_URL}/businesses`)
+    fetch(`${API_URL}/business`)
       .then((r) => r.json())
       .then((d) => setBusinesses(Array.isArray(d) ? d : []));
   }, []);
 
   const handleCreate = async () => {
-    const res = await fetch(`${API_URL}/businesses`, {
+    const res = await fetch(`${API_URL}/business`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -127,7 +127,7 @@ export default function BusinessesPage() {
                 <td>{b.email}</td>
                 <td>{b.phone}</td>
                 <td>{b.address}</td>
-                <td><Badge status={b.status} /></td>
+                <td><Badge status={b.status as BusinessStatus} /></td>
               </tr>
             ))}
           </tbody>
@@ -151,19 +151,13 @@ export default function BusinessesPage() {
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
 
-              <select
+              <input
                 className="input"
+                type="text"
+                placeholder="Categoría (ej: Peluquería, Spa...)"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-              >
-                <option value="">Categoría</option>
-                <option value="Peluquería">Peluquería</option>
-                <option value="Estética">Estética</option>
-                <option value="Barbería">Barbería</option>
-                <option value="Spa">Spa</option>
-                <option value="Fisioterapia">Fisioterapia</option>
-                <option value="Otro">Otro</option>
-              </select>
+              />
 
               <input
                 className="input"
