@@ -1,528 +1,286 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type {
-  Booking,
-  BookingStatus,
-  CreateBookingDto,
-  UpdateBookingDto,
-} from "@/lib/api";
-import {
-  createAppointment,
-  deleteAppointment,
-  updateAppointment,
-} from "@/lib/api";
+import { useMemo, useState, useEffect } from "react";
+import type { Booking, BookingStatus, CreateBookingDto } from "@/lib/api";
+import { createAppointment, deleteAppointment, updateAppointment } from "@/lib/api";
 
-function StatusBadge({ status }: { status: BookingStatus }) {
-  const label =
-    status === "pending"
-      ? "Pendiente"
-      : status === "confirmed"
-        ? "Confirmada"
-        : "Pagada";
-
-  return <span className={`badge badge--${status}`}>{label}</span>;
-}
-
-function formatDate(date: string) {
-  try {
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(new Date(date));
-  } catch {
-    return date;
-  }
-}
-
-export default function BookingsClient({
-  initialBookings,
-}: {
-  initialBookings: Booking[];
-}) {
+export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
-
-  const emptyForm: CreateBookingDto = {
-    date: "",
-    time: "",
-    status: "pending",
-    customerId: 1,
-    businessId: 1,
-    serviceName: "",
-  };
-
-  const [createForm, setCreateForm] = useState<CreateBookingDto>(emptyForm);
-  const [editForm, setEditForm] = useState<CreateBookingDto>(emptyForm);
-
   const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
-  const [loadingCreate, setLoadingCreate] = useState(false);
-  const [loadingEdit, setLoadingEdit] = useState(false);
-  const [deletingBookingId, setDeletingBookingId] = useState<number | null>(null);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
-  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  const filteredBookings = useMemo(() => {
-    if (statusFilter === "all") return bookings;
-    return bookings.filter((booking) => booking.status === statusFilter);
-  }, [bookings, statusFilter]);
+  const [form, setForm] = useState<CreateBookingDto>({
+    date: "", time: "", status: "pending", customerId: 1, businessId: 1, serviceName: "",
+  });
 
-  const totalCount = bookings.length;
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
-  const confirmedCount = bookings.filter((b) => b.status === "confirmed").length;
-  const paidCount = bookings.filter((b) => b.status === "paid").length;
-
-  function updateCreateForm<K extends keyof CreateBookingDto>(
-    key: K,
-    value: CreateBookingDto[K]
-  ) {
-    setCreateForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-
-  function updateEditForm<K extends keyof CreateBookingDto>(
-    key: K,
-    value: CreateBookingDto[K]
-  ) {
-    setEditForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-
-  function resetCreateForm() {
-    setCreateForm(emptyForm);
-  }
-
-  function resetEditForm() {
-    setEditForm(emptyForm);
-  }
-
-  function openCreateForm() {
-    setErrorMessage("");
-    setSuccessMessage("");
-    setEditingBookingId(null);
-    setDeleteTargetId(null);
-    resetEditForm();
-    setIsCreateOpen(true);
-  }
-
-  function closeCreateForm() {
-    setErrorMessage("");
-    resetCreateForm();
-    setIsCreateOpen(false);
-  }
-
-  function openEditForm(booking: Booking) {
-    setErrorMessage("");
-    setSuccessMessage("");
-    setIsCreateOpen(false);
-    setDeleteTargetId(null);
-    setEditingBookingId(booking.id);
-    setEditForm({
-      date: booking.date,
-      time: booking.time,
-      status: booking.status,
-      customerId: booking.customerId,
-      businessId: booking.businessId,
-      serviceName: booking.serviceName,
-    });
-  }
-
-  function closeEditForm() {
-    setErrorMessage("");
-    setEditingBookingId(null);
-    resetEditForm();
-  }
-
-  function openDeleteModal(id: number) {
-    setErrorMessage("");
-    setSuccessMessage("");
-    setDeleteTargetId(id);
-  }
-
-  function closeDeleteModal() {
-    setDeleteTargetId(null);
-  }
-
-  async function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoadingCreate(true);
-    setSuccessMessage("");
-    setErrorMessage("");
-
-    try {
-      const created = await createAppointment(createForm);
-      setBookings((prev) => [created, ...prev]);
-      resetCreateForm();
-      setIsCreateOpen(false);
-      setSuccessMessage("Reserva creada correctamente.");
-    } catch {
-      setErrorMessage("No se pudo crear la reserva. Revisa los datos o el backend.");
-    } finally {
-      setLoadingCreate(false);
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 4000);
+      return () => clearTimeout(timer);
     }
-  }
+  }, [message]);
 
-  async function handleEditSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const stats = useMemo(() => ({
+    total: bookings.length,
+    pending: bookings.filter(b => b.status === "pending").length,
+    confirmed: bookings.filter(b => b.status === "confirmed").length,
+    paid: bookings.filter(b => b.status === "paid").length,
+  }), [bookings]);
+
+  const filtered = useMemo(() => 
+    statusFilter === "all" ? bookings : bookings.filter(b => b.status === statusFilter)
+  , [bookings, statusFilter]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!editingBookingId) return;
-
-    setLoadingEdit(true);
-    setSuccessMessage("");
-    setErrorMessage("");
-
     try {
-      const payload: UpdateBookingDto = {
-        date: editForm.date,
-        time: editForm.time,
-        status: editForm.status,
-        customerId: editForm.customerId,
-        businessId: editForm.businessId,
-        serviceName: editForm.serviceName,
-      };
+      // 🔧 FIX 1
+      if (editingId !== null) {
+        const updated = await updateAppointment(editingId, form);
 
-      const updated = await updateAppointment(editingBookingId, payload);
+        setBookings(bookings.map(b => b.id === editingId ? updated : b));
 
-      setBookings((prev) =>
-        prev.map((booking) =>
-          booking.id === editingBookingId ? updated : booking
-        )
-      );
+        setMessage({ text: "Cambios guardados con éxito", type: "success" });
+      } else {
+        const created = await createAppointment(form);
 
-      setEditingBookingId(null);
-      resetEditForm();
-      setSuccessMessage("Reserva actualizada correctamente.");
-    } catch {
-      setErrorMessage("No se pudo actualizar la reserva.");
-    } finally {
-      setLoadingEdit(false);
-    }
-  }
+        setBookings([created, ...bookings]);
 
-  async function confirmDelete() {
-    if (deleteTargetId === null) return;
-
-    setDeletingBookingId(deleteTargetId);
-    setSuccessMessage("");
-    setErrorMessage("");
-
-    try {
-      await deleteAppointment(deleteTargetId);
-      setBookings((prev) => prev.filter((booking) => booking.id !== deleteTargetId));
-
-      if (editingBookingId === deleteTargetId) {
-        closeEditForm();
+        setMessage({ text: "Cita programada correctamente", type: "success" });
       }
 
-      setSuccessMessage("Reserva eliminada correctamente.");
-      closeDeleteModal();
-    } catch {
-      setErrorMessage("No se pudo eliminar la reserva.");
-    } finally {
-      setDeletingBookingId(null);
+      setIsFormOpen(false);
+      setEditingId(null);
+    } catch (err) {
+      setMessage({ text: "No pudimos procesar la solicitud", type: "error" });
     }
-  }
+  };
 
   return (
-    <div className="page-stack">
-      <section className="page-hero">
-        <div>
-          <h2>Bookings list</h2>
-          <p>Gestión de reservas conectada con la API.</p>
-        </div>
+    <div className="admin-shell">
 
-        <button className="primary-btn" type="button" onClick={openCreateForm}>
-          Nueva reserva
-        </button>
-      </section>
+      <main className="admin-main">
+        <header className="admin-header">
+          <div>
+            <h2 className="admin-header__title">Panel de Citas</h2>
+            <div style={{height: '20px'}}>
+              {message && (
+                <span className={`message-${message.type}`} style={{fontSize: '12px'}}>
+                  {message.type === 'success' ? '● ' : '○ '}{message.text}
+                </span>
+              )}
+            </div>
+          </div>
 
-      <section className="kpi-grid">
-        <div className="kpi-card">
-          <p className="kpi-card__label">Total reservas</p>
-          <h3 className="kpi-card__value">{totalCount}</h3>
-          <p className="kpi-card__meta">Registros disponibles</p>
-        </div>
-
-        <div className="kpi-card">
-          <p className="kpi-card__label">Pendientes</p>
-          <h3 className="kpi-card__value">{pendingCount}</h3>
-          <p className="kpi-card__meta kpi-card__meta--warning">
-            Requieren seguimiento
-          </p>
-        </div>
-
-        <div className="kpi-card">
-          <p className="kpi-card__label">Confirmadas</p>
-          <h3 className="kpi-card__value">{confirmedCount}</h3>
-          <p className="kpi-card__meta kpi-card__meta--positive">
-            Estado activo
-          </p>
-        </div>
-
-        <div className="kpi-card">
-          <p className="kpi-card__label">Pagadas</p>
-          <h3 className="kpi-card__value">{paidCount}</h3>
-          <p className="kpi-card__meta">Reservas cerradas</p>
-        </div>
-      </section>
-
-      {isCreateOpen && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Nueva reserva</h3>
-            <button type="button" className="secondary-btn bg-cancel" onClick={closeCreateForm}>
-              Cancelar
+          <div className="admin-header__actions">
+            <button
+              className="primary-btn"
+              onClick={() => {
+                setEditingId(null);
+                setForm({
+                  date: "", time: "", status: "pending",
+                  customerId: 1, businessId: 1, serviceName: "",
+                });
+                setIsFormOpen(true);
+              }}
+            >
+              + Nueva Reserva
             </button>
+
+            <div className="admin-avatar">JD</div>
           </div>
+        </header>
 
-          <form onSubmit={handleCreateSubmit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <input
-                className="input"
-                type="date"
-                value={createForm.date}
-                onChange={(e) => updateCreateForm("date", e.target.value)}
-                required
-              />
-              <input
-                className="input"
-                type="time"
-                value={createForm.time}
-                onChange={(e) => updateCreateForm("time", e.target.value)}
-                required
-              />
-              <select
-                className="select"
-                value={createForm.status}
-                onChange={(e) =>
-                  updateCreateForm("status", e.target.value as BookingStatus)
-                }
-              >
-                <option value="pending">Pendiente</option>
-                <option value="confirmed">Confirmada</option>
-                <option value="paid">Pagada</option>
-              </select>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={createForm.customerId}
-                onChange={(e) =>
-                  updateCreateForm("customerId", Number(e.target.value))
-                }
-                placeholder="Customer ID"
-                required
-              />
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={createForm.businessId}
-                onChange={(e) =>
-                  updateCreateForm("businessId", Number(e.target.value))
-                }
-                placeholder="Business ID"
-                required
-              />
-              <input
-                className="input input--full"
-                type="text"
-                value={createForm.serviceName}
-                onChange={(e) => updateCreateForm("serviceName", e.target.value)}
-                placeholder="Servicio"
-                required
-              />
+        <div className="admin-content">
+          <div className="page-stack">
+
+            <div className="kpi-grid">
+              {[
+                { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
+                { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
+                { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
+                { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
+              ].map((kpi, i) => (
+                <div key={i} className="kpi-card" style={{borderLeft: `4px solid ${kpi.color}`}}>
+                  <p className="kpi-card__label">{kpi.label}</p>
+                  <h3 className="kpi-card__value" style={{color: kpi.color}}>{kpi.val}</h3>
+                  <p className="kpi-card__meta">{kpi.sub}</p>
+                </div>
+              ))}
             </div>
 
-            {errorMessage ? <div className="message-error">{errorMessage}</div> : null}
+            <div className="section-card">
+              <div className="panel-title-row">
+                <h3 className="panel-title">Próximas Citas</h3>
 
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingCreate}>
-                {loadingCreate ? "Guardando..." : "Crear reserva"}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {editingBookingId !== null && (
-        <section className="section-card">
-          <div className="panel-title-row">
-            <h3 className="panel-title">Editar reserva #{editingBookingId}</h3>
-            <button type="button" className="secondary-btn bg-cancel" onClick={closeEditForm}>
-              Cancelar
-            </button>
-          </div>
-
-          <form onSubmit={handleEditSubmit} className="page-stack" style={{ gap: 16 }}>
-            <div className="form-grid">
-              <input
-                className="input"
-                type="date"
-                value={editForm.date}
-                onChange={(e) => updateEditForm("date", e.target.value)}
-                required
-              />
-              <input
-                className="input"
-                type="time"
-                value={editForm.time}
-                onChange={(e) => updateEditForm("time", e.target.value)}
-                required
-              />
-              <select
-                className="select"
-                value={editForm.status}
-                onChange={(e) =>
-                  updateEditForm("status", e.target.value as BookingStatus)
-                }
-              >
-                <option value="pending">Pendiente</option>
-                <option value="confirmed">Confirmada</option>
-                <option value="paid">Pagada</option>
-              </select>
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={editForm.customerId}
-                onChange={(e) =>
-                  updateEditForm("customerId", Number(e.target.value))
-                }
-                placeholder="Customer ID"
-                required
-              />
-              <input
-                className="input"
-                type="number"
-                min={1}
-                value={editForm.businessId}
-                onChange={(e) =>
-                  updateEditForm("businessId", Number(e.target.value))
-                }
-                placeholder="Business ID"
-                required
-              />
-              <input
-                className="input input--full"
-                type="text"
-                value={editForm.serviceName}
-                onChange={(e) => updateEditForm("serviceName", e.target.value)}
-                placeholder="Servicio"
-                required
-              />
-            </div>
-
-            {errorMessage ? <div className="message-error">{errorMessage}</div> : null}
-
-            <div className="message-row">
-              <button className="primary-btn" type="submit" disabled={loadingEdit}>
-                {loadingEdit ? "Guardando..." : "Guardar cambios"}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
-
-      {deleteTargetId !== null && (
-        <div
-          className="modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-modal-title"
-          aria-describedby="delete-modal-description"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeDeleteModal();
-          }}
-        >
-          <div className="modal-card">
-            <div className="modal-icon">!</div>
-            <h3 id="delete-modal-title" className="modal-title">
-              Eliminar reserva
-            </h3>
-            <p id="delete-modal-description" className="modal-text">
-              ¿Seguro que quieres eliminar la reserva #{deleteTargetId}? Esta acción no se puede deshacer.
-            </p>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary-btn bg-cancel"
-                onClick={closeDeleteModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="danger-btn"
-                onClick={confirmDelete}
-                disabled={deletingBookingId === deleteTargetId}
-              >
-                {deletingBookingId === deleteTargetId ? "Eliminando..." : "Eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <section className="section-card">
-        <div className="panel-title-row">
-          <h3 className="panel-title">Reservas registradas</h3>
-          <div className="filter-row">
-            <button type="button" className={`filter-pill filter-pill--all ${statusFilter === "all" ? "active" : ""}`} onClick={() => setStatusFilter("all")}>Todas</button>
-            <button type="button" className={`filter-pill filter-pill--pending ${statusFilter === "pending" ? "active" : ""}`} onClick={() => setStatusFilter("pending")}>Pendientes</button>
-            <button type="button" className={`filter-pill filter-pill--confirmed ${statusFilter === "confirmed" ? "active" : ""}`} onClick={() => setStatusFilter("confirmed")}>Confirmadas</button>
-            <button type="button" className={`filter-pill filter-pill--paid ${statusFilter === "paid" ? "active" : ""}`} onClick={() => setStatusFilter("paid")}>Pagadas</button>
-          </div>
-        </div>
-
-        {successMessage ? <div className="message-success" style={{ marginBottom: 12 }}>{successMessage}</div> : null}
-        {errorMessage ? <div className="message-error" style={{ marginBottom: 12 }}>{errorMessage}</div> : null}
-
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Servicio</th>
-              <th>Customer</th>
-              <th>Business</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredBookings.map((booking) => (
-              <tr key={booking.id}>
-                <td style={{ fontWeight: 600 }}>{booking.id}</td>
-                <td>{formatDate(booking.date)}</td>
-                <td>{booking.time}</td>
-                <td>{booking.serviceName}</td>
-                <td>{booking.customerId}</td>
-                <td>{booking.businessId}</td>
-                <td><StatusBadge status={booking.status} /></td>
-                <td>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" className="secondary-btn bg-edit" onClick={() => openEditForm(booking)}>
-                      Editar
+                <div className="filter-row">
+                  {["all", "pending", "confirmed", "paid"].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setStatusFilter(f as any)}
+                      className={`filter-pill filter-pill--${f} ${statusFilter === f ? "active" : ""}`}
+                    >
+                      {f === "all" ? "Ver todas": f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
-                    <button type="button" className="secondary-btn bg-delete" onClick={() => openDeleteModal(booking.id)}>
-                      Eliminar
+                  ))}
+                </div>
+              </div>
+
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>SERVICIO</th>
+                    <th>FECHA Y HORA</th>
+                    <th>ESTADO</th>
+                    <th style={{textAlign: 'right'}}>ACCIONES</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filtered.map(b => (
+                    <tr key={b.id} className="row-hover">
+                      <td>
+                        <div style={{fontWeight: 600, color: 'var(--primary)'}}>{b.serviceName}</div>
+                        <div style={{fontSize: '12px', color: 'var(--muted)'}}>ID Cliente: #{b.customerId}</div>
+                      </td>
+
+                      <td>
+                        <div>{new Date(b.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</div>
+                        <div style={{fontSize: '12px', color: 'var(--muted)'}}>{b.time} hs</div>
+                      </td>
+
+                      <td>
+                        <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
+                      </td>
+
+                      <td style={{textAlign: 'right'}}>
+                        <button
+                          className="secondary-btn bg-edit"
+                          style={{padding: '6px 12px', marginRight: '8px'}}
+                          onClick={() => {
+                            setEditingId(b.id);
+
+                            // 🔧 FIX 2
+                            setForm({
+                              date: b.date,
+                              time: b.time,
+                              status: b.status,
+                              customerId: b.customerId,
+                              businessId: b.businessId,
+                              serviceName: b.serviceName,
+                            });
+
+                            setIsFormOpen(true);
+                          }}
+                        >
+                          Editar
+                        </button>
+
+                        <button
+                          className="secondary-btn bg-delete"
+                          style={{padding: '6px 12px'}}
+                          onClick={async () => {
+                            if (confirm("¿Eliminar?")) {
+                              await deleteAppointment(b.id);
+                              setBookings(bookings.filter(x => x.id !== b.id));
+                            }
+                          }}
+                        >
+                          Borrar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+        {isFormOpen && (
+          <div className="modal-backdrop">
+            <div className="modal-card">
+              <h3 className="modal-title">
+                {editingId ? "Actualizar Cita" : "Nueva Reserva"}
+              </h3>
+
+              <p className="modal-text">
+                Completa los campos para organizar la agenda.
+              </p>
+
+              <form onSubmit={handleSubmit}>
+                <div className="page-stack">
+
+                  <div className="input-group">
+                    <label className="kpi-card__label" style={{fontSize: '11px'}}>Servicio</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={form.serviceName}
+                      onChange={e => setForm({...form, serviceName: e.target.value})}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-grid">
+                    <div>
+                      <label className="kpi-card__label" style={{fontSize: '11px'}}>Fecha</label>
+                      <input
+                        className="input"
+                        type="date"
+                        value={form.date}
+                        onChange={e => setForm({...form, date: e.target.value})}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="kpi-card__label" style={{fontSize: '11px'}}>Hora</label>
+                      <input
+                        className="input"
+                        type="time"
+                        value={form.time}
+                        onChange={e => setForm({...form, time: e.target.value})}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="kpi-card__label" style={{fontSize: '11px'}}>Estado de Pago</label>
+                    <select
+                      className="select"
+                      value={form.status}
+                      onChange={e => setForm({...form, status: e.target.value as BookingStatus})}
+                    >
+                      <option value="pending">Pendiente</option>
+                      <option value="confirmed">Confirmada</option>
+                      <option value="paid">Pagada</option>
+                    </select>
+                  </div>
+
+                  <div className="modal-actions" style={{marginTop: '20px'}}>
+                    <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
+                      Cancelar
+                    </button>
+
+                    <button type="submit" className="primary-btn">
+                      Finalizar
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+
+                </div>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+      </main>
     </div>
   );
 }
