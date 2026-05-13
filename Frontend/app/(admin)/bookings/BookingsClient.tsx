@@ -4,6 +4,13 @@ import { useMemo, useState, useEffect } from "react";
 import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
 import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
 
+const FILTERS: { key: "all" | BookingStatus; label: string }[] = [
+  { key: "all", label: "Ver todas" },
+  { key: "pending", label: "Pendientes" },
+  { key: "confirmed", label: "Confirmadas" },
+  { key: "paid", label: "Pagadas" },
+];
+
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -111,73 +118,86 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               <div className="panel-title-row">
                 <h3 className="panel-title">Próximas Citas</h3>
                 <div className="filter-row">
-                  {["all", "pending", "confirmed", "paid"].map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setStatusFilter(f as any)}
-                      className={`filter-pill filter-pill--${f} ${statusFilter === f ? "active" : ""}`}
-                    >
-                      {f === "all" ? "Ver todas" : f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                  ))}
+                  {FILTERS.map((f) => {
+                    const isActive = statusFilter === f.key;
+                    const count = f.key === "all" ? null : stats[f.key as BookingStatus];
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={() => setStatusFilter(f.key)}
+                        className={`filter-pill filter-pill--${f.key} ${isActive ? "active" : ""}`}
+                      >
+                        {f.label}
+                        {count !== null && (
+                          <span className="filter-pill__count">{count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>SERVICIO</th>
-                    <th>FECHA Y HORA</th>
-                    <th>ESTADO</th>
-                    <th style={{ textAlign: "right" }}>ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(b => (
-                    <tr key={b.id} className="row-hover">
-                      <td>
-                        <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
-                        <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
-                      </td>
-                      <td>
-                        <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
-                        <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
-                      </td>
-                      <td>
-                        <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
-                      </td>
-                      <td style={{ textAlign: "right" }}>
-                        <button
-                          className="secondary-btn bg-edit"
-                          style={{ padding: "6px 12px", marginRight: "8px" }}
-                          onClick={() => {
-                            setEditingId(b.id);
-                            setForm({
-                              date: b.date, time: b.time, status: b.status,
-                              customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
-                            });
-                            setIsFormOpen(true);
-                          }}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="secondary-btn bg-delete"
-                          style={{ padding: "6px 12px" }}
-                          onClick={async () => {
-                            if (confirm("¿Eliminar?")) {
-                              await deleteAppointment(b.id);
-                              setBookings(bookings.filter(x => x.id !== b.id));
-                            }
-                          }}
-                        >
-                          Borrar
-                        </button>
-                      </td>
+              {filtered.length === 0 ? (
+                <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
+                  No hay citas en esta categoría
+                </p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>SERVICIO</th>
+                      <th>FECHA Y HORA</th>
+                      <th>ESTADO</th>
+                      <th style={{ textAlign: "right" }}>ACCIONES</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map(b => (
+                      <tr key={b.id} className="row-hover">
+                        <td>
+                          <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
+                        </td>
+                        <td>
+                          <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
+                        </td>
+                        <td>
+                          <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            className="secondary-btn bg-edit"
+                            style={{ padding: "6px 12px", marginRight: "8px" }}
+                            onClick={() => {
+                              setEditingId(b.id);
+                              setForm({
+                                date: b.date, time: b.time, status: b.status,
+                                customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
+                              });
+                              setIsFormOpen(true);
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="secondary-btn bg-delete"
+                            style={{ padding: "6px 12px" }}
+                            onClick={async () => {
+                              if (confirm("¿Eliminar?")) {
+                                await deleteAppointment(b.id);
+                                setBookings(bookings.filter(x => x.id !== b.id));
+                              }
+                            }}
+                          >
+                            Borrar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
           </div>
@@ -193,7 +213,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
 
               <form onSubmit={handleSubmit}>
                 <div className="page-stack">
-
                   <div className="input-group">
                     <label className="kpi-card__label" style={{ fontSize: "11px" }}>Servicio</label>
                     <input
@@ -279,13 +298,11 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                       Finalizar
                     </button>
                   </div>
-
                 </div>
               </form>
             </div>
           </div>
         )}
-
       </main>
     </div>
   );

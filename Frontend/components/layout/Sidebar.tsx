@@ -23,7 +23,6 @@ export default function Sidebar() {
       <nav className="admin-sidebar__nav">
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
-
           return (
             <Link
               key={item.href}

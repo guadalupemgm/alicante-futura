@@ -29,6 +29,12 @@ function Badge({ status }: { status: PaymentStatus }) {
   );
 }
 
+const FILTERS = [
+  { key: "all", label: "Ver todos", className: "filter-pill--all" },
+  { key: "pending", label: "Pendientes", className: "filter-pill--pending" },
+  { key: "paid", label: "Pagados", className: "filter-pill--paid" },
+];
+
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -131,75 +137,82 @@ export default function PaymentsPage() {
         <div className="panel-title-row">
           <h3 className="panel-title">Listado de cobros</h3>
           <div className="filter-row">
-            {[
-              { key: "all", label: "Ver todos" },
-              { key: "pending", label: "Pendientes" },
-              { key: "paid", label: "Pagados" },
-            ].map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setStatusFilter(f.key as any)}
-                className={`filter-pill filter-pill--${f.key} ${statusFilter === f.key ? "active" : ""}`}
-              >
-                {f.label}
-              </button>
-            ))}
+            {FILTERS.map((f) => {
+              const isActive = statusFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStatusFilter(f.key as "all" | PaymentStatus)}
+                  className={`filter-pill ${f.className} ${isActive ? "active" : ""}`}
+                >
+                  {f.label}
+                  {f.key !== "all" && (
+                    <span className="filter-pill__count">
+                      {payments.filter(p => p.status === f.key).length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Importe</th>
-              <th>Método</th>
-              <th>Reserva</th>
-              <th>Estado</th>
-              <th style={{ textAlign: "right" }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((p) => (
-              <tr key={p.id}>
-                <td style={{ fontWeight: 600 }}>COB-{String(p.id).padStart(3, "0")}</td>
-                <td>{Number(p.amount).toFixed(2)} €</td>
-                <td>{p.method}</td>
-                <td>#{p.appointmentId}</td>
-                <td><Badge status={p.status} /></td>
-                <td style={{ textAlign: "right" }}>
-                  {p.status === "pending" ? (
-                    <button
-                      className="primary-btn"
-                      style={{ padding: "4px 12px", fontSize: "12px" }}
-                      onClick={() => handleStatusChange(p.id, "paid")}
-                    >
-                      Marcar pagado
-                    </button>
-                  ) : (
-                    <button
-                      className="secondary-btn"
-                      style={{ padding: "4px 12px", fontSize: "12px" }}
-                      onClick={() => handleStatusChange(p.id, "pending")}
-                    >
-                      Marcar pendiente
-                    </button>
-                  )}
-                </td>
+        {filtered.length === 0 ? (
+          <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
+            No hay cobros en esta categoría
+          </p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Importe</th>
+                <th>Método</th>
+                <th>Reserva</th>
+                <th>Estado</th>
+                <th style={{ textAlign: "right" }}>Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((p) => (
+                <tr key={p.id}>
+                  <td style={{ fontWeight: 600 }}>COB-{String(p.id).padStart(3, "0")}</td>
+                  <td>{Number(p.amount).toFixed(2)} €</td>
+                  <td>{p.method}</td>
+                  <td>#{p.appointmentId}</td>
+                  <td><Badge status={p.status} /></td>
+                  <td style={{ textAlign: "right" }}>
+                    {p.status === "pending" ? (
+                      <button
+                        className="primary-btn"
+                        style={{ padding: "4px 12px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "paid")}
+                      >
+                        Marcar pagado
+                      </button>
+                    ) : (
+                      <button
+                        className="secondary-btn"
+                        style={{ padding: "4px 12px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "pending")}
+                      >
+                        Marcar pendiente
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
 
       {showModal && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
-        }}>
-          <div style={{ background: "white", padding: "2rem", borderRadius: "8px", minWidth: "360px" }}>
-            <h3 style={{ marginBottom: "1rem" }}>Registrar cobro</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3 className="modal-title">Registrar cobro</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
               <input
                 className="input"
                 type="number"
@@ -239,9 +252,9 @@ export default function PaymentsPage() {
                 ))}
               </select>
             </div>
-            <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
-              <button className="primary-btn" onClick={handleCreate}>Guardar</button>
+            <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className="primary-btn" onClick={handleCreate}>Guardar</button>
             </div>
           </div>
         </div>

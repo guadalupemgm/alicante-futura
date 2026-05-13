@@ -32,7 +32,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: #f5f7fb;
+  background: var(--bg);
   color: var(--text);
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
@@ -66,6 +66,8 @@ body {
   position: sticky;
   top: 0;
   height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-sidebar__brand {
@@ -117,6 +119,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: var(--bg);
 }
 
 .admin-header {
@@ -223,11 +226,11 @@ body {
   transition: transform 0.25s;
 }
 
-.primary-btn:hover{
+.primary-btn:hover {
   transform: scale(1.05);
 }
 
-.primary-btn:active{
+.primary-btn:active {
   transform: scale(0.95);
 }
 
@@ -242,11 +245,11 @@ body {
   transition: transform 0.25s;
 }
 
-.secondary-btn:hover{
+.secondary-btn:hover {
   transform: scale(1.05);
 }
 
-.secondary-btn:active{
+.secondary-btn:active {
   transform: scale(0.95);
 }
 
@@ -364,9 +367,9 @@ body {
 }
 
 .filter-pill--all.active,
-.filter-pill--all:hover { 
-  background: black; 
-  color:white
+.filter-pill--all:hover {
+  background: black;
+  color: white;
 }
 
 .badge--pending.active,
@@ -385,7 +388,7 @@ body {
 
 .badge--paid,
 .filter-pill--paid:hover,
-.filter-pill--paid.active{
+.filter-pill--paid.active {
   background: var(--paid-bg);
   color: var(--paid-text);
 }
@@ -649,14 +652,281 @@ body {
   cursor: not-allowed;
 }
 
-
 .bg-edit:hover {
   background-color: #fef3c7;
 }
+
 .bg-cancel:hover {
   background-color: #f1f5f9;
 }
+
 .bg-delete:hover {
   background-color: #b91c1c;
-  color:white;
+  color: white;
+}
+
+/* ===== THEME TOGGLE BUTTON ===== */
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.1);
+}
+
+/* ===== DARK MODE ===== */
+html.dark {
+  --bg: #111111;
+  --surface: #1a1a1a;
+  --surface-2: #1a1a1a;
+  --border: #2a2a2a;
+  --border-strong: #333333;
+  --text: #ffffff;
+  --muted: #888888;
+  --muted-2: #666666;
+  --primary: #ffffff;
+  --primary-soft: #222222;
+  --success-bg: #0d2b1a;
+  --success-text: #4ade80;
+  --warning-bg: #2b1a00;
+  --warning-text: #fbbf24;
+  --paid-bg: #0d1f3c;
+  --paid-text: #60a5fa;
+}
+
+html.dark,
+html.dark body {
+  background: #111111 !important;
+  color: #ffffff;
+}
+
+html.dark .admin-shell {
+  background: #111111;
+}
+
+html.dark .admin-main {
+  background: #111111;
+}
+
+html.dark .admin-content {
+  background: #111111;
+}
+
+html.dark .admin-sidebar {
+  background: #1a1a1a !important;
+  border-right: 1px solid #2a2a2a !important;
+}
+
+html.dark .admin-sidebar__title {
+  color: #ffffff;
+}
+
+html.dark .admin-sidebar__subtitle {
+  color: #888888;
+}
+
+html.dark .admin-sidebar__link {
+  color: #cccccc;
+}
+
+html.dark .admin-sidebar__link:hover {
+  background: #222222;
+  color: #ffffff;
+}
+
+html.dark .admin-sidebar__link--active {
+  background: #222222;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+html.dark .admin-header {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .admin-header__title,
+html.dark .admin-header__subtitle {
+  color: #ffffff;
+}
+
+html.dark .page-hero {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .page-hero h2 {
+  color: #ffffff;
+}
+
+html.dark .page-hero p {
+  color: #888888;
+}
+
+html.dark .surface-card,
+html.dark .section-card {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .kpi-card {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .kpi-card__value {
+  color: #ffffff;
+}
+
+html.dark .customer-card {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .customer-name {
+  color: #ffffff;
+}
+
+html.dark .customer-meta {
+  color: #888888;
+}
+
+html.dark .customer-tag {
+  background: #222222;
+  color: #cccccc;
+}
+
+html.dark .primary-btn {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+html.dark .secondary-btn {
+  background: #1a1a1a !important;
+  border-color: #333333 !important;
+  color: #ffffff !important;
+}
+
+html.dark .filter-pill {
+  background: #1a1a1a;
+  border-color: #333333;
+  color: #cccccc;
+}
+
+html.dark .filter-pill--all.active,
+html.dark .filter-pill--all:hover {
+  background: #ffffff;
+  color: #111111;
+}
+
+html.dark .input,
+html.dark .select {
+  background: #222222 !important;
+  border-color: #333333 !important;
+  color: #ffffff !important;
+}
+
+html.dark .data-table thead tr {
+  color: #888888;
+}
+
+html.dark .data-table td {
+  border-top-color: #2a2a2a;
+  color: #cccccc;
+}
+
+html.dark .modal-card {
+  background: #1a1a1a !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .modal-title {
+  color: #ffffff;
+}
+
+html.dark .modal-text {
+  color: #888888;
+}
+
+html.dark .info-box {
+  background: #222222 !important;
+  border-color: #2a2a2a !important;
+}
+
+html.dark .info-box__title {
+  color: #ffffff;
+}
+
+html.dark .panel-title {
+  color: #ffffff;
+}
+
+/* ===== FILTER PILL COUNT BADGE ===== */
+.filter-pill__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.1);
+}
+
+.filter-pill--pending.active .filter-pill__count,
+.filter-pill--pending:hover .filter-pill__count {
+  background: rgba(146, 64, 14, 0.2);
+}
+
+.filter-pill--paid.active .filter-pill__count,
+.filter-pill--paid:hover .filter-pill__count {
+  background: rgba(29, 78, 216, 0.2);
+}
+
+html.dark .filter-pill__count {
+  background: rgba(255,255,255,0.15);
+}
+.filter-pill--pending.active,
+.filter-pill--pending:hover {
+  background: white;
+  color: #111111;
+  border-color: #111111;
+}
+
+.filter-pill--confirmed.active,
+.filter-pill--confirmed:hover {
+  background: white;
+  color: #111111;
+  border-color: #111111;
+}
+
+.filter-pill--paid.active,
+.filter-pill--paid:hover {
+  background: white;
+  color: #111111;
+  border-color: #111111;
+}
+
+html.dark .filter-pill--pending.active,
+html.dark .filter-pill--pending:hover,
+html.dark .filter-pill--confirmed.active,
+html.dark .filter-pill--confirmed:hover,
+html.dark .filter-pill--paid.active,
+html.dark .filter-pill--paid:hover {
+  background: #ffffff;
+  color: #111111;
+  border-color: #ffffff;
 }
