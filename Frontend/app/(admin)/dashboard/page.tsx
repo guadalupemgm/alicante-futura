@@ -1,36 +1,7 @@
+import Link from "next/link";
+import { getAppointments } from "@/lib/api";
+
 type DashboardBookingStatus = "pending" | "confirmed" | "paid";
-
-type DashboardBooking = {
-  time: string;
-  client: string;
-  business: string;
-  service: string;
-  status: DashboardBookingStatus;
-};
-
-const bookings: DashboardBooking[] = [
-  {
-    time: "09:00",
-    client: "María López",
-    business: "Peluquería Nova",
-    service: "Corte + peinado",
-    status: "confirmed",
-  },
-  {
-    time: "10:30",
-    client: "Carlos Pérez",
-    business: "Restaurante Marea",
-    service: "Reserva para 4",
-    status: "pending",
-  },
-  {
-    time: "12:00",
-    client: "Lucía Sánchez",
-    business: "Barber Studio",
-    service: "Corte caballero",
-    status: "paid",
-  },
-];
 
 function Badge({ status }: { status: DashboardBookingStatus }) {
   const label =
@@ -73,7 +44,16 @@ function KpiCard({
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const bookings = await getAppointments();
+
+  const total = bookings.length;
+  const pending = bookings.filter(b => b.status === "pending").length;
+  const confirmed = bookings.filter(b => b.status === "confirmed").length;
+  const paid = bookings.filter(b => b.status === "paid").length;
+
+  const upcoming = bookings.slice(0, 5);
+
   return (
     <div className="page-stack">
       <section className="page-hero">
@@ -89,73 +69,90 @@ export default function DashboardPage() {
 
       <section className="kpi-grid">
         <KpiCard
-          title="Reservas hoy"
-          value="24"
-          subtitle="+5 respecto a ayer"
-          variant="positive"
+          title="Total reservas"
+          value={String(total)}
+          subtitle="Registros en base de datos"
         />
-        <KpiCard title="Cobrado hoy" value="820 €" subtitle="18 pagos registrados" />
         <KpiCard
           title="Pendientes"
-          value="6"
-          subtitle="Seguimiento necesario"
+          value={String(pending)}
+          subtitle="Por confirmar"
           variant="warning"
         />
-        <KpiCard title="Clientes activos" value="214" subtitle="Este mes" />
+        <KpiCard
+          title="Confirmadas"
+          value={String(confirmed)}
+          subtitle="En agenda"
+          variant="positive"
+        />
+        <KpiCard
+          title="Pagadas"
+          value={String(paid)}
+          subtitle="Completadas"
+        />
       </section>
 
       <section className="dashboard-grid">
         <div className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">Próximas reservas</h3>
-            <button className="panel-subtle-link" type="button">
+            <Link href="/bookings" className="panel-subtle-link">
               Ver todas
-            </button>
+            </Link>
           </div>
 
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Hora</th>
-                <th>Cliente</th>
-                <th>Comercio</th>
-                <th>Servicio</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((booking, index) => (
-                <tr key={index}>
-                  <td style={{ fontWeight: 600 }}>{booking.time}</td>
-                  <td>{booking.client}</td>
-                  <td>{booking.business}</td>
-                  <td>{booking.service}</td>
-                  <td>
-                    <Badge status={booking.status} />
-                  </td>
+          {bookings.length === 0 ? (
+            <p style={{ padding: "1rem", color: "var(--muted)" }}>
+              No hay reservas registradas todavía.
+            </p>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>Servicio</th>
+                  <th>Estado</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {upcoming.map((booking) => (
+                  <tr key={booking.id}>
+                    <td style={{ fontWeight: 600 }}>
+                      {new Date(booking.date).toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </td>
+                    <td>{booking.time}</td>
+                    <td>{booking.serviceName}</td>
+                    <td>
+                      <Badge status={booking.status as DashboardBookingStatus} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="info-stack">
           <div className="info-box">
-            <p className="info-box__eyebrow">Siguiente reserva</p>
-            <p className="info-box__title">María López</p>
-            <p className="info-box__text">09:00 · Peluquería Nova</p>
+            <p className="info-box__eyebrow">Total reservas</p>
+            <p className="info-box__title">{total}</p>
+            <p className="info-box__text">Registradas en el sistema</p>
           </div>
 
           <div className="info-box">
-            <p className="info-box__eyebrow">Comercio destacado</p>
-            <p className="info-box__title">Restaurante Marea</p>
-            <p className="info-box__text">6 reservas hoy</p>
+            <p className="info-box__eyebrow">Pendientes de confirmar</p>
+            <p className="info-box__title">{pending}</p>
+            <p className="info-box__text">Requieren seguimiento</p>
           </div>
 
           <div className="info-box">
-            <p className="info-box__eyebrow">Recordatorios</p>
-            <p className="info-box__title">4 confirmaciones pendientes</p>
-            <p className="info-box__text">Revisión recomendada esta mañana</p>
+            <p className="info-box__eyebrow">Pagadas</p>
+            <p className="info-box__title">{paid}</p>
+            <p className="info-box__text">Reservas cerradas</p>
           </div>
         </div>
       </section>

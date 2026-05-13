@@ -1,4 +1,5 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Appointment } from '../../appointments/appointment.entity';
 
 @Entity()
 export class Customer {
@@ -9,14 +10,14 @@ export class Customer {
   name!: string;
 
   @Column()
-  phone!: string;
-
-  @Column()
   email!: string;
 
   @Column()
+  phone!: string;
+
+  @Column({ nullable: true })
   business!: string;
 
-  @OneToMany('Appointment', 'customer')
-  appointments!: any[];
+  @OneToMany(() => Appointment, (appointment) => appointment.customer)
+  appointments!: Appointment[];
 }

@@ -32,6 +32,7 @@ function Badge({ status }: { status: PaymentStatus }) {
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>("all");
   const [showModal, setShowModal] = useState(false);
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState({
@@ -71,6 +72,21 @@ export default function PaymentsPage() {
       setTimeout(() => setSuccess(""), 3000);
     }
   };
+
+  const handleStatusChange = async (id: number, newStatus: PaymentStatus) => {
+    const res = await fetch(`${API_URL}/payments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    }
+  };
+
+  const filtered = statusFilter === "all"
+    ? payments
+    : payments.filter(p => p.status === statusFilter);
 
   const totalPaid = payments
     .filter((p) => p.status === "paid")
@@ -114,7 +130,22 @@ export default function PaymentsPage() {
       <section className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Listado de cobros</h3>
-          <span style={{ color: "#6b7280", fontSize: 14 }}>{payments.length} resultados</span>
+          <div className="filter-row">
+            {[
+              { key: "all", label: "Ver todos" },
+              { key: "pending", label: "Pendientes" },
+              { key: "paid", label: "Pagados" },
+            ].map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setStatusFilter(f.key as any)}
+                className={`filter-pill filter-pill--${f.key} ${statusFilter === f.key ? "active" : ""}`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <table className="data-table">
@@ -125,16 +156,36 @@ export default function PaymentsPage() {
               <th>Método</th>
               <th>Reserva</th>
               <th>Estado</th>
+              <th style={{ textAlign: "right" }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {payments.map((p) => (
+            {filtered.map((p) => (
               <tr key={p.id}>
                 <td style={{ fontWeight: 600 }}>COB-{String(p.id).padStart(3, "0")}</td>
                 <td>{Number(p.amount).toFixed(2)} €</td>
                 <td>{p.method}</td>
                 <td>#{p.appointmentId}</td>
                 <td><Badge status={p.status} /></td>
+                <td style={{ textAlign: "right" }}>
+                  {p.status === "pending" ? (
+                    <button
+                      className="primary-btn"
+                      style={{ padding: "4px 12px", fontSize: "12px" }}
+                      onClick={() => handleStatusChange(p.id, "paid")}
+                    >
+                      Marcar pagado
+                    </button>
+                  ) : (
+                    <button
+                      className="secondary-btn"
+                      style={{ padding: "4px 12px", fontSize: "12px" }}
+                      onClick={() => handleStatusChange(p.id, "pending")}
+                    >
+                      Marcar pendiente
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -149,7 +200,6 @@ export default function PaymentsPage() {
           <div style={{ background: "white", padding: "2rem", borderRadius: "8px", minWidth: "360px" }}>
             <h3 style={{ marginBottom: "1rem" }}>Registrar cobro</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-
               <input
                 className="input"
                 type="number"
@@ -157,7 +207,6 @@ export default function PaymentsPage() {
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
-
               <select
                 className="input"
                 value={form.method}
@@ -169,7 +218,6 @@ export default function PaymentsPage() {
                 <option value="Bizum">Bizum</option>
                 <option value="Transferencia">Transferencia</option>
               </select>
-
               <select
                 className="input"
                 value={form.status}
@@ -178,7 +226,6 @@ export default function PaymentsPage() {
                 <option value="pending">Por cobrar</option>
                 <option value="paid">Pagado</option>
               </select>
-
               <select
                 className="input"
                 value={form.appointmentId}
@@ -191,7 +238,6 @@ export default function PaymentsPage() {
                   </option>
                 ))}
               </select>
-
             </div>
             <div style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
               <button className="primary-btn" onClick={handleCreate}>Guardar</button>
