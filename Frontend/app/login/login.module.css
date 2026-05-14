@@ -1,0 +1,219 @@
+.root {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ── Left ── */
+.left {
+  background: #0f1923;
+  padding: 52px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.left::before {
+  content: '';
+  position: absolute;
+  width: 360px; height: 360px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(29,158,117,0.18) 0%, transparent 70%);
+  top: -100px; right: -100px;
+}
+.left::after {
+  content: '';
+  position: absolute;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(29,158,117,0.1) 0%, transparent 70%);
+  bottom: 40px; left: -70px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.brandIcon {
+  width: 36px; height: 36px;
+  background: #1D9E75;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brandName {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+
+.geoArt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.tagline {
+  position: relative;
+  z-index: 1;
+}
+.tagline h2 {
+  font-size: 26px;
+  font-weight: 400;
+  color: #fff;
+  line-height: 1.35;
+  margin: 0 0 8px;
+}
+.tagline h2 em {
+  font-style: italic;
+  color: #5DCAA5;
+}
+.tagline p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  margin: 0;
+  font-weight: 300;
+}
+
+/* ── Right ── */
+.right {
+  background: #ffffff;
+  padding: 52px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+}
+
+.formHeader h1 {
+  font-size: 30px;
+  font-weight: 600;
+  color: #111;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+.formHeader p {
+  font-size: 14px;
+  color: #888;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.inputWrap {
+  position: relative;
+}
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #bbb;
+  pointer-events: none;
+}
+.inputWrap input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: #f8f9fa;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #111;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+.inputWrap input:focus {
+  border-color: #1D9E75;
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
+  background: #fff;
+}
+.inputWrap input::placeholder { color: #ccc; }
+
+.eyeBtn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #bbb;
+  display: flex;
+  align-items: center;
+}
+.eyeBtn:hover { color: #888; }
+
+.errorMsg {
+  font-size: 13px;
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 13px;
+  background: #1D9E75;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+.submitBtn:hover:not(:disabled) { background: #0F6E56; }
+.submitBtn:active:not(:disabled) { transform: scale(0.99); }
+.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.secureBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #999;
+}
+
+@media (max-width: 768px) {
+  .root { grid-template-columns: 1fr; }
+  .left { display: none; }
+  .right { padding: 40px 28px; }
+}
