@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
 import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
 const FILTERS: { key: "all" | BookingStatus; label: string }[] = [
   { key: "all", label: "Ver todas" },
   { key: "pending", label: "Pendientes" },
@@ -11,6 +13,172 @@ const FILTERS: { key: "all" | BookingStatus; label: string }[] = [
   { key: "paid", label: "Pagadas" },
 ];
 
+// ─── Sub-modal: Nuevo Cliente ────────────────────────────────────────────────
+function NewCustomerModal({
+  onSave,
+  onClose,
+}: {
+  onSave: (customer: Customer) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", phone: "", email: "", business: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "El nombre es obligatorio";
+    if (!form.phone.trim()) e.phone = "El teléfono es obligatorio";
+    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) e.phone = "9 dígitos";
+    if (!form.email.trim()) e.email = "El email es obligatorio";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email no válido";
+    return e;
+  };
+
+  const handleSave = async () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/customers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const newCustomer = await res.json();
+        onSave(newCustomer);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" style={{ zIndex: 200 }}>
+      <div className="modal-card">
+        <h3 className="modal-title">Nuevo cliente</h3>
+        <p className="modal-text">Rellena los datos para añadirlo a la base de datos.</p>
+        <div className="page-stack">
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+            <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            {errors.name && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.name}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono *</label>
+            <input className="input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            {errors.phone && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.phone}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email *</label>
+            <input className="input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            {errors.email && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.email}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio (opcional)</label>
+            <input className="input" value={form.business} onChange={e => setForm({ ...form, business: e.target.value })} />
+          </div>
+          <div className="modal-actions" style={{ marginTop: "20px" }}>
+            <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+            <button type="button" className="primary-btn" onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cliente"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-modal: Nuevo Negocio ─────────────────────────────────────────────────
+function NewBusinessModal({
+  onSave,
+  onClose,
+}: {
+  onSave: (business: Business) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", address: "", category: "", email: "", phone: "", status: "active" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "El nombre es obligatorio";
+    if (!form.address.trim()) e.address = "La dirección es obligatoria";
+    return e;
+  };
+
+  const handleSave = async () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/business`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const newBusiness = await res.json();
+        onSave(newBusiness);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" style={{ zIndex: 200 }}>
+      <div className="modal-card">
+        <h3 className="modal-title">Nuevo negocio</h3>
+        <p className="modal-text">Rellena los datos para añadirlo a la base de datos.</p>
+        <div className="page-stack">
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+            <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            {errors.name && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.name}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Dirección *</label>
+            <input className="input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+            {errors.address && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.address}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Categoría</label>
+            <input className="input" placeholder="ej: Peluquería, Spa…" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
+          </div>
+          <div className="form-grid">
+            <div>
+              <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email</label>
+              <input className="input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div>
+              <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono</label>
+              <input className="input" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado</label>
+            <select className="select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+            </select>
+          </div>
+          <div className="modal-actions" style={{ marginTop: "20px" }}>
+            <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+            <button type="button" className="primary-btn" onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando…" : "Guardar negocio"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -19,6 +187,10 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Sub-modales
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showNewBusiness, setShowNewBusiness] = useState(false);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -64,6 +236,22 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     } catch {
       setMessage({ text: "No pudimos procesar la solicitud", type: "error" });
     }
+  };
+
+  // Callback cuando se crea un cliente desde el sub-modal
+  const handleCustomerCreated = (newCustomer: Customer) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    setForm(prev => ({ ...prev, customerId: newCustomer.id }));
+    setShowNewCustomer(false);
+    setMessage({ text: `Cliente "${newCustomer.name}" añadido`, type: "success" });
+  };
+
+  // Callback cuando se crea un negocio desde el sub-modal
+  const handleBusinessCreated = (newBusiness: Business) => {
+    setBusinesses(prev => [...prev, newBusiness]);
+    setForm(prev => ({ ...prev, businessId: newBusiness.id }));
+    setShowNewBusiness(false);
+    setMessage({ text: `Negocio "${newBusiness.name}" añadido`, type: "success" });
   };
 
   return (
@@ -203,6 +391,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
           </div>
         </div>
 
+        {/* ── Modal principal: Nueva / Editar Reserva ── */}
         {isFormOpen && (
           <div className="modal-backdrop">
             <div className="modal-card">
@@ -247,8 +436,21 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                     </div>
                   </div>
 
+                  {/* ── Selector de Negocio con botón "Crear nuevo" ── */}
                   <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewBusiness(true)}
+                        style={{
+                          fontSize: "11px", color: "var(--primary)", background: "none",
+                          border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                        }}
+                      >
+                        + Crear nuevo negocio
+                      </button>
+                    </div>
                     <select
                       className="select"
                       value={form.businessId}
@@ -262,8 +464,21 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                     </select>
                   </div>
 
+                  {/* ── Selector de Cliente con botón "Crear nuevo" ── */}
                   <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCustomer(true)}
+                        style={{
+                          fontSize: "11px", color: "var(--primary)", background: "none",
+                          border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                        }}
+                      >
+                        + Crear nuevo cliente
+                      </button>
+                    </div>
                     <select
                       className="select"
                       value={form.customerId}
@@ -302,6 +517,22 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               </form>
             </div>
           </div>
+        )}
+
+        {/* ── Sub-modal: Nuevo Cliente ── */}
+        {showNewCustomer && (
+          <NewCustomerModal
+            onSave={handleCustomerCreated}
+            onClose={() => setShowNewCustomer(false)}
+          />
+        )}
+
+        {/* ── Sub-modal: Nuevo Negocio ── */}
+        {showNewBusiness && (
+          <NewBusinessModal
+            onSave={handleBusinessCreated}
+            onClose={() => setShowNewBusiness(false)}
+          />
         )}
       </main>
     </div>
