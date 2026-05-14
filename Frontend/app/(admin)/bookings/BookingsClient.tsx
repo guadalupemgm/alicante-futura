@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
 import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+
 const FILTERS: { key: "all" | BookingStatus; label: string }[] = [
   { key: "all", label: "Ver todas" },
   { key: "pending", label: "Pendientes" },
@@ -11,6 +13,172 @@ const FILTERS: { key: "all" | BookingStatus; label: string }[] = [
   { key: "paid", label: "Pagadas" },
 ];
 
+// ─── Sub-modal: Nuevo Cliente ────────────────────────────────────────────────
+function NewCustomerModal({
+  onSave,
+  onClose,
+}: {
+  onSave: (customer: Customer) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", phone: "", email: "", business: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "El nombre es obligatorio";
+    if (!form.phone.trim()) e.phone = "El teléfono es obligatorio";
+    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) e.phone = "9 dígitos";
+    if (!form.email.trim()) e.email = "El email es obligatorio";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Email no válido";
+    return e;
+  };
+
+  const handleSave = async () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/customers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const newCustomer = await res.json();
+        onSave(newCustomer);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" style={{ zIndex: 200 }}>
+      <div className="modal-card">
+        <h3 className="modal-title">Nuevo cliente</h3>
+        <p className="modal-text">Rellena los datos para añadirlo a la base de datos.</p>
+        <div className="page-stack">
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+            <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            {errors.name && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.name}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono *</label>
+            <input className="input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            {errors.phone && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.phone}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email *</label>
+            <input className="input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            {errors.email && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.email}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio (opcional)</label>
+            <input className="input" value={form.business} onChange={e => setForm({ ...form, business: e.target.value })} />
+          </div>
+          <div className="modal-actions" style={{ marginTop: "20px" }}>
+            <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+            <button type="button" className="primary-btn" onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cliente"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-modal: Nuevo Negocio ─────────────────────────────────────────────────
+function NewBusinessModal({
+  onSave,
+  onClose,
+}: {
+  onSave: (business: Business) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({ name: "", address: "", category: "", email: "", phone: "", status: "active" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "El nombre es obligatorio";
+    if (!form.address.trim()) e.address = "La dirección es obligatoria";
+    return e;
+  };
+
+  const handleSave = async () => {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/business`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        const newBusiness = await res.json();
+        onSave(newBusiness);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" style={{ zIndex: 200 }}>
+      <div className="modal-card">
+        <h3 className="modal-title">Nuevo negocio</h3>
+        <p className="modal-text">Rellena los datos para añadirlo a la base de datos.</p>
+        <div className="page-stack">
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+            <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            {errors.name && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.name}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Dirección *</label>
+            <input className="input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+            {errors.address && <p style={{ color: "red", fontSize: "11px", margin: 0 }}>{errors.address}</p>}
+          </div>
+          <div className="input-group">
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Categoría</label>
+            <input className="input" placeholder="ej: Peluquería, Spa…" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
+          </div>
+          <div className="form-grid">
+            <div>
+              <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email</label>
+              <input className="input" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div>
+              <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono</label>
+              <input className="input" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado</label>
+            <select className="select" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+              <option value="active">Activo</option>
+              <option value="inactive">Inactivo</option>
+            </select>
+          </div>
+          <div className="modal-actions" style={{ marginTop: "20px" }}>
+            <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+            <button type="button" className="primary-btn" onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando…" : "Guardar negocio"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -19,6 +187,10 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Sub-modales
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showNewBusiness, setShowNewBusiness] = useState(false);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -66,201 +238,303 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   };
 
+  // Callback cuando se crea un cliente desde el sub-modal
+  const handleCustomerCreated = (newCustomer: Customer) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    setForm(prev => ({ ...prev, customerId: newCustomer.id }));
+    setShowNewCustomer(false);
+    setMessage({ text: `Cliente "${newCustomer.name}" añadido`, type: "success" });
+  };
+
+  // Callback cuando se crea un negocio desde el sub-modal
+  const handleBusinessCreated = (newBusiness: Business) => {
+    setBusinesses(prev => [...prev, newBusiness]);
+    setForm(prev => ({ ...prev, businessId: newBusiness.id }));
+    setShowNewBusiness(false);
+    setMessage({ text: `Negocio "${newBusiness.name}" añadido`, type: "success" });
+  };
+
   return (
-    <div className="page-stack">
-
-      <section className="page-hero">
-        <div>
-          <h2>Panel de Citas</h2>
-          {message && (
-            <span className={`message-${message.type}`} style={{ fontSize: "13px" }}>
-              {message.type === "success" ? "● " : "○ "}{message.text}
-            </span>
-          )}
-        </div>
-        <button
-          className="primary-btn"
-          onClick={() => {
-            setEditingId(null);
-            setForm({ date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "" });
-            setIsFormOpen(true);
-          }}
-        >
-          + Nueva Reserva
-        </button>
-      </section>
-
-      <div className="kpi-grid">
-        {[
-          { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
-          { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
-          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
-          { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
-        ].map((kpi, i) => (
-          <div key={i} className="kpi-card" style={{ borderLeft: `4px solid ${kpi.color}` }}>
-            <p className="kpi-card__label">{kpi.label}</p>
-            <h3 className="kpi-card__value" style={{ color: kpi.color }}>{kpi.val}</h3>
-            <p className="kpi-card__meta">{kpi.sub}</p>
+    <div className="admin-shell">
+      <main className="admin-main">
+        <header className="admin-header">
+          <div>
+            <h2 className="admin-header__title">Panel de Citas</h2>
+            <div style={{ height: "20px" }}>
+              {message && (
+                <span className={`message-${message.type}`} style={{ fontSize: "12px" }}>
+                  {message.type === "success" ? "● " : "○ "}{message.text}
+                </span>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className="section-card">
-        <div className="panel-title-row">
-          <h3 className="panel-title">Próximas Citas</h3>
-          <div className="filter-row">
-            {FILTERS.map((f) => {
-              const isActive = statusFilter === f.key;
-              const count = f.key === "all" ? null : stats[f.key as BookingStatus];
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setStatusFilter(f.key)}
-                  className={`filter-pill filter-pill--${f.key} ${isActive ? "active" : ""}`}
-                >
-                  {f.label}
-                  {count !== null && (
-                    <span className="filter-pill__count">{count}</span>
-                  )}
-                </button>
-              );
-            })}
+          <div className="admin-header__actions">
+            <button
+              className="primary-btn"
+              onClick={() => {
+                setEditingId(null);
+                setForm({ date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "" });
+                setIsFormOpen(true);
+              }}
+            >
+              + Nueva Reserva
+            </button>
+            <div className="admin-avatar">JD</div>
           </div>
-        </div>
+        </header>
 
-        {filtered.length === 0 ? (
-          <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
-            No hay citas en esta categoría
-          </p>
-        ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>SERVICIO</th>
-                <th>FECHA Y HORA</th>
-                <th>ESTADO</th>
-                <th style={{ textAlign: "right" }}>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(b => (
-                <tr key={b.id}>
-                  <td>
-                    <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
-                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
-                  </td>
-                  <td>
-                    <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
-                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
-                  </td>
-                  <td>
-                    <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
-                  </td>
-                  <td style={{ textAlign: "right" }}>
-                    <button
-                      className="secondary-btn bg-edit"
-                      style={{ padding: "6px 12px", marginRight: "8px" }}
-                      onClick={() => {
-                        setEditingId(b.id);
-                        setForm({
-                          date: b.date, time: b.time, status: b.status,
-                          customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
-                        });
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="secondary-btn bg-delete"
-                      style={{ padding: "6px 12px" }}
-                      onClick={async () => {
-                        if (confirm("¿Eliminar?")) {
-                          await deleteAppointment(b.id);
-                          setBookings(bookings.filter(x => x.id !== b.id));
-                        }
-                      }}
-                    >
-                      Borrar
-                    </button>
-                  </td>
-                </tr>
+        <div className="admin-content">
+          <div className="page-stack">
+
+            <div className="kpi-grid">
+              {[
+                { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
+                { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
+                { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
+                { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
+              ].map((kpi, i) => (
+                <div key={i} className="kpi-card" style={{ borderLeft: `4px solid ${kpi.color}` }}>
+                  <p className="kpi-card__label">{kpi.label}</p>
+                  <h3 className="kpi-card__value" style={{ color: kpi.color }}>{kpi.val}</h3>
+                  <p className="kpi-card__meta">{kpi.sub}</p>
+                </div>
               ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+            </div>
 
-      {isFormOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3 className="modal-title">
-              {editingId ? "Actualizar Cita" : "Nueva Reserva"}
-            </h3>
-            <p className="modal-text">Completa los campos para organizar la agenda.</p>
-
-            <form onSubmit={handleSubmit}>
-              <div className="page-stack">
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Servicio</label>
-                  <input className="input" type="text" value={form.serviceName}
-                    onChange={e => setForm({ ...form, serviceName: e.target.value })} required />
-                </div>
-
-                <div className="form-grid">
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Fecha</label>
-                    <input className="input" type="date" value={form.date}
-                      onChange={e => setForm({ ...form, date: e.target.value })} required />
-                  </div>
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Hora</label>
-                    <input className="input" type="time" value={form.time}
-                      onChange={e => setForm({ ...form, time: e.target.value })} required />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
-                  <select className="select" value={form.businessId}
-                    onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
-                    <option value={0}>Selecciona un negocio</option>
-                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
-                  <select className="select" value={form.customerId}
-                    onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
-                    <option value={0}>Selecciona un cliente</option>
-                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado de Pago</label>
-                  <select className="select" value={form.status}
-                    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}>
-                    <option value="pending">Pendiente</option>
-                    <option value="confirmed">Confirmada</option>
-                    <option value="paid">Pagada</option>
-                  </select>
-                </div>
-
-                <div className="modal-actions" style={{ marginTop: "20px" }}>
-                  <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
-                    Cancelar
-                  </button>
-                  <button type="submit" className="primary-btn">
-                    Finalizar
-                  </button>
+            <div className="section-card">
+              <div className="panel-title-row">
+                <h3 className="panel-title">Próximas Citas</h3>
+                <div className="filter-row">
+                  {FILTERS.map((f) => {
+                    const isActive = statusFilter === f.key;
+                    const count = f.key === "all" ? null : stats[f.key as BookingStatus];
+                    return (
+                      <button
+                        key={f.key}
+                        onClick={() => setStatusFilter(f.key)}
+                        className={`filter-pill filter-pill--${f.key} ${isActive ? "active" : ""}`}
+                      >
+                        {f.label}
+                        {count !== null && (
+                          <span className="filter-pill__count">{count}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </form>
+
+              {filtered.length === 0 ? (
+                <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
+                  No hay citas en esta categoría
+                </p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>SERVICIO</th>
+                      <th>FECHA Y HORA</th>
+                      <th>ESTADO</th>
+                      <th style={{ textAlign: "right" }}>ACCIONES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(b => (
+                      <tr key={b.id} className="row-hover">
+                        <td>
+                          <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
+                        </td>
+                        <td>
+                          <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
+                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
+                        </td>
+                        <td>
+                          <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            className="secondary-btn bg-edit"
+                            style={{ padding: "6px 12px", marginRight: "8px" }}
+                            onClick={() => {
+                              setEditingId(b.id);
+                              setForm({
+                                date: b.date, time: b.time, status: b.status,
+                                customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
+                              });
+                              setIsFormOpen(true);
+                            }}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            className="secondary-btn bg-delete"
+                            style={{ padding: "6px 12px" }}
+                            onClick={async () => {
+                              if (confirm("¿Eliminar?")) {
+                                await deleteAppointment(b.id);
+                                setBookings(bookings.filter(x => x.id !== b.id));
+                              }
+                            }}
+                          >
+                            Borrar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
           </div>
         </div>
-      )}
+
+        {/* ── Modal principal: Nueva / Editar Reserva ── */}
+        {isFormOpen && (
+          <div className="modal-backdrop">
+            <div className="modal-card">
+              <h3 className="modal-title">
+                {editingId ? "Actualizar Cita" : "Nueva Reserva"}
+              </h3>
+              <p className="modal-text">Completa los campos para organizar la agenda.</p>
+
+              <form onSubmit={handleSubmit}>
+                <div className="page-stack">
+                  <div className="input-group">
+                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Servicio</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={form.serviceName}
+                      onChange={e => setForm({ ...form, serviceName: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-grid">
+                    <div>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Fecha</label>
+                      <input
+                        className="input"
+                        type="date"
+                        value={form.date}
+                        onChange={e => setForm({ ...form, date: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Hora</label>
+                      <input
+                        className="input"
+                        type="time"
+                        value={form.time}
+                        onChange={e => setForm({ ...form, time: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* ── Selector de Negocio con botón "Crear nuevo" ── */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewBusiness(true)}
+                        style={{
+                          fontSize: "11px", color: "var(--primary)", background: "none",
+                          border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                        }}
+                      >
+                        + Crear nuevo negocio
+                      </button>
+                    </div>
+                    <select
+                      className="select"
+                      value={form.businessId}
+                      onChange={e => setForm({ ...form, businessId: Number(e.target.value) })}
+                      required
+                    >
+                      <option value={0}>Selecciona un negocio</option>
+                      {businesses.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* ── Selector de Cliente con botón "Crear nuevo" ── */}
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewCustomer(true)}
+                        style={{
+                          fontSize: "11px", color: "var(--primary)", background: "none",
+                          border: "none", cursor: "pointer", padding: 0, textDecoration: "underline",
+                        }}
+                      >
+                        + Crear nuevo cliente
+                      </button>
+                    </div>
+                    <select
+                      className="select"
+                      value={form.customerId}
+                      onChange={e => setForm({ ...form, customerId: Number(e.target.value) })}
+                      required
+                    >
+                      <option value={0}>Selecciona un cliente</option>
+                      {customers.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado de Pago</label>
+                    <select
+                      className="select"
+                      value={form.status}
+                      onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}
+                    >
+                      <option value="pending">Pendiente</option>
+                      <option value="confirmed">Confirmada</option>
+                      <option value="paid">Pagada</option>
+                    </select>
+                  </div>
+
+                  <div className="modal-actions" style={{ marginTop: "20px" }}>
+                    <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
+                      Cancelar
+                    </button>
+                    <button type="submit" className="primary-btn">
+                      Finalizar
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Sub-modal: Nuevo Cliente ── */}
+        {showNewCustomer && (
+          <NewCustomerModal
+            onSave={handleCustomerCreated}
+            onClose={() => setShowNewCustomer(false)}
+          />
+        )}
+
+        {/* ── Sub-modal: Nuevo Negocio ── */}
+        {showNewBusiness && (
+          <NewBusinessModal
+            onSave={handleBusinessCreated}
+            onClose={() => setShowNewBusiness(false)}
+          />
+        )}
+      </main>
     </div>
   );
 }

@@ -39,7 +39,6 @@ export default function Header() {
       <div className="admin-header__actions">
         <div className="avatar-menu" ref={menuRef}>
 
-          {/* Trigger — pill con iniciales + nombre */}
           <button
             className="user-pill"
             onClick={() => { setOpen(!open); setLangOpen(false); }}
@@ -50,13 +49,12 @@ export default function Header() {
               <span className="user-pill__name">Vardab</span>
               <span className="user-pill__role">Admin</span>
             </div>
-            <span className="user-pill__chevron">{open ? "▲" : "▼"}</span>
+            <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}></i>
           </button>
 
           {open && (
             <div className="avatar-menu__dropdown">
 
-              {/* Header del menú */}
               <div className="avatar-menu__header">
                 <div className="avatar-menu__header-avatar">V</div>
                 <div>
@@ -67,9 +65,8 @@ export default function Header() {
 
               <div className="avatar-menu__divider" />
 
-              {/* Dark mode */}
               <div className="avatar-menu__item avatar-menu__item--toggle">
-                <span className="avatar-menu__item-icon">🌙</span>
+                <i className="bi bi-moon-stars-fill avatar-menu__item-icon"></i>
                 <span>Modo oscuro</span>
                 <button
                   className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
@@ -80,7 +77,6 @@ export default function Header() {
                 </button>
               </div>
 
-              {/* Language */}
               <div
                 className="avatar-menu__item avatar-menu__item--toggle"
                 onClick={() => setLangOpen(!langOpen)}
@@ -88,9 +84,7 @@ export default function Header() {
               >
                 <span className="avatar-menu__item-icon">{lang.flag}</span>
                 <span>Cambiar idioma</span>
-                <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}>
-                  {langOpen ? "▲" : "▼"}
-                </span>
+                <i className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"}`} style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}></i>
               </div>
 
               {langOpen && (
@@ -103,7 +97,7 @@ export default function Header() {
                     >
                       <span className="avatar-menu__item-icon">{l.flag}</span>
                       <span>{l.label}</span>
-                      {lang.code === l.code && <span className="avatar-menu__check">✓</span>}
+                      {lang.code === l.code && <i className="bi bi-check-lg avatar-menu__check"></i>}
                     </button>
                   ))}
                 </div>
@@ -111,9 +105,8 @@ export default function Header() {
 
               <div className="avatar-menu__divider" />
 
-              {/* Logout */}
               <button className="avatar-menu__item avatar-menu__item--danger">
-                <span className="avatar-menu__item-icon">🚪</span>
+                <i className="bi bi-box-arrow-right avatar-menu__item-icon"></i>
                 <span>Cerrar sesión</span>
               </button>
 
