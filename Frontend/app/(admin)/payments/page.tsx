@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 type PaymentStatus = "pending" | "paid";
 
@@ -22,38 +23,33 @@ type Appointment = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-function Badge({ status }: { status: PaymentStatus }) {
+function Badge({ status, label }: { status: PaymentStatus; label: string }) {
   return (
     <span className={`badge badge--${status === "pending" ? "pending" : "confirmed"}`}>
-      {status === "pending" ? "Por cobrar" : "Pagado"}
+      {label}
     </span>
   );
 }
 
-const FILTERS = [
-  { key: "all", label: "Ver todos", className: "filter-pill--all" },
-  { key: "pending", label: "Pendientes", className: "filter-pill--pending" },
-  { key: "paid", label: "Pagados", className: "filter-pill--paid" },
-];
-
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const { t } = useLanguage();
+  const [payments, setPayments]         = useState<Payment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>("all");
-  const [showModal, setShowModal] = useState(false);
-  const [success, setSuccess] = useState("");
-  const [form, setForm] = useState({
-    amount: "",
-    method: "",
-    status: "pending",
-    appointmentId: "",
-  });
+  const [showModal, setShowModal]       = useState(false);
+  const [success, setSuccess]           = useState("");
+  const [form, setForm] = useState({ amount: "", method: "", status: "pending", appointmentId: "" });
+
+  const FILTERS = [
+    { key: "all",     label: t("seeAll"),        className: "filter-pill--all" },
+    { key: "pending", label: t("pendingFilter"), className: "filter-pill--pending" },
+    { key: "paid",    label: t("paidFilter"),    className: "filter-pill--paid" },
+  ];
 
   useEffect(() => {
     fetch(`${API_URL}/payments`)
       .then((r) => r.json())
       .then((d) => setPayments(Array.isArray(d) ? d : []));
-
     fetch(`${API_URL}/appointments`)
       .then((r) => r.json())
       .then((d) => setAppointments(Array.isArray(d) ? d : []));
@@ -75,8 +71,6 @@ export default function PaymentsPage() {
       setPayments([...payments, newPayment]);
       setShowModal(false);
       setForm({ amount: "", method: "", status: "pending", appointmentId: "" });
-
-      // Sincronizar la reserva vinculada al crear el cobro
       if (form.appointmentId) {
         const bookingStatus = form.status === "paid" ? "paid" : "pending";
         await fetch(`${API_URL}/appointments/${form.appointmentId}`, {
@@ -85,8 +79,7 @@ export default function PaymentsPage() {
           body: JSON.stringify({ status: bookingStatus }),
         });
       }
-
-      setSuccess("Cobro registrado correctamente");
+      setSuccess(t("paymentRegistered"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
@@ -99,8 +92,6 @@ export default function PaymentsPage() {
     });
     if (res.ok) {
       setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
-
-      // Sincronizar la reserva vinculada
       const payment = payments.find(p => p.id === id);
       if (payment?.appointmentId) {
         const bookingStatus = newStatus === "paid" ? "paid" : "pending";
@@ -109,38 +100,28 @@ export default function PaymentsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: bookingStatus }),
         });
-        // Refrescar la lista de appointments en el estado local
         setAppointments(appointments.map(a =>
           a.id === payment.appointmentId ? { ...a, status: bookingStatus } : a
         ));
       }
-
-      setSuccess(newStatus === "paid" ? "Reserva marcada como pagada" : "Reserva marcada como pendiente");
+      setSuccess(newStatus === "paid" ? t("markedPaid") : t("markedPending"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
 
-  const filtered = statusFilter === "all"
-    ? payments
-    : payments.filter(p => p.status === statusFilter);
-
-  const totalPaid = payments
-    .filter((p) => p.status === "paid")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
-
-  const totalPending = payments
-    .filter((p) => p.status === "pending")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const filtered = statusFilter === "all" ? payments : payments.filter(p => p.status === statusFilter);
+  const totalPaid    = payments.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0);
+  const totalPending = payments.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0);
 
   return (
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Payments</h2>
-          <p>Seguimiento de cobros realizados y pendientes.</p>
+          <h2>{t("paymentsTitle")}</h2>
+          <p>{t("paymentsSubtitle")}</p>
         </div>
         <button className="primary-btn" type="button" onClick={() => setShowModal(true)}>
-          Registrar cobro
+          {t("registerPayment")}
         </button>
       </section>
 
@@ -148,24 +129,24 @@ export default function PaymentsPage() {
 
       <section className="kpi-grid">
         <div className="kpi-card">
-          <p className="kpi-card__label">Cobrado</p>
+          <p className="kpi-card__label">{t("collected")}</p>
           <h3 className="kpi-card__value">{totalPaid.toFixed(2)} €</h3>
           <p className="kpi-card__meta kpi-card__meta--positive">
-            {payments.filter((p) => p.status === "paid").length} operaciones
+            {payments.filter(p => p.status === "paid").length} {t("operations")}
           </p>
         </div>
         <div className="kpi-card">
-          <p className="kpi-card__label">Pendiente</p>
+          <p className="kpi-card__label">{t("pending")}</p>
           <h3 className="kpi-card__value">{totalPending.toFixed(2)} €</h3>
           <p className="kpi-card__meta kpi-card__meta--warning">
-            {payments.filter((p) => p.status === "pending").length} por revisar
+            {payments.filter(p => p.status === "pending").length} {t("toReview")}
           </p>
         </div>
       </section>
 
       <section className="section-card">
         <div className="panel-title-row">
-          <h3 className="panel-title">Listado de cobros</h3>
+          <h3 className="panel-title">{t("paymentList")}</h3>
           <div className="filter-row">
             {FILTERS.map((f) => {
               const isActive = statusFilter === f.key;
@@ -190,18 +171,18 @@ export default function PaymentsPage() {
 
         {filtered.length === 0 ? (
           <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
-            No hay cobros en esta categoría
+            {t("noPaymentsCategory")}
           </p>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Importe</th>
-                <th>Método</th>
-                <th>Reserva</th>
-                <th>Estado</th>
-                <th style={{ textAlign: "right" }}>Acciones</th>
+                <th>{t("amount")}</th>
+                <th>{t("method")}</th>
+                <th>{t("reservation")}</th>
+                <th>{t("status")}</th>
+                <th style={{ textAlign: "right" }}>{t("actionsCol")}</th>
               </tr>
             </thead>
             <tbody>
@@ -211,23 +192,22 @@ export default function PaymentsPage() {
                   <td>{Number(p.amount).toFixed(2)} €</td>
                   <td>{p.method}</td>
                   <td>#{p.appointmentId}</td>
-                  <td><Badge status={p.status} /></td>
+                  <td>
+                    <Badge
+                      status={p.status}
+                      label={p.status === "pending" ? t("toPay") : t("statusPaid")}
+                    />
+                  </td>
                   <td style={{ textAlign: "right" }}>
                     {p.status === "pending" ? (
-                      <button
-                        className="primary-btn"
-                        style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "paid")}
-                      >
-                        Marcar pagado
+                      <button className="primary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "paid")}>
+                        {t("markPaid")}
                       </button>
                     ) : (
-                      <button
-                        className="secondary-btn"
-                        style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "pending")}
-                      >
-                        Marcar pendiente
+                      <button className="secondary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "pending")}>
+                        {t("markPending")}
                       </button>
                     )}
                   </td>
@@ -241,40 +221,26 @@ export default function PaymentsPage() {
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal-card">
-            <h3 className="modal-title">Registrar cobro</h3>
+            <h3 className="modal-title">{t("registerPaymentModal")}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              <input
-                className="input"
-                type="number"
-                placeholder="Importe (€)"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              />
-              <select
-                className="input"
-                value={form.method}
-                onChange={(e) => setForm({ ...form, method: e.target.value })}
-              >
-                <option value="">Método de pago</option>
-                <option value="Tarjeta">Tarjeta</option>
-                <option value="Efectivo">Efectivo</option>
+              <input className="input" type="number" placeholder={t("amountPlaceholder")}
+                value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+              <select className="input" value={form.method}
+                onChange={(e) => setForm({ ...form, method: e.target.value })}>
+                <option value="">{t("paymentMethod")}</option>
+                <option value="Tarjeta">{t("card")}</option>
+                <option value="Efectivo">{t("cash")}</option>
                 <option value="Bizum">Bizum</option>
-                <option value="Transferencia">Transferencia</option>
+                <option value="Transferencia">{t("transfer")}</option>
               </select>
-              <select
-                className="input"
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="pending">Por cobrar</option>
-                <option value="paid">Pagado</option>
+              <select className="input" value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <option value="pending">{t("toPay")}</option>
+                <option value="paid">{t("statusPaid")}</option>
               </select>
-              <select
-                className="input"
-                value={form.appointmentId}
-                onChange={(e) => setForm({ ...form, appointmentId: e.target.value })}
-              >
-                <option value="">Selecciona una reserva</option>
+              <select className="input" value={form.appointmentId}
+                onChange={(e) => setForm({ ...form, appointmentId: e.target.value })}>
+                <option value="">{t("selectReservation")}</option>
                 {appointments.map((a) => (
                   <option key={a.id} value={a.id}>
                     #{a.id} — {a.date} {a.time} · {a.serviceName}
@@ -283,8 +249,8 @@ export default function PaymentsPage() {
               </select>
             </div>
             <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="primary-btn" onClick={handleCreate}>Guardar</button>
+              <button className="secondary-btn" onClick={() => setShowModal(false)}>{t("cancel")}</button>
+              <button className="primary-btn" onClick={handleCreate}>{t("save")}</button>
             </div>
           </div>
         </div>

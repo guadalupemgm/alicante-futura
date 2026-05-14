@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/context/ThemeContext";
 import { AuthProvider } from "@/components/context/AuthContext";
+import { LanguageProvider } from "@/components/context/LanguageContext";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
