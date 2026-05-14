@@ -1,32 +1,16 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { UsersService } from './users/users.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
 
-  app.enableCors({
-    origin: 'http://localhost:3001',
-  });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
-
-  const config = new DocumentBuilder()
-    .setTitle('Booking Management API')
-    .setDescription('API MVP para gestión de reservas de comercios')
-    .setVersion('1.0')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  // Seed admin user on first start
+  const usersService = app.get(UsersService);
+  await usersService.seedAdmin();
 
   await app.listen(3000);
+  console.log('🚀 Backend running on http://localhost:3000');
 }
 bootstrap();
