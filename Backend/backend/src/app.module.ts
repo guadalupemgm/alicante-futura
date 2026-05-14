@@ -5,6 +5,7 @@ import { CustomersModule } from './customers/customers.module';
 import { BusinessModule } from './business/business.module';
 import { PaymentsModule } from './payments/payments.module';
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { Appointment } from './appointments/appointment.entity';
 import { Customer } from './customers/entities/customer.entity';
 import { Business } from './business/entities/business.entity';
@@ -24,6 +25,7 @@ import { User } from './users/entities/user.entity';
     BusinessModule,
     PaymentsModule,
     UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
