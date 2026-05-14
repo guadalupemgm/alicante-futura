@@ -133,6 +133,7 @@ body {
   border-radius: 22px;
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow-sm);
+  overflow: visible;
 }
 
 .admin-header__title {
@@ -967,7 +968,7 @@ html.dark [style*="background:white"] {
   border-radius: 18px;
   box-shadow: var(--shadow-md);
   padding: 8px;
-  z-index: 100;
+  z-index: 9999;
   animation: dropdown-in 0.15s ease;
 }
 
