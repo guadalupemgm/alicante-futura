@@ -56,6 +56,7 @@ export const translations = {
     statusPending:       "Pendiente",
     statusConfirmed:     "Confirmada",
     statusPaid:          "Pagada",
+    statusCancelled:     "Cancelada",
 
     // Bookings
     bookingsTitle:       "Panel de Citas",
