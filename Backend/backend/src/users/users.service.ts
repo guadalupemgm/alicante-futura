@@ -12,10 +12,14 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    const user = this.userRepository.create(createUserDto);
-    return this.userRepository.save(user);
-  }
+  async create(createUserDto: CreateUserDto) {
+  const passwordHash = await bcrypt.hash(createUserDto.password, 10);
+  const user = this.userRepository.create({
+    ...createUserDto,
+    password: passwordHash,
+  });
+  return this.userRepository.save(user);
+}
 
   findAll() {
     return this.userRepository.find();

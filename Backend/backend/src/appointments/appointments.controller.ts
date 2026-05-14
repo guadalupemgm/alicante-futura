@@ -28,6 +28,13 @@ export class AppointmentsController {
     return this.appointmentsService.findAll();
   }
 
+  // 🆕 Endpoint: GET /appointments/business/:businessId
+  @Get('business/:businessId')
+  @ApiOkResponse({ description: 'Reservas de un negocio' })
+  findByBusiness(@Param('businessId', ParseIntPipe) businessId: number) {
+    return this.appointmentsService.findByBusiness(businessId);
+  }
+
   @Get(':id')
   @ApiOkResponse({ description: 'Detalle de una reserva' })
   findOne(@Param('id', ParseIntPipe) id: number) {

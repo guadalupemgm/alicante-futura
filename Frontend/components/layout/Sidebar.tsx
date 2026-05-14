@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/context/AuthContext";
 
-const menuItems = [
+const adminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: "bi-speedometer2" },
   { label: "Bookings", href: "/bookings", icon: "bi-calendar-check" },
   { label: "Customers", href: "/customers", icon: "bi-people" },
@@ -11,14 +12,23 @@ const menuItems = [
   { label: "Business", href: "/business", icon: "bi-shop" },
 ];
 
+const businessMenu = [
+  { label: "Mis Reservas", href: "/business-bookings", icon: "bi-calendar-check" },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const menuItems = user?.role === "business" ? businessMenu : adminMenu;
 
   return (
     <aside className="admin-sidebar">
       <div className="admin-sidebar__brand">
         <h2 className="admin-sidebar__title">BookFlow</h2>
-        <p className="admin-sidebar__subtitle">Admin workspace</p>
+        <p className="admin-sidebar__subtitle">
+          {user?.role === "business" ? "Mi negocio" : "Admin workspace"}
+        </p>
       </div>
 
       <nav className="admin-sidebar__nav">

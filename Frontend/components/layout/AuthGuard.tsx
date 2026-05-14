@@ -1,18 +1,28 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoading) return;
+
+    // Sin sesión → login
+    if (!user) {
       router.push("/login");
+      return;
     }
-  }, [user, isLoading, router]);
+
+    // Business solo puede ver /business-bookings
+    if (user.role === "business" && pathname !== "/business-bookings") {
+      router.push("/business-bookings");
+    }
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
     return (
