@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/context/ThemeContext";
 import { AuthProvider } from "@/components/context/AuthContext";
+import { LanguageProvider } from "@/components/context/LanguageContext";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -13,6 +14,9 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Bookings Admin",
   description: "Plataforma de gestión de reservas",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -22,10 +26,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={dmSans.className}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        />
+      </head>
       <body>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <LanguageProvider>
+              {children}
+            </LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>
