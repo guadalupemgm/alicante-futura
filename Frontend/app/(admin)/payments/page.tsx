@@ -17,6 +17,7 @@ type Appointment = {
   date: string;
   time: string;
   serviceName: string;
+  status?: string;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -74,6 +75,17 @@ export default function PaymentsPage() {
       setPayments([...payments, newPayment]);
       setShowModal(false);
       setForm({ amount: "", method: "", status: "pending", appointmentId: "" });
+
+      // Sincronizar la reserva vinculada al crear el cobro
+      if (form.appointmentId) {
+        const bookingStatus = form.status === "paid" ? "paid" : "pending";
+        await fetch(`${API_URL}/appointments/${form.appointmentId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: bookingStatus }),
+        });
+      }
+
       setSuccess("Cobro registrado correctamente");
       setTimeout(() => setSuccess(""), 3000);
     }
@@ -87,6 +99,24 @@ export default function PaymentsPage() {
     });
     if (res.ok) {
       setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
+
+      // Sincronizar la reserva vinculada
+      const payment = payments.find(p => p.id === id);
+      if (payment?.appointmentId) {
+        const bookingStatus = newStatus === "paid" ? "paid" : "pending";
+        await fetch(`${API_URL}/appointments/${payment.appointmentId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: bookingStatus }),
+        });
+        // Refrescar la lista de appointments en el estado local
+        setAppointments(appointments.map(a =>
+          a.id === payment.appointmentId ? { ...a, status: bookingStatus } : a
+        ));
+      }
+
+      setSuccess(newStatus === "paid" ? "Reserva marcada como pagada" : "Reserva marcada como pendiente");
+      setTimeout(() => setSuccess(""), 3000);
     }
   };
 

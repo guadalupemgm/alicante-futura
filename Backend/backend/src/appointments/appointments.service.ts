@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { Appointment } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { Payment } from '../payments/entities/payment.entity';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentsRepository: Repository<Appointment>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
   ) {}
 
   findAll() {
@@ -39,7 +42,19 @@ export class AppointmentsService {
       updateAppointmentDto,
     );
 
-    return this.appointmentsRepository.save(updatedAppointment);
+    const saved = await this.appointmentsRepository.save(updatedAppointment);
+
+    // Sincronizar payments vinculados si cambia el status del appointment
+    if (updateAppointmentDto.status !== undefined) {
+      const newPaymentStatus =
+        updateAppointmentDto.status === 'paid' ? 'paid' : 'pending';
+      await this.paymentRepository.update(
+        { appointmentId: id },
+        { status: newPaymentStatus },
+      );
+    }
+
+    return saved;
   }
 
   async remove(id: number) {
