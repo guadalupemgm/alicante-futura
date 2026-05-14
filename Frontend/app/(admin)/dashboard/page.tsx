@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAppointments } from "@/lib/api";
+import ExportButton from "./ExportButton";
 
 type DashboardBookingStatus = "pending" | "confirmed" | "paid";
 
@@ -62,9 +63,7 @@ export default async function DashboardPage() {
           <p>Control diario de reservas, actividad y pagos.</p>
         </div>
 
-        <button className="primary-btn" type="button">
-          Export report
-        </button>
+        <ExportButton />
       </section>
 
       <section className="kpi-grid">
