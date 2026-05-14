@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const menuItems = [
-  { label: "Dashboard", href: "/dashboard", icon: "◫" },
-  { label: "Bookings", href: "/bookings", icon: "📅" },
-  { label: "Customers", href: "/customers", icon: "👥" },
-  { label: "Payments", href: "/payments", icon: "💳" },
-  { label: "Business", href: "/business", icon: "💼" }
+  { label: "Dashboard", href: "/dashboard", icon: "bi-speedometer2" },
+  { label: "Bookings", href: "/bookings", icon: "bi-calendar-check" },
+  { label: "Customers", href: "/customers", icon: "bi-people" },
+  { label: "Payments", href: "/payments", icon: "bi-credit-card" },
+  { label: "Business", href: "/business", icon: "bi-shop" },
 ];
 
 export default function Sidebar() {
@@ -30,7 +30,7 @@ export default function Sidebar() {
               href={item.href}
               className={`admin-sidebar__link ${isActive ? "admin-sidebar__link--active" : ""}`}
             >
-              <span>{item.icon}</span>
+              <i className={`bi ${item.icon}`} style={{ fontSize: "1.1rem" }}></i>
               <span>{item.label}</span>
             </Link>
           );
