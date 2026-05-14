@@ -21,6 +21,14 @@ export class AppointmentsService {
     });
   }
 
+  // 🆕 Devuelve solo las reservas de un negocio concreto
+  findByBusiness(businessId: number) {
+    return this.appointmentsRepository.find({
+      where: { businessId },
+      order: { date: 'ASC', time: 'ASC' },
+    });
+  }
+
   findOne(id: number) {
     return this.appointmentsRepository.findOneBy({ id });
   }
@@ -44,7 +52,6 @@ export class AppointmentsService {
 
     const saved = await this.appointmentsRepository.save(updatedAppointment);
 
-    // Sincronizar payments vinculados si cambia el status del appointment
     if (updateAppointmentDto.status !== undefined) {
       const newPaymentStatus =
         updateAppointmentDto.status === 'paid' ? 'paid' : 'pending';

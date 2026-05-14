@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 interface Customer {
   id: number;
@@ -20,13 +21,14 @@ interface Appointment {
 }
 
 export default function CustomersClient() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { t } = useLanguage();
+  const [customers, setCustomers]       = useState<Customer[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", business: "" });
-  const [success, setSuccess] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [search, setSearch] = useState("");
+  const [showModal, setShowModal]       = useState(false);
+  const [form, setForm]                 = useState({ name: "", phone: "", email: "", business: "" });
+  const [success, setSuccess]           = useState("");
+  const [errors, setErrors]             = useState<Record<string, string>>({});
+  const [search, setSearch]             = useState("");
 
   useEffect(() => {
     fetch("http://localhost:3000/customers")
@@ -43,28 +45,25 @@ export default function CustomersClient() {
     const future = appointments
       .filter((a) => a.customerId === customerId && a.date >= today)
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-    if (future.length === 0) return "Sin reservas próximas";
+    if (future.length === 0) return t("noNextBooking");
     const next = future[0];
     return `${next.date} · ${next.time}`;
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
-    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) newErrors.phone = "El teléfono debe tener 9 dígitos";
-    if (!form.email.trim()) newErrors.email = "El email es obligatorio";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "El email no es válido";
-    if (!form.business.trim()) newErrors.business = "El negocio es obligatorio";
+    if (!form.name.trim())    newErrors.name     = t("errName");
+    if (!form.phone.trim())   newErrors.phone    = t("errPhone");
+    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) newErrors.phone = t("errPhoneFormat");
+    if (!form.email.trim())   newErrors.email    = t("errEmail");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = t("errEmailFormat");
+    if (!form.business.trim()) newErrors.business = t("errBusiness");
     return newErrors;
   };
 
   const handleCreate = async () => {
     const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
     setErrors({});
     const res = await fetch("http://localhost:3000/customers", {
       method: "POST",
@@ -76,7 +75,7 @@ export default function CustomersClient() {
       setCustomers([...customers, newCustomer]);
       setShowModal(false);
       setForm({ name: "", phone: "", email: "", business: "" });
-      setSuccess("Cliente creado correctamente");
+      setSuccess(t("customerCreated"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
@@ -89,11 +88,11 @@ export default function CustomersClient() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Customer directory</h2>
-          <p>Gestión visual de clientes y próximas reservas.</p>
+          <h2>{t("customersTitle")}</h2>
+          <p>{t("customersSubtitle")}</p>
         </div>
         <button className="primary-btn" type="button" onClick={() => setShowModal(true)}>
-          Nuevo cliente
+          {t("newCustomer")}
         </button>
       </section>
 
@@ -103,12 +102,12 @@ export default function CustomersClient() {
         <div className="search-row">
           <input
             className="input"
-            placeholder="Buscar cliente..."
+            placeholder={t("searchCustomer")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button className="secondary-btn" type="button" onClick={() => setSearch("")}>
-            Limpiar
+            {t("clearSearch")}
           </button>
         </div>
       </section>
@@ -121,7 +120,7 @@ export default function CustomersClient() {
             <p className="customer-meta">{customer.email}</p>
             <div className="customer-tag">{customer.business}</div>
             <div className="customer-next">
-              <strong>Próxima reserva:</strong> {getNextBooking(customer.id)}
+              <strong>{t("nextBooking")}</strong> {getNextBooking(customer.id)}
             </div>
           </div>
         ))}
@@ -130,27 +129,27 @@ export default function CustomersClient() {
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal-card">
-            <h3 className="modal-title">Nuevo cliente</h3>
+            <h3 className="modal-title">{t("newCustomerModal")}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              <input className="input" placeholder="Nombre" value={form.name}
+              <input className="input" placeholder={t("namePlaceholder")} value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
               {errors.name && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.name}</p>}
 
-              <input className="input" placeholder="Teléfono" value={form.phone}
+              <input className="input" placeholder={t("phonePlaceholder")} value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               {errors.phone && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.phone}</p>}
 
-              <input className="input" placeholder="Email" value={form.email}
+              <input className="input" placeholder={t("emailPlaceholder")} value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {errors.email && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.email}</p>}
 
-              <input className="input" placeholder="Negocio" value={form.business}
+              <input className="input" placeholder={t("businessPlaceholder")} value={form.business}
                 onChange={(e) => setForm({ ...form, business: e.target.value })} />
               {errors.business && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.business}</p>}
             </div>
             <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button className="primary-btn" onClick={handleCreate}>Guardar</button>
+              <button className="secondary-btn" onClick={() => setShowModal(false)}>{t("cancel")}</button>
+              <button className="primary-btn" onClick={handleCreate}>{t("save")}</button>
             </div>
           </div>
         </div>
