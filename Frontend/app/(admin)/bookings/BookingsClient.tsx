@@ -67,243 +67,200 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   };
 
   return (
-    <div className="admin-shell">
-      <main className="admin-main">
-        <header className="admin-header">
-          <div>
-            <h2 className="admin-header__title">Panel de Citas</h2>
-            <div style={{ height: "20px" }}>
-              {message && (
-                <span className={`message-${message.type}`} style={{ fontSize: "12px" }}>
-                  {message.type === "success" ? "● " : "○ "}{message.text}
-                </span>
-              )}
-            </div>
+    <div className="page-stack">
+
+      <section className="page-hero">
+        <div>
+          <h2>Panel de Citas</h2>
+          {message && (
+            <span className={`message-${message.type}`} style={{ fontSize: "13px" }}>
+              {message.type === "success" ? "● " : "○ "}{message.text}
+            </span>
+          )}
+        </div>
+        <button
+          className="primary-btn"
+          onClick={() => {
+            setEditingId(null);
+            setForm({ date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "" });
+            setIsFormOpen(true);
+          }}
+        >
+          + Nueva Reserva
+        </button>
+      </section>
+
+      <div className="kpi-grid">
+        {[
+          { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
+          { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
+          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
+          { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
+        ].map((kpi, i) => (
+          <div key={i} className="kpi-card" style={{ borderLeft: `4px solid ${kpi.color}` }}>
+            <p className="kpi-card__label">{kpi.label}</p>
+            <h3 className="kpi-card__value" style={{ color: kpi.color }}>{kpi.val}</h3>
+            <p className="kpi-card__meta">{kpi.sub}</p>
           </div>
+        ))}
+      </div>
 
-          <div className="admin-header__actions">
-            <button
-              className="primary-btn"
-              onClick={() => {
-                setEditingId(null);
-                setForm({ date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "" });
-                setIsFormOpen(true);
-              }}
-            >
-              + Nueva Reserva
-            </button>
-            <div className="admin-avatar">JD</div>
-          </div>
-        </header>
-
-        <div className="admin-content">
-          <div className="page-stack">
-
-            <div className="kpi-grid">
-              {[
-                { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
-                { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
-                { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
-                { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
-              ].map((kpi, i) => (
-                <div key={i} className="kpi-card" style={{ borderLeft: `4px solid ${kpi.color}` }}>
-                  <p className="kpi-card__label">{kpi.label}</p>
-                  <h3 className="kpi-card__value" style={{ color: kpi.color }}>{kpi.val}</h3>
-                  <p className="kpi-card__meta">{kpi.sub}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="section-card">
-              <div className="panel-title-row">
-                <h3 className="panel-title">Próximas Citas</h3>
-                <div className="filter-row">
-                  {FILTERS.map((f) => {
-                    const isActive = statusFilter === f.key;
-                    const count = f.key === "all" ? null : stats[f.key as BookingStatus];
-                    return (
-                      <button
-                        key={f.key}
-                        onClick={() => setStatusFilter(f.key)}
-                        className={`filter-pill filter-pill--${f.key} ${isActive ? "active" : ""}`}
-                      >
-                        {f.label}
-                        {count !== null && (
-                          <span className="filter-pill__count">{count}</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {filtered.length === 0 ? (
-                <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
-                  No hay citas en esta categoría
-                </p>
-              ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>SERVICIO</th>
-                      <th>FECHA Y HORA</th>
-                      <th>ESTADO</th>
-                      <th style={{ textAlign: "right" }}>ACCIONES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(b => (
-                      <tr key={b.id} className="row-hover">
-                        <td>
-                          <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
-                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
-                        </td>
-                        <td>
-                          <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
-                          <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
-                        </td>
-                        <td>
-                          <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
-                        </td>
-                        <td style={{ textAlign: "right" }}>
-                          <button
-                            className="secondary-btn bg-edit"
-                            style={{ padding: "6px 12px", marginRight: "8px" }}
-                            onClick={() => {
-                              setEditingId(b.id);
-                              setForm({
-                                date: b.date, time: b.time, status: b.status,
-                                customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
-                              });
-                              setIsFormOpen(true);
-                            }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            className="secondary-btn bg-delete"
-                            style={{ padding: "6px 12px" }}
-                            onClick={async () => {
-                              if (confirm("¿Eliminar?")) {
-                                await deleteAppointment(b.id);
-                                setBookings(bookings.filter(x => x.id !== b.id));
-                              }
-                            }}
-                          >
-                            Borrar
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
+      <div className="section-card">
+        <div className="panel-title-row">
+          <h3 className="panel-title">Próximas Citas</h3>
+          <div className="filter-row">
+            {FILTERS.map((f) => {
+              const isActive = statusFilter === f.key;
+              const count = f.key === "all" ? null : stats[f.key as BookingStatus];
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setStatusFilter(f.key)}
+                  className={`filter-pill filter-pill--${f.key} ${isActive ? "active" : ""}`}
+                >
+                  {f.label}
+                  {count !== null && (
+                    <span className="filter-pill__count">{count}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {isFormOpen && (
-          <div className="modal-backdrop">
-            <div className="modal-card">
-              <h3 className="modal-title">
-                {editingId ? "Actualizar Cita" : "Nueva Reserva"}
-              </h3>
-              <p className="modal-text">Completa los campos para organizar la agenda.</p>
-
-              <form onSubmit={handleSubmit}>
-                <div className="page-stack">
-                  <div className="input-group">
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Servicio</label>
-                    <input
-                      className="input"
-                      type="text"
-                      value={form.serviceName}
-                      onChange={e => setForm({ ...form, serviceName: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-grid">
-                    <div>
-                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Fecha</label>
-                      <input
-                        className="input"
-                        type="date"
-                        value={form.date}
-                        onChange={e => setForm({ ...form, date: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="kpi-card__label" style={{ fontSize: "11px" }}>Hora</label>
-                      <input
-                        className="input"
-                        type="time"
-                        value={form.time}
-                        onChange={e => setForm({ ...form, time: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
-                    <select
-                      className="select"
-                      value={form.businessId}
-                      onChange={e => setForm({ ...form, businessId: Number(e.target.value) })}
-                      required
+        {filtered.length === 0 ? (
+          <p style={{ color: "var(--muted)", textAlign: "center", padding: "32px 0" }}>
+            No hay citas en esta categoría
+          </p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>SERVICIO</th>
+                <th>FECHA Y HORA</th>
+                <th>ESTADO</th>
+                <th style={{ textAlign: "right" }}>ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(b => (
+                <tr key={b.id}>
+                  <td>
+                    <div style={{ fontWeight: 600, color: "var(--primary)" }}>{b.serviceName}</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>ID Cliente: #{b.customerId}</div>
+                  </td>
+                  <td>
+                    <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
+                    <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
+                  </td>
+                  <td>
+                    <span className={`badge badge--${b.status}`}>{b.status.toUpperCase()}</span>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    <button
+                      className="secondary-btn bg-edit"
+                      style={{ padding: "6px 12px", marginRight: "8px" }}
+                      onClick={() => {
+                        setEditingId(b.id);
+                        setForm({
+                          date: b.date, time: b.time, status: b.status,
+                          customerId: b.customerId, businessId: b.businessId, serviceName: b.serviceName,
+                        });
+                        setIsFormOpen(true);
+                      }}
                     >
-                      <option value={0}>Selecciona un negocio</option>
-                      {businesses.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
-                    <select
-                      className="select"
-                      value={form.customerId}
-                      onChange={e => setForm({ ...form, customerId: Number(e.target.value) })}
-                      required
-                    >
-                      <option value={0}>Selecciona un cliente</option>
-                      {customers.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado de Pago</label>
-                    <select
-                      className="select"
-                      value={form.status}
-                      onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}
-                    >
-                      <option value="pending">Pendiente</option>
-                      <option value="confirmed">Confirmada</option>
-                      <option value="paid">Pagada</option>
-                    </select>
-                  </div>
-
-                  <div className="modal-actions" style={{ marginTop: "20px" }}>
-                    <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
-                      Cancelar
+                      Editar
                     </button>
-                    <button type="submit" className="primary-btn">
-                      Finalizar
+                    <button
+                      className="secondary-btn bg-delete"
+                      style={{ padding: "6px 12px" }}
+                      onClick={async () => {
+                        if (confirm("¿Eliminar?")) {
+                          await deleteAppointment(b.id);
+                          setBookings(bookings.filter(x => x.id !== b.id));
+                        }
+                      }}
+                    >
+                      Borrar
                     </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {isFormOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3 className="modal-title">
+              {editingId ? "Actualizar Cita" : "Nueva Reserva"}
+            </h3>
+            <p className="modal-text">Completa los campos para organizar la agenda.</p>
+
+            <form onSubmit={handleSubmit}>
+              <div className="page-stack">
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Servicio</label>
+                  <input className="input" type="text" value={form.serviceName}
+                    onChange={e => setForm({ ...form, serviceName: e.target.value })} required />
+                </div>
+
+                <div className="form-grid">
+                  <div>
+                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Fecha</label>
+                    <input className="input" type="date" value={form.date}
+                      onChange={e => setForm({ ...form, date: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="kpi-card__label" style={{ fontSize: "11px" }}>Hora</label>
+                    <input className="input" type="time" value={form.time}
+                      onChange={e => setForm({ ...form, time: e.target.value })} required />
                   </div>
                 </div>
-              </form>
-            </div>
+
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio</label>
+                  <select className="select" value={form.businessId}
+                    onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
+                    <option value={0}>Selecciona un negocio</option>
+                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Cliente</label>
+                  <select className="select" value={form.customerId}
+                    onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
+                    <option value={0}>Selecciona un cliente</option>
+                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado de Pago</label>
+                  <select className="select" value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}>
+                    <option value="pending">Pendiente</option>
+                    <option value="confirmed">Confirmada</option>
+                    <option value="paid">Pagada</option>
+                  </select>
+                </div>
+
+                <div className="modal-actions" style={{ marginTop: "20px" }}>
+                  <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="primary-btn">
+                    Finalizar
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
