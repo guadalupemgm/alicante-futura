@@ -1,5 +1,6 @@
-import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
+import AuthGuard from "@/components/layout/AuthGuard";
 
 export default function AdminLayout({
   children,
@@ -7,13 +8,14 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="admin-shell">
-      <Sidebar />
-
-      <div className="admin-main">
-        <Header />
-        <main className="admin-content">{children}</main>
+    <AuthGuard>
+      <div className="admin-shell">
+        <Sidebar />
+        <div className="admin-main">
+          <Header />
+          <div className="admin-content">{children}</div>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }

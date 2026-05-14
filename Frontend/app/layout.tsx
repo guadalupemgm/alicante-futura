@@ -1,10 +1,18 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { DM_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/context/ThemeContext";
+import { AuthProvider } from "@/components/context/AuthContext";
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-dm-sans",
+});
 
 export const metadata: Metadata = {
   title: "Bookings Admin",
-  description: "Base inicial del proyecto de gestión de reservas",
+  description: "Plataforma de gestión de reservas",
 };
 
 export default function RootLayout({
@@ -13,15 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-        />
-      </head>
+    <html lang="es" className={dmSans.className}>
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
