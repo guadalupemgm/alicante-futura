@@ -1,4 +1,5 @@
-export type BookingStatus = "pending" | "confirmed" | "paid";
+// --- CAMBIO CLAVE: Añadir "cancelled" al tipo ---
+export type BookingStatus = "pending" | "confirmed" | "paid" | "cancelled";
 
 export interface Booking {
   id: number;

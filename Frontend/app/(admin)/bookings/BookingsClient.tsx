@@ -34,11 +34,13 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   }, [message]);
 
+  // 1. Estadísticas actualizadas con "cancelled"
   const stats = useMemo(() => ({
     total: bookings.length,
     pending: bookings.filter(b => b.status === "pending").length,
     confirmed: bookings.filter(b => b.status === "confirmed").length,
     paid: bookings.filter(b => b.status === "paid").length,
+    cancelled: bookings.filter(b => b.status === "cancelled").length,
   }), [bookings]);
 
   const filtered = useMemo(() =>
@@ -71,7 +73,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         <div>
           <h2>Panel de Citas</h2>
           {message && (
-            <p style={{ margin: "4px 0 0", fontSize: "13px", color: message.type === "success" ? "green" : "red" }}>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: message.type === "success" ? "#15803d" : "#b91c1c" }}>
               {message.text}
             </p>
           )}
@@ -88,12 +90,14 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         </button>
       </div>
 
+      {/* 2. Grid de KPIs con 5 elementos */}
       <div className="kpi-grid">
         {[
           { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
           { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
           { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
           { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
+          { label: "Canceladas", val: stats.cancelled, sub: "Anuladas", color: "#ef4444" },
         ].map((kpi, i) => (
           <div key={i} className="kpi-card" style={{ borderLeft: "4px solid " + kpi.color }}>
             <p className="kpi-card__label">{kpi.label}</p>
@@ -106,14 +110,18 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
       <div className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Próximas Citas</h3>
+          {/* 3. Filtros actualizados */}
           <div className="filter-row">
-            {["all", "pending", "confirmed", "paid"].map((f) => (
+            {["all", "pending", "confirmed", "paid", "cancelled"].map((f) => (
               <button
                 key={f}
                 onClick={() => setStatusFilter(f as "all" | BookingStatus)}
                 className={"filter-pill filter-pill--" + f + (statusFilter === f ? " active" : "")}
               >
-                {f === "all" ? "Ver todas" : f.charAt(0).toUpperCase() + f.slice(1)}
+                {f === "all" ? "Ver todas" : 
+                 f === "paid" ? "Pagadas" : 
+                 f === "cancelled" ? "Canceladas" : 
+                 f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
           </div>
@@ -255,6 +263,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                   </select>
                 </div>
 
+                {/* 4. Select de Estado con 4 opciones */}
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>Estado</label>
                   <select
@@ -265,6 +274,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                     <option value="pending">Pendiente</option>
                     <option value="confirmed">Confirmada</option>
                     <option value="paid">Pagada</option>
+                    <option value="cancelled">Cancelada</option>
                   </select>
                 </div>
 
