@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const menuItems = [
   { label: "Dashboard", href: "/dashboard", icon: "bi-speedometer2" },
-  { label: "Bookings", href: "/bookings", icon: "bi-calendar-check" },
-  { label: "Customers", href: "/customers", icon: "bi-people" },
-  { label: "Payments", href: "/payments", icon: "bi-credit-card" },
-  { label: "Business", href: "/business", icon: "bi-shop" },
+  { label: "Bookings", href: "/bookings", icon: "bi-calendar2-check" },
+  { label: "Customers", href: "/customers", icon: "bi-people-fill" },
+  { label: "Payments", href: "/payments", icon: "bi-credit-card-2-front-fill" },
+  { label: "Business", href: "/business", icon: "bi-shop-window" },
 ];
 
 export default function Sidebar() {
@@ -30,7 +30,7 @@ export default function Sidebar() {
               href={item.href}
               className={`admin-sidebar__link ${isActive ? "admin-sidebar__link--active" : ""}`}
             >
-              <i className={`bi ${item.icon}`} style={{ fontSize: "1.1rem" }}></i>
+              <i className={`bi ${item.icon} admin-sidebar__icon`} aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
           );

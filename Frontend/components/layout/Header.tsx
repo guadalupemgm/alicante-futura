@@ -68,7 +68,10 @@ export default function Header() {
                 <span className="user-pill__name">{user?.email?.split("@")[0] ?? "Usuario"}</span>
                 <span className="user-pill__role">{user?.role === "admin" ? "Administrador" : "Negocio"}</span>
               </div>
-              <span className="user-pill__chevron">{open ? "▲" : "▼"}</span>
+              <i
+                className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}
+                aria-hidden="true"
+              />
             </button>
 
             {open && (
@@ -88,7 +91,7 @@ export default function Header() {
 
                 {/* Dark mode */}
                 <div className="avatar-menu__item avatar-menu__item--toggle">
-                  <span className="avatar-menu__item-icon">🌙</span>
+                  <i className="bi bi-moon-stars-fill avatar-menu__item-icon" aria-hidden="true" />
                   <span>Modo oscuro</span>
                   <button
                     className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
@@ -104,11 +107,12 @@ export default function Header() {
                   onClick={() => setLangOpen(!langOpen)}
                   style={{ cursor: "pointer" }}
                 >
-                  <span className="avatar-menu__item-icon">{lang.flag}</span>
+                  <i className="bi bi-globe2 avatar-menu__item-icon" aria-hidden="true" />
                   <span>Cambiar idioma</span>
-                  <span style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}>
-                    {langOpen ? "▲" : "▼"}
-                  </span>
+                  <i
+                    className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"} avatar-menu__item-chevron`}
+                    aria-hidden="true"
+                  />
                 </div>
 
                 {langOpen && (
@@ -121,7 +125,7 @@ export default function Header() {
                       >
                         <span className="avatar-menu__item-icon">{l.flag}</span>
                         <span>{l.label}</span>
-                        {lang.code === l.code && <span className="avatar-menu__check">✓</span>}
+                        {lang.code === l.code && <i className="bi bi-check2 avatar-menu__check" aria-hidden="true" />}
                       </button>
                     ))}
                   </div>
@@ -132,7 +136,7 @@ export default function Header() {
                   className="avatar-menu__item"
                   onClick={() => { setShowPwdModal(true); setOpen(false); }}
                 >
-                  <span className="avatar-menu__item-icon">🔑</span>
+                  <i className="bi bi-key-fill avatar-menu__item-icon" aria-hidden="true" />
                   <span>Cambiar contraseña</span>
                 </button>
 
@@ -140,7 +144,7 @@ export default function Header() {
 
                 {/* Logout */}
                 <button className="avatar-menu__item avatar-menu__item--danger" onClick={logout}>
-                  <span className="avatar-menu__item-icon">🚪</span>
+                  <i className="bi bi-box-arrow-right avatar-menu__item-icon" aria-hidden="true" />
                   <span>Cerrar sesión</span>
                 </button>
 
