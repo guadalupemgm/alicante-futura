@@ -44,23 +44,6 @@ export default function Header() {
             </div>
             <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}></i>
           </button>
-        <div className="admin-header__actions">
-          <div className="avatar-menu" ref={menuRef}>
-            <button
-              className="user-pill"
-              onClick={() => { setOpen(!open); setLangOpen(false); }}
-              aria-label="Menú de usuario"
-            >
-              <div className="user-pill__avatar">{initials}</div>
-              <div className="user-pill__info">
-                <span className="user-pill__name">{user?.email?.split("@")[0] ?? "Usuario"}</span>
-                <span className="user-pill__role">{user?.role === "admin" ? "Administrador" : "Negocio"}</span>
-              </div>
-              <i
-                className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}
-                aria-hidden="true"
-              />
-            </button>
 
           {open && (
             <div className="avatar-menu__dropdown">
@@ -72,86 +55,19 @@ export default function Header() {
                   <p className="avatar-menu__header-email">admin@bookflow.com</p>
                 </div>
               </div>
-              <i
-                className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}
-                aria-hidden="true"
-              />
-            </button>
 
               <div className="avatar-menu__divider" />
 
-                <div className="avatar-menu__header">
-                  <div className="avatar-menu__header-avatar">{initials}</div>
-                  <div>
-                    <p className="avatar-menu__header-name">{user?.email}</p>
-                    <p className="avatar-menu__header-email">
-                      {user?.role === "admin" ? "Administrador" : "Negocio"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="avatar-menu__divider" />
-
-                {/* Dark mode */}
-                <div className="avatar-menu__item avatar-menu__item--toggle">
-                  <i className="bi bi-moon-stars-fill avatar-menu__item-icon" aria-hidden="true" />
-                  <span>Modo oscuro</span>
-                  <button
-                    className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
-                    onClick={toggleTheme}
-                  >
-                    <span className="toggle-switch__knob" />
-                  </button>
-                </div>
-
-                {/* Language */}
-                <div
-                  className="avatar-menu__item avatar-menu__item--toggle"
-                  onClick={() => setLangOpen(!langOpen)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <i className="bi bi-globe2 avatar-menu__item-icon" aria-hidden="true" />
-                  <span>Cambiar idioma</span>
-                  <i
-                    className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"} avatar-menu__item-chevron`}
-                    aria-hidden="true"
-                  />
-                </div>
-
-                {langOpen && (
-                  <div className="avatar-menu__submenu">
-                    {LANGUAGES.map((l) => (
-                      <button
-                        key={l.code}
-                        className={`avatar-menu__item ${lang.code === l.code ? "avatar-menu__item--active" : ""}`}
-                        onClick={() => { setLang(l); setLangOpen(false); }}
-                      >
-                        <span className="avatar-menu__item-icon">{l.flag}</span>
-                        <span>{l.label}</span>
-                        {lang.code === l.code && <i className="bi bi-check2 avatar-menu__check" aria-hidden="true" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Change password */}
+              <div className="avatar-menu__item avatar-menu__item--toggle">
+                <i className="bi bi-moon-stars-fill avatar-menu__item-icon"></i>
+                <span>{t("darkMode")}</span>
                 <button
                   className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
                   onClick={toggleTheme}
                   aria-label="Cambiar tema"
                 >
-                  <i className="bi bi-key-fill avatar-menu__item-icon" aria-hidden="true" />
-                  <span>Cambiar contraseña</span>
+                  <span className="toggle-switch__knob" />
                 </button>
-
-                <div className="avatar-menu__divider" />
-
-                {/* Logout */}
-                <button className="avatar-menu__item avatar-menu__item--danger" onClick={logout}>
-                  <i className="bi bi-box-arrow-right avatar-menu__item-icon" aria-hidden="true" />
-                  <span>Cerrar sesión</span>
-                </button>
-
               </div>
 
               <div
