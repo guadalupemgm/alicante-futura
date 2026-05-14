@@ -13,7 +13,7 @@
   --success-bg: #dcfce7;
   --success-text: #166534;
   --warning-bg: #fef3c7;
-  --warning-text: #92400e;
+  --warning-text: #6e6439;
   --paid-bg: #dbeafe;
   --paid-text: #1d4ed8;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -22,6 +22,9 @@
   --radius-md: 18px;
   --radius-lg: 24px;
   --sidebar-width: 248px;
+  --danger-bg: #fee2e2;    
+  --danger-text: #991b1b; 
+  --danger-border: #fecaca;
 }
 
 * {
@@ -394,6 +397,11 @@ body {
   color: var(--paid-text);
 }
 
+.badge--cancelled {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
 .info-stack {
   display: flex;
   flex-direction: column;
@@ -703,6 +711,8 @@ html.dark {
   --warning-text: #fbbf24;
   --paid-bg: #0d1f3c;
   --paid-text: #60a5fa;
+  --danger-bg: #450a0a;
+  --danger-text: #f87171;
 }
 
 html.dark,

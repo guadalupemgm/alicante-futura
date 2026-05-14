@@ -146,7 +146,10 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </td>
                 <td>
                   <span className={"badge badge--" + b.status}>
-                    {b.status === "pending" ? t("statusPending") : b.status === "confirmed" ? t("statusConfirmed") : t("statusPaid")}
+                    {b.status === "pending" && t("statusPending")}
+                    {b.status === "confirmed" && t("statusConfirmed")}
+                    {b.status === "paid" && t("statusPaid")}
+                    {b.status === "cancelled" && (t("statusCancelled"))}
                   </span>
                 </td>
                 <td style={{ textAlign: "right" }}>
@@ -238,9 +241,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     <option value="confirmed">{t("statusConfirmed")}</option>
     <option value="paid">{t("statusPaid")}</option>
     {/* Añadimos la opción cancelada respetando el formato anterior */}
-    <option value="cancelled">
-      Cancelada
-    </option>
+    <option value="cancelled">{t("statusCancelled")}</option>
   </select>
 </div>
                 <div className="modal-actions" style={{ marginTop: "20px" }}>
