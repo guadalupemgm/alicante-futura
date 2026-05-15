@@ -109,7 +109,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
           <h3 className="panel-title">Próximas Citas</h3>
           {/* 3. Filtros actualizados */}
           <div className="filter-row">
-            {["all", "pending", "confirmed", "paid", "cancelled"].map((f) => (
+            {(["all", "pending", "confirmed", "paid", "cancelled"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setStatusFilter(f)}

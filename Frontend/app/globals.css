@@ -376,32 +376,6 @@ body {
   color: white;
 }
 
-.badge--pending.active,
-.filter-pill--pending:hover,
-.filter-pill--pending.active {
-  background: var(--warning-bg);
-  color: var(--warning-text);
-}
-
-.badge--confirmed,
-.filter-pill--confirmed:hover,
-.filter-pill--confirmed.active {
-  background: var(--success-bg);
-  color: var(--success-text);
-}
-
-.badge--paid,
-.filter-pill--paid:hover,
-.filter-pill--paid.active {
-  background: var(--paid-bg);
-  color: var(--paid-text);
-}
-
-.badge--cancelled {
-  background: var(--danger-bg);
-  color: var(--danger-text);
-}
-
 .info-stack {
   display: flex;
   flex-direction: column;
@@ -930,7 +904,12 @@ html.dark .filter-pill__count {
   color: #111111;
   border-color: #111111;
 }
-
+.filter-pill--cancelled:hover,
+.filter-pill--cancelled.active {
+  background: white;
+  color: #111111;
+  border-color: #111111;
+}
 html.dark .filter-pill--pending.active,
 html.dark .filter-pill--pending:hover,
 html.dark .filter-pill--confirmed.active,
