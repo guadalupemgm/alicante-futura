@@ -30,7 +30,10 @@ export default function BusinessesPage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [showModal, setShowModal]   = useState(false);
   const [success, setSuccess]       = useState("");
-  const [form, setForm] = useState({ name: "", category: "", email: "", phone: "", address: "", status: "active" });
+  const [form, setForm] = useState({
+    name: "", category: "", email: "", phone: "", address: "", status: "active",
+    ownerEmail: "", ownerPassword: "",
+  });
 
   useEffect(() => {
     fetch(`${API_URL}/business`)
@@ -48,7 +51,7 @@ export default function BusinessesPage() {
       const newBusiness = await res.json();
       setBusinesses([...businesses, newBusiness]);
       setShowModal(false);
-      setForm({ name: "", category: "", email: "", phone: "", address: "", status: "active" });
+      setForm({ name: "", category: "", email: "", phone: "", address: "", status: "active", ownerEmail: "", ownerPassword: "" });
       setSuccess(t("businessCreated"));
       setTimeout(() => setSuccess(""), 3000);
     }
@@ -148,6 +151,10 @@ export default function BusinessesPage() {
                 <option value="active">{t("active")}</option>
                 <option value="inactive">{t("inactive")}</option>
               </select>
+              <input className="input" type="email" placeholder="Email del propietario"
+                value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
+              <input className="input" type="password" placeholder="Contraseña del propietario"
+                value={form.ownerPassword} onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} />
             </div>
             <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setShowModal(false)}>{t("cancel")}</button>
