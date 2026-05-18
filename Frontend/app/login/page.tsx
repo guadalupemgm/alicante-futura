@@ -4,14 +4,25 @@ import { useState } from "react";
 import s from "./login.module.css";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth(); // Asumo que añadirás 'register' a tu contexto
+  
+  // Estado para alternar entre Login y Registro
+  const [isRegister, setIsRegister] = useState(false);
+
+  // Estados comunes y de Login
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Estados exclusivos para el Registro de Cliente Particular
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Manejador del Login
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -24,9 +35,45 @@ export default function LoginPage() {
     }
   };
 
+  // Manejador del Registro
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // Validación básica de contraseñas en el cliente
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Enviamos los datos al backend (añadiendo el rol explícito de cliente particular si es necesario)
+      if (register) {
+        await register({ name, email, phone, password, role: "particular" });
+      } else {
+        // Si aún no se tiene el contexto listo, se puede hacer un fetch directo aquí:
+        // const res = await fetch('/api/register', { ... })
+        console.log("Registrando:", { name, email, phone, password });
+      }
+    } catch {
+      setError("Hubo un error al crear la cuenta. Inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Limpia los errores y campos al cambiar de pestaña
+  const toggleMode = () => {
+    setIsRegister(!isRegister);
+    setError("");
+    setPassword("");
+    setConfirmPassword("");
+  };
+
   return (
     <main className={s.root}>
-      {/* LEFT PANEL */}
+      {/* LEFT PANEL (Se mantiene fijo y elegante en ambos modos) */}
       <section className={s.left}>
         <div className={s.leftCircle1} />
         <div className={s.leftCircle2} />
@@ -54,63 +101,153 @@ export default function LoginPage() {
         </div>
       </section>
 
-      {/* RIGHT PANEL */}
+      {/* RIGHT PANEL (Dinamizado según el estado isRegister) */}
       <section className={s.right}>
-        <div className={s.formTitle}>Iniciar sesión</div>
-        <div className={s.formSub}>Accede a tu panel</div>
+        <div className={s.formTitle}>
+          {isRegister ? "Crear cuenta" : "Iniciar sesión"}
+        </div>
+        <div className={s.formSub}>
+          {isRegister ? "Regístrate como cliente particular" : "Accede a tu panel"}
+        </div>
 
-        <form onSubmit={handleSubmit} className={s.form}>
-          <div className={s.field}>
-            <label className={s.label} htmlFor="email">Correo electrónico</label>
-            <input
-              id="email"
-              className={s.input}
-              type="email"
-              placeholder="tu@email.com"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={s.field}>
-            <label className={s.label} htmlFor="password">Contraseña</label>
-            <div className={s.inputWrap}>
+        {!isRegister ? (
+          /* FORMULARIO DE LOGIN */
+          <form onSubmit={handleLoginSubmit} className={s.form}>
+            <div className={s.field}>
+              <label className={s.label} htmlFor="email">Correo electrónico</label>
               <input
-                id="password"
-                className={`${s.input} ${s.inputWithBtn}`}
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                autoComplete="current-password"
+                id="email"
+                className={s.input}
+                type="email"
+                placeholder="tu@email.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={s.field}>
+              <label className={s.label} htmlFor="password">Contraseña</label>
+              <div className={s.inputWrap}>
+                <input
+                  id="password"
+                  className={`${s.input} ${s.inputWithBtn}`}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className={s.eyeBtn}
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+            </div>
+
+            {error && <p className={s.errorMsg}>{error}</p>}
+
+            <button type="submit" className={s.submitBtn} disabled={loading}>
+              {loading ? "Entrando..." : "Entrar →"}
+            </button>
+
+            <button
+              type="button"
+              className={s.registerBtn}
+              onClick={toggleMode}
+            >
+              Crear cuenta nueva
+            </button>
+          </form>
+        ) : (
+          /* FORMULARIO DE REGISTRO (CLIENTE PARTICULAR) */
+          <form onSubmit={handleRegisterSubmit} className={s.form}>
+            <div className={s.field}>
+              <label className={s.label} htmlFor="reg-name">Nombre completo</label>
+              <input
+                id="reg-name"
+                className={s.input}
+                type="text"
+                placeholder="Juan Pérez"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={s.field}>
+              <label className={s.label} htmlFor="reg-email">Correo electrónico</label>
+              <input
+                id="reg-email"
+                className={s.input}
+                type="email"
+                placeholder="juan@email.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={s.field}>
+              <label className={s.label} htmlFor="reg-phone">Teléfono móvil</label>
+              <input
+                id="reg-phone"
+                className={s.input}
+                type="tel"
+                placeholder="600 000 000"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className={s.field}>
+              <label className={s.label} htmlFor="reg-password">Contraseña</label>
+              <input
+                id="reg-password"
+                className={s.input}
+                type="password"
+                placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <button
-                type="button"
-                className={s.eyeBtn}
-                onClick={() => setShowPassword((v) => !v)}
-              >
-                {showPassword ? "Ocultar" : "Mostrar"}
-              </button>
             </div>
-          </div>
 
-          {error && <p className={s.errorMsg}>{error}</p>}
+            <div className={s.field}>
+              <label className={s.label} htmlFor="confirm-password">Confirmar contraseña</label>
+              <input
+                id="confirm-password"
+                className={s.input}
+                type="password"
+                placeholder="Repite tu contraseña"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
 
-          <button type="submit" className={s.submitBtn} disabled={loading}>
-            {loading ? "Entrando..." : "Entrar →"}
-          </button>
+            {error && <p className={s.errorMsg}>{error}</p>}
 
-          <button
-            type="button"
-            className={s.registerBtn}
-            onClick={() => {/* TODO: implementar registro */}}
-          >
-            Crear cuenta nueva
-          </button>
-        </form>
+            <button type="submit" className={s.submitBtn} disabled={loading}>
+              {loading ? "Registrando..." : "Registrarse e iniciar sesión →"}
+            </button>
+
+            <button
+              type="button"
+              className={s.registerBtn}
+              onClick={toggleMode}
+            >
+              ¿Ya tienes cuenta? Inicia sesión
+            </button>
+          </form>
+        )}
 
         <div className={s.bottomText}>Acceso protegido y cifrado</div>
       </section>
