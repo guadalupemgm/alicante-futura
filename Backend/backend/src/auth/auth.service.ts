@@ -10,17 +10,36 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user || !user.isActive) throw new UnauthorizedException('Credenciales incorrectas');
+  async login(identifier: string, password: string) {
+    let user = await this.usersService.findByEmail(identifier);
+    if (!user) {
+      user = await this.usersService.findByUsername(identifier);
+    }
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new UnauthorizedException('Credenciales incorrectas');
+    if (!valid) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
 
-    const payload = { sub: user.id, email: user.email, role: user.role, businessId: user.businessId };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      businessId: user.businessId,
+    };
+
     return {
       access_token: this.jwtService.sign(payload),
-      user: { id: user.id, email: user.email, role: user.role, businessId: user.businessId },
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        businessId: user.businessId,
+      },
     };
   }
 }
