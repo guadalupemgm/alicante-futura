@@ -56,6 +56,7 @@ export const translations = {
     statusPending:       "Pendiente",
     statusConfirmed:     "Confirmada",
     statusPaid:          "Pagada",
+    statusCancelled:     "Cancelada",
 
     // Bookings
     bookingsTitle:       "Panel de Citas",
@@ -193,6 +194,7 @@ export const translations = {
     statusPending:       "Pending",
     statusConfirmed:     "Confirmed",
     statusPaid:          "Paid",
+    statusCancelled:     "Cancelled",
     bookingsTitle:       "Appointments Panel",
     newBooking:          "+ New Booking",
     total:               "Total",
@@ -322,6 +324,7 @@ export const translations = {
     statusPending:       "En attente",
     statusConfirmed:     "Confirmée",
     statusPaid:          "Payée",
+    statusCancelled:     "Annulée",
     bookingsTitle:       "Panneau de rendez-vous",
     newBooking:          "+ Nouveau rendez-vous",
     total:               "Total",

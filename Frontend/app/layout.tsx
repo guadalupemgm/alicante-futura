@@ -12,7 +12,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Bookings Admin",
+  title: "BookFlow",
   description: "Plataforma de gestión de reservas",
   icons: {
     icon: "/favicon.ico",

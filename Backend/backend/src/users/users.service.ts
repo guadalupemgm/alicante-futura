@@ -13,13 +13,13 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-  const passwordHash = await bcrypt.hash(createUserDto.password, 10);
-  const user = this.userRepository.create({
-    ...createUserDto,
-    password: passwordHash,
-  });
-  return this.userRepository.save(user);
-}
+    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
+    const user = this.userRepository.create({
+      ...createUserDto,
+      password: passwordHash,
+    });
+    return this.userRepository.save(user);
+  }
 
   findAll() {
     return this.userRepository.find();
@@ -31,6 +31,10 @@ export class UsersService {
 
   findByEmail(email: string) {
     return this.userRepository.findOneBy({ email });
+  }
+
+  findByUsername(username: string) {
+    return this.userRepository.findOneBy({ username });
   }
 
   remove(id: number) {
@@ -49,7 +53,6 @@ export class UsersService {
       isActive: true,
     });
     await this.userRepository.save(admin);
-
     console.log('✅ Usuario admin creado: admin@alicante.com / admin123');
   }
 }
