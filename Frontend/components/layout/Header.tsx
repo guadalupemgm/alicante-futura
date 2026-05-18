@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "@/components/context/ThemeContext";
 import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
+import { useAuth } from "@/components/context/AuthContext";
 
 export default function Header() {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t }   = useLanguage();
+  const { logout }             = useAuth();
   const [open, setOpen]        = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -105,7 +107,7 @@ export default function Header() {
 
               <div className="avatar-menu__divider" />
 
-              <button className="avatar-menu__item avatar-menu__item--danger">
+              <button className="avatar-menu__item avatar-menu__item--danger" onClick={logout}>
                 <i className="bi bi-box-arrow-right avatar-menu__item-icon"></i>
                 <span>{t("logout")}</span>
               </button>
