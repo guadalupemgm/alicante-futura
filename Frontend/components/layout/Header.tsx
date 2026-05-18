@@ -6,12 +6,16 @@ import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
 import { useAuth } from "@/components/context/AuthContext";
 
 export default function Header() {
-  const { theme, toggleTheme } = useTheme();
-  const { lang, setLang, t }   = useLanguage();
-  const { logout }             = useAuth();
-  const [open, setOpen]        = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { theme, toggleTheme }   = useTheme();
+  const { lang, setLang, t }     = useLanguage();
+  const { logout, user }         = useAuth();
+  const [open, setOpen]          = useState(false);
+  const [langOpen, setLangOpen]  = useState(false);
+  const menuRef                  = useRef<HTMLDivElement>(null);
+
+  const displayName = user?.email?.split("@")[0] ?? "Usuario";
+  const initial     = displayName[0]?.toUpperCase() ?? "U";
+  const roleLabel   = user?.role === "business" ? "Negocio" : "Admin";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -32,36 +36,50 @@ export default function Header() {
       </div>
 
       <div className="admin-header__actions">
-        <div className="avatar-menu" ref={menuRef}>
+        {/* Search */}
+        <div className="bf-topbar-search">
+          <i className="bi bi-search" style={{ fontSize: 13 }} />
+          <span>Buscar...</span>
+        </div>
 
+        {/* Notifications */}
+        <div style={{ position: "relative" }}>
+          <button className="bf-badge-btn" aria-label="Notificaciones">
+            <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
+            <div className="bf-notif-dot" />
+          </button>
+        </div>
+
+        {/* Avatar menu */}
+        <div className="avatar-menu" ref={menuRef}>
           <button
             className="user-pill"
             onClick={() => { setOpen(!open); setLangOpen(false); }}
             aria-label="Menú de usuario"
           >
-            <div className="user-pill__avatar">V</div>
+            <div className="user-pill__avatar">{initial}</div>
             <div className="user-pill__info">
-              <span className="user-pill__name">Vardab</span>
-              <span className="user-pill__role">Admin</span>
+              <span className="user-pill__name">{displayName}</span>
+              <span className="user-pill__role">{roleLabel}</span>
             </div>
-            <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`}></i>
+            <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`} />
           </button>
 
           {open && (
             <div className="avatar-menu__dropdown">
-
               <div className="avatar-menu__header">
-                <div className="avatar-menu__header-avatar">V</div>
+                <div className="avatar-menu__header-avatar">{initial}</div>
                 <div>
-                  <p className="avatar-menu__header-name">Vardab</p>
-                  <p className="avatar-menu__header-email">admin@bookflow.com</p>
+                  <p className="avatar-menu__header-name">{displayName}</p>
+                  <p className="avatar-menu__header-email">{user?.email ?? ""}</p>
                 </div>
               </div>
 
               <div className="avatar-menu__divider" />
 
+              {/* Dark mode toggle */}
               <div className="avatar-menu__item avatar-menu__item--toggle">
-                <i className="bi bi-moon-stars-fill avatar-menu__item-icon"></i>
+                <i className="bi bi-moon-stars-fill avatar-menu__item-icon" />
                 <span>{t("darkMode")}</span>
                 <button
                   className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
@@ -72,6 +90,7 @@ export default function Header() {
                 </button>
               </div>
 
+              {/* Language */}
               <div
                 className="avatar-menu__item avatar-menu__item--toggle"
                 onClick={() => setLangOpen(!langOpen)}
@@ -81,8 +100,8 @@ export default function Header() {
                 <span>{t("changeLanguage")}</span>
                 <i
                   className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"}`}
-                  style={{ marginLeft: "auto", fontSize: 10, color: "var(--muted)" }}
-                ></i>
+                  style={{ marginLeft: "auto", fontSize: 10, color: "var(--ink-3)" }}
+                />
               </div>
 
               {langOpen && (
@@ -91,15 +110,11 @@ export default function Header() {
                     <button
                       key={l.code}
                       className={`avatar-menu__item ${lang.code === l.code ? "avatar-menu__item--active" : ""}`}
-                      onClick={() => {
-                        setLang(l);
-                        setLangOpen(false);
-                        setOpen(false);
-                      }}
+                      onClick={() => { setLang(l); setLangOpen(false); setOpen(false); }}
                     >
                       <span className="avatar-menu__item-icon">{l.flag}</span>
                       <span>{l.label}</span>
-                      {lang.code === l.code && <i className="bi bi-check-lg avatar-menu__check"></i>}
+                      {lang.code === l.code && <i className="bi bi-check-lg avatar-menu__check" />}
                     </button>
                   ))}
                 </div>
@@ -108,10 +123,9 @@ export default function Header() {
               <div className="avatar-menu__divider" />
 
               <button className="avatar-menu__item avatar-menu__item--danger" onClick={logout}>
-                <i className="bi bi-box-arrow-right avatar-menu__item-icon"></i>
+                <i className="bi bi-box-arrow-right avatar-menu__item-icon" />
                 <span>{t("logout")}</span>
               </button>
-
             </div>
           )}
         </div>
