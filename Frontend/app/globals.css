@@ -11,8 +11,8 @@
   --ink:          #0e0e10;
   --ink-2:        #3d3d44;
   --ink-3:        #8888a0;
-  --paper:        #f7f6f1;
-  --paper-2:      #eeece5;
+  --paper:        white;
+  --paper-2:      white;
   --paper-3:      #e4e1d7;
   --line:         rgba(14,14,16,0.10);
   --line-2:       rgba(14,14,16,0.06);
