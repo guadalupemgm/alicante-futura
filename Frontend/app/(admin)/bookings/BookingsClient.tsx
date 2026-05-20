@@ -4,16 +4,20 @@ import { useMemo, useState, useEffect } from "react";
 import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
 import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
 import { useLanguage } from "@/components/context/LanguageContext";
+import Pagination from "@/components/ui/Pagination";
+
+const PER_PAGE = 8;
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const { t } = useLanguage();
-  const [bookings, setBookings]       = useState<Booking[]>(initialBookings);
-  const [businesses, setBusinesses]   = useState<Business[]>([]);
-  const [customers, setCustomers]     = useState<Customer[]>([]);
+  const [bookings, setBookings]         = useState<Booking[]>(initialBookings);
+  const [businesses, setBusinesses]     = useState<Business[]>([]);
+  const [customers, setCustomers]       = useState<Customer[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
-  const [isFormOpen, setIsFormOpen]   = useState(false);
-  const [editingId, setEditingId]     = useState<number | null>(null);
-  const [message, setMessage]         = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [isFormOpen, setIsFormOpen]     = useState(false);
+  const [editingId, setEditingId]       = useState<number | null>(null);
+  const [message, setMessage]           = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [page, setPage]                 = useState(1);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -31,18 +35,24 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   }, [message]);
 
-  // 1. Estadísticas actualizadas con "cancelled"
+  useEffect(() => { setPage(1); }, [statusFilter]);
+
   const stats = useMemo(() => ({
     total:     bookings.length,
     pending:   bookings.filter(b => b.status === "pending").length,
     confirmed: bookings.filter(b => b.status === "confirmed").length,
-    paid: bookings.filter(b => b.status === "paid").length,
+    paid:      bookings.filter(b => b.status === "paid").length,
     cancelled: bookings.filter(b => b.status === "cancelled").length,
   }), [bookings]);
 
   const filtered = useMemo(() =>
     statusFilter === "all" ? bookings : bookings.filter(b => b.status === statusFilter)
   , [bookings, statusFilter]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PER_PAGE;
+    return filtered.slice(start, start + PER_PAGE);
+  }, [filtered, page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,14 +97,13 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         </button>
       </div>
 
-      {/* 2. Grid de KPIs con 5 elementos */}
       <div className="kpi-grid">
         {[
-          { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
-          { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
-          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
-          { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
-          { label: "Canceladas", val: stats.cancelled, sub: "Anuladas", color: "#ef4444" },
+          { label: "Total",       val: stats.total,     sub: "Histórico",    color: "var(--text)" },
+          { label: "Pendientes",  val: stats.pending,   sub: "Por confirmar", color: "var(--warning-text)" },
+          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda",    color: "var(--success-text)" },
+          { label: "Pagadas",     val: stats.paid,      sub: "Completado",   color: "var(--paid-text)" },
+          { label: "Canceladas",  val: stats.cancelled, sub: "Anuladas",     color: "#ef4444" },
         ].map((kpi, i) => (
           <div key={i} className="kpi-card" style={{ borderLeft: "4px solid " + kpi.color }}>
             <p className="kpi-card__label">{kpi.label}</p>
@@ -107,7 +116,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
       <div className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Próximas Citas</h3>
-          {/* 3. Filtros actualizados */}
           <div className="filter-row">
             {(["all", "pending", "confirmed", "paid", "cancelled"] as const).map((f) => (
               <button
@@ -115,9 +123,9 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 onClick={() => setStatusFilter(f)}
                 className={"filter-pill filter-pill--" + f + (statusFilter === f ? " active" : "")}
               >
-                {f === "all" ? "Ver todas" : 
-                 f === "paid" ? "Pagadas" : 
-                 f === "cancelled" ? "Canceladas" : 
+                {f === "all" ? "Ver todas" :
+                 f === "paid" ? "Pagadas" :
+                 f === "cancelled" ? "Canceladas" :
                  f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
@@ -134,7 +142,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
             </tr>
           </thead>
           <tbody>
-            {filtered.map(b => (
+            {paginated.map(b => (
               <tr key={b.id}>
                 <td>
                   <div style={{ fontWeight: 600 }}>{b.serviceName}</div>
@@ -146,10 +154,10 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </td>
                 <td>
                   <span className={"badge badge--" + b.status}>
-                    {b.status === "pending" && t("statusPending")}
+                    {b.status === "pending"   && t("statusPending")}
                     {b.status === "confirmed" && t("statusConfirmed")}
-                    {b.status === "paid" && t("statusPaid")}
-                    {b.status === "cancelled" && (t("statusCancelled"))}
+                    {b.status === "paid"      && t("statusPaid")}
+                    {b.status === "cancelled" && t("statusCancelled")}
                   </span>
                 </td>
                 <td style={{ textAlign: "right" }}>
@@ -181,6 +189,8 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
             ))}
           </tbody>
         </table>
+
+        <Pagination total={filtered.length} page={page} perPage={PER_PAGE} onPageChange={setPage} />
       </div>
 
       {isFormOpen && (
@@ -190,7 +200,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               {editingId ? t("updateAppointment") : t("newAppointment")}
             </h3>
             <p className="modal-text">{t("fillFields")}</p>
-
             <form onSubmit={handleSubmit}>
               <div className="page-stack">
                 <div>
@@ -226,31 +235,21 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-
-                {/* 4. Select de Estado con 4 opciones */}
-               <div>
-  <label className="kpi-card__label" style={{ fontSize: "11px" }}>
-    {t("statusLabel")}
-  </label>
-  <select
-    className="select"
-    value={form.status}
-    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}
-  >
-    <option value="pending">{t("statusPending")}</option>
-    <option value="confirmed">{t("statusConfirmed")}</option>
-    <option value="paid">{t("statusPaid")}</option>
-    {/* Añadimos la opción cancelada respetando el formato anterior */}
-    <option value="cancelled">{t("statusCancelled")}</option>
-  </select>
-</div>
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("statusLabel")}</label>
+                  <select className="select" value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}>
+                    <option value="pending">{t("statusPending")}</option>
+                    <option value="confirmed">{t("statusConfirmed")}</option>
+                    <option value="paid">{t("statusPaid")}</option>
+                    <option value="cancelled">{t("statusCancelled")}</option>
+                  </select>
+                </div>
                 <div className="modal-actions" style={{ marginTop: "20px" }}>
                   <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
                     {t("cancel")}
                   </button>
-                  <button type="submit" className="primary-btn">
-                    {t("finish")}
-                  </button>
+                  <button type="submit" className="primary-btn">{t("finish")}</button>
                 </div>
               </div>
             </form>
