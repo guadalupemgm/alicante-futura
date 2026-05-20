@@ -29,7 +29,7 @@ export const translations = {
     customers:           "Clientes",
     payments:            "Pagos",
     business:            "Negocio",
-    adminWorkspace:      "Área de administración",
+    adminWorkspace:      "Panel de administración",
 
     // Dashboard
     dashboardTitle:      "Dashboard overview",
@@ -60,6 +60,7 @@ export const translations = {
 
     // Bookings
     bookingsTitle:       "Panel de Citas",
+    bookingsSubtitle:    "Visualización y gestión de citas programadas y próximas reservas.",
     newBooking:          "+ Nueva Reserva",
     total:               "Total",
     historical:          "Histórico",
