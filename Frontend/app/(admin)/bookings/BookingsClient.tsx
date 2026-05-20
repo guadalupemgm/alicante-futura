@@ -74,6 +74,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               {message.text}
             </p>
           )}
+          <p>{t("bookingsSubtitle")}</p>
         </div>
         <button
           className="primary-btn"
