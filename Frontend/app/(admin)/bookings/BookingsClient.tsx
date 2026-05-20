@@ -4,20 +4,17 @@ import { useMemo, useState, useEffect } from "react";
 import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
 import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
 import { useLanguage } from "@/components/context/LanguageContext";
-import Pagination from "@/components/ui/Pagination";
-
-const PER_PAGE = 8;
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const { t } = useLanguage();
-  const [bookings, setBookings]         = useState<Booking[]>(initialBookings);
-  const [businesses, setBusinesses]     = useState<Business[]>([]);
-  const [customers, setCustomers]       = useState<Customer[]>([]);
-  const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
-  const [isFormOpen, setIsFormOpen]     = useState(false);
-  const [editingId, setEditingId]       = useState<number | null>(null);
-  const [message, setMessage]           = useState<{ text: string; type: "success" | "error" } | null>(null);
-  const [page, setPage]                 = useState(1);
+  const [bookings, setBookings]           = useState<Booking[]>(initialBookings);
+  const [businesses, setBusinesses]       = useState<Business[]>([]);
+  const [customers, setCustomers]         = useState<Customer[]>([]);
+  const [statusFilter, setStatusFilter]   = useState<"all" | BookingStatus>("all");
+  const [isFormOpen, setIsFormOpen]       = useState(false);
+  const [editingId, setEditingId]         = useState<number | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [message, setMessage]             = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -35,8 +32,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   }, [message]);
 
-  useEffect(() => { setPage(1); }, [statusFilter]);
-
   const stats = useMemo(() => ({
     total:     bookings.length,
     pending:   bookings.filter(b => b.status === "pending").length,
@@ -48,11 +43,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const filtered = useMemo(() =>
     statusFilter === "all" ? bookings : bookings.filter(b => b.status === statusFilter)
   , [bookings, statusFilter]);
-
-  const paginated = useMemo(() => {
-    const start = (page - 1) * PER_PAGE;
-    return filtered.slice(start, start + PER_PAGE);
-  }, [filtered, page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +63,19 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (deleteTargetId === null) return;
+    try {
+      await deleteAppointment(deleteTargetId);
+      setBookings(bookings.filter(x => x.id !== deleteTargetId));
+      setMessage({ text: "Reserva eliminada correctamente", type: "success" });
+    } catch {
+      setMessage({ text: t("errorMsg"), type: "error" });
+    } finally {
+      setDeleteTargetId(null);
+    }
+  };
+
   return (
     <div className="page-stack">
 
@@ -84,7 +87,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               {message.text}
             </p>
           )}
-          <p>{t("bookingsSubtitle")}</p>
         </div>
         <button
           className="primary-btn"
@@ -143,7 +145,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
             </tr>
           </thead>
           <tbody>
-            {paginated.map(b => (
+            {filtered.map(b => (
               <tr key={b.id}>
                 <td>
                   <div style={{ fontWeight: 600 }}>{b.serviceName}</div>
@@ -176,12 +178,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                   <button
                     className="secondary-btn"
                     style={{ padding: "6px 12px" }}
-                    onClick={async () => {
-                      if (confirm(t("confirmDelete"))) {
-                        await deleteAppointment(b.id);
-                        setBookings(bookings.filter(x => x.id !== b.id));
-                      }
-                    }}
+                    onClick={() => setDeleteTargetId(b.id)}
                   >
                     {t("delete")}
                   </button>
@@ -190,10 +187,38 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
             ))}
           </tbody>
         </table>
-
-        <Pagination total={filtered.length} page={page} perPage={PER_PAGE} onPageChange={setPage} />
       </div>
 
+      {/* Modal de confirmación de borrado */}
+      {deleteTargetId !== null && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <div className="modal-icon">!</div>
+            <h3 className="modal-title">Eliminar reserva</h3>
+            <p className="modal-text">
+              ¿Seguro que quieres eliminar la reserva #{deleteTargetId}? Esta acción no se puede deshacer.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setDeleteTargetId(null)}
+              >
+                {t("cancel")}
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={handleConfirmDelete}
+              >
+                {t("delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de formulario */}
       {isFormOpen && (
         <div className="modal-backdrop">
           <div className="modal-card">
@@ -250,13 +275,16 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                   <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
                     {t("cancel")}
                   </button>
-                  <button type="submit" className="primary-btn">{t("finish")}</button>
+                  <button type="submit" className="primary-btn">
+                    {t("finish")}
+                  </button>
                 </div>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
