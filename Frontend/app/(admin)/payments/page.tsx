@@ -1,31 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "@/components/context/LanguageContext";
+import Pagination from "@/components/ui/Pagination";
+
+const PER_PAGE = 8;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type PaymentStatus = "pending" | "paid";
-
-type Payment = {
-  id: number;
-  amount: number;
-  method: string;
-  status: PaymentStatus;
-  appointmentId: number;
-};
-
-type Appointment = {
-  id: number;
-  date: string;
-  time: string;
-  serviceName: string;
-  status?: string;
-};
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+type Payment = { id: number; amount: number; method: string; status: PaymentStatus; appointmentId: number; };
+type Appointment = { id: number; date: string; time: string; serviceName: string; status?: string; };
 
 function Badge({ status, label }: { status: PaymentStatus; label: string }) {
   return (
-    <span className={`badge badge--${status === "pending" ? "pending" : "confirmed"}`}>
+    <span className={"badge badge--" + (status === "pending" ? "pending" : "confirmed")}>
       {label}
     </span>
   );
@@ -38,6 +26,7 @@ export default function PaymentsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>("all");
   const [showModal, setShowModal]       = useState(false);
   const [success, setSuccess]           = useState("");
+  const [page, setPage]                 = useState(1);
   const [form, setForm] = useState({ amount: "", method: "", status: "pending", appointmentId: "" });
 
   const FILTERS = [
@@ -47,16 +36,14 @@ export default function PaymentsPage() {
   ];
 
   useEffect(() => {
-    fetch(`${API_URL}/payments`)
-      .then((r) => r.json())
-      .then((d) => setPayments(Array.isArray(d) ? d : []));
-    fetch(`${API_URL}/appointments`)
-      .then((r) => r.json())
-      .then((d) => setAppointments(Array.isArray(d) ? d : []));
+    fetch(API_URL + "/payments").then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
+    fetch(API_URL + "/appointments").then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
   }, []);
 
+  useEffect(() => { setPage(1); }, [statusFilter]);
+
   const handleCreate = async () => {
-    const res = await fetch(`${API_URL}/payments`, {
+    const res = await fetch(API_URL + "/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -71,45 +58,33 @@ export default function PaymentsPage() {
       setPayments([...payments, newPayment]);
       setShowModal(false);
       setForm({ amount: "", method: "", status: "pending", appointmentId: "" });
-      if (form.appointmentId) {
-        const bookingStatus = form.status === "paid" ? "paid" : "pending";
-        await fetch(`${API_URL}/appointments/${form.appointmentId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: bookingStatus }),
-        });
-      }
       setSuccess(t("paymentRegistered"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
 
   const handleStatusChange = async (id: number, newStatus: PaymentStatus) => {
-    const res = await fetch(`${API_URL}/payments/${id}`, {
+    const res = await fetch(API_URL + "/payments/" + id, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
     if (res.ok) {
       setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
-      const payment = payments.find(p => p.id === id);
-      if (payment?.appointmentId) {
-        const bookingStatus = newStatus === "paid" ? "paid" : "pending";
-        await fetch(`${API_URL}/appointments/${payment.appointmentId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: bookingStatus }),
-        });
-        setAppointments(appointments.map(a =>
-          a.id === payment.appointmentId ? { ...a, status: bookingStatus } : a
-        ));
-      }
       setSuccess(newStatus === "paid" ? t("markedPaid") : t("markedPending"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
 
-  const filtered = statusFilter === "all" ? payments : payments.filter(p => p.status === statusFilter);
+  const filtered = useMemo(() =>
+    statusFilter === "all" ? payments : payments.filter(p => p.status === statusFilter)
+  , [payments, statusFilter]);
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PER_PAGE;
+    return filtered.slice(start, start + PER_PAGE);
+  }, [filtered, page]);
+
   const totalPaid    = payments.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0);
   const totalPending = payments.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0);
 
@@ -131,16 +106,12 @@ export default function PaymentsPage() {
         <div className="kpi-card">
           <p className="kpi-card__label">{t("collected")}</p>
           <h3 className="kpi-card__value">{totalPaid.toFixed(2)} €</h3>
-          <p className="kpi-card__meta kpi-card__meta--positive">
-            {payments.filter(p => p.status === "paid").length} {t("operations")}
-          </p>
+          <p className="kpi-card__meta kpi-card__meta--positive">{payments.filter(p => p.status === "paid").length} {t("operations")}</p>
         </div>
         <div className="kpi-card">
           <p className="kpi-card__label">{t("pending")}</p>
           <h3 className="kpi-card__value">{totalPending.toFixed(2)} €</h3>
-          <p className="kpi-card__meta kpi-card__meta--warning">
-            {payments.filter(p => p.status === "pending").length} {t("toReview")}
-          </p>
+          <p className="kpi-card__meta kpi-card__meta--warning">{payments.filter(p => p.status === "pending").length} {t("toReview")}</p>
         </div>
       </section>
 
@@ -148,24 +119,17 @@ export default function PaymentsPage() {
         <div className="panel-title-row">
           <h3 className="panel-title">{t("paymentList")}</h3>
           <div className="filter-row">
-            {FILTERS.map((f) => {
-              const isActive = statusFilter === f.key;
-              return (
-                <button
-                  key={f.key}
-                  type="button"
-                  onClick={() => setStatusFilter(f.key as "all" | PaymentStatus)}
-                  className={`filter-pill ${f.className} ${isActive ? "active" : ""}`}
-                >
-                  {f.label}
-                  {f.key !== "all" && (
-                    <span className="filter-pill__count">
-                      {payments.filter(p => p.status === f.key).length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            {FILTERS.map(f => (
+              <button key={f.key} type="button"
+                onClick={() => setStatusFilter(f.key as "all" | PaymentStatus)}
+                className={"filter-pill " + f.className + (statusFilter === f.key ? " active" : "")}
+              >
+                {f.label}
+                {f.key !== "all" && (
+                  <span className="filter-pill__count">{payments.filter(p => p.status === f.key).length}</span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -186,29 +150,20 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {paginated.map(p => (
                 <tr key={p.id}>
                   <td style={{ fontWeight: 600 }}>COB-{String(p.id).padStart(3, "0")}</td>
                   <td>{Number(p.amount).toFixed(2)} €</td>
                   <td>{p.method}</td>
                   <td>#{p.appointmentId}</td>
-                  <td>
-                    <Badge
-                      status={p.status}
-                      label={p.status === "pending" ? t("toPay") : t("statusPaid")}
-                    />
-                  </td>
+                  <td><Badge status={p.status} label={p.status === "pending" ? t("toPay") : t("statusPaid")} /></td>
                   <td style={{ textAlign: "right" }}>
                     {p.status === "pending" ? (
                       <button className="primary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "paid")}>
-                        {t("markPaid")}
-                      </button>
+                        onClick={() => handleStatusChange(p.id, "paid")}>{t("markPaid")}</button>
                     ) : (
                       <button className="secondary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "pending")}>
-                        {t("markPending")}
-                      </button>
+                        onClick={() => handleStatusChange(p.id, "pending")}>{t("markPending")}</button>
                     )}
                   </td>
                 </tr>
@@ -216,6 +171,8 @@ export default function PaymentsPage() {
             </tbody>
           </table>
         )}
+
+        <Pagination total={filtered.length} page={page} perPage={PER_PAGE} onPageChange={setPage} />
       </section>
 
       {showModal && (
@@ -223,28 +180,22 @@ export default function PaymentsPage() {
           <div className="modal-card">
             <h3 className="modal-title">{t("registerPaymentModal")}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              <input className="input" type="number" placeholder={t("amountPlaceholder")}
-                value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-              <select className="input" value={form.method}
-                onChange={(e) => setForm({ ...form, method: e.target.value })}>
+              <input className="input" type="number" placeholder={t("amountPlaceholder")} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+              <select className="input" value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
                 <option value="">{t("paymentMethod")}</option>
                 <option value="Tarjeta">{t("card")}</option>
                 <option value="Efectivo">{t("cash")}</option>
                 <option value="Bizum">Bizum</option>
                 <option value="Transferencia">{t("transfer")}</option>
               </select>
-              <select className="input" value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
                 <option value="pending">{t("toPay")}</option>
                 <option value="paid">{t("statusPaid")}</option>
               </select>
-              <select className="input" value={form.appointmentId}
-                onChange={(e) => setForm({ ...form, appointmentId: e.target.value })}>
+              <select className="input" value={form.appointmentId} onChange={e => setForm({ ...form, appointmentId: e.target.value })}>
                 <option value="">{t("selectReservation")}</option>
-                {appointments.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    #{a.id} — {a.date} {a.time} · {a.serviceName}
-                  </option>
+                {appointments.map(a => (
+                  <option key={a.id} value={a.id}>#{a.id} — {a.date} {a.time} · {a.serviceName}</option>
                 ))}
               </select>
             </div>

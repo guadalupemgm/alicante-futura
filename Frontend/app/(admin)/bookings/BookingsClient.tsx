@@ -7,13 +7,14 @@ import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
   const { t } = useLanguage();
-  const [bookings, setBookings]       = useState<Booking[]>(initialBookings);
-  const [businesses, setBusinesses]   = useState<Business[]>([]);
-  const [customers, setCustomers]     = useState<Customer[]>([]);
-  const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
-  const [isFormOpen, setIsFormOpen]   = useState(false);
-  const [editingId, setEditingId]     = useState<number | null>(null);
-  const [message, setMessage]         = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [bookings, setBookings]           = useState<Booking[]>(initialBookings);
+  const [businesses, setBusinesses]       = useState<Business[]>([]);
+  const [customers, setCustomers]         = useState<Customer[]>([]);
+  const [statusFilter, setStatusFilter]   = useState<"all" | BookingStatus>("all");
+  const [isFormOpen, setIsFormOpen]       = useState(false);
+  const [editingId, setEditingId]         = useState<number | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+  const [message, setMessage]             = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -31,12 +32,11 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   }, [message]);
 
-  // 1. Estadísticas actualizadas con "cancelled"
   const stats = useMemo(() => ({
     total:     bookings.length,
     pending:   bookings.filter(b => b.status === "pending").length,
     confirmed: bookings.filter(b => b.status === "confirmed").length,
-    paid: bookings.filter(b => b.status === "paid").length,
+    paid:      bookings.filter(b => b.status === "paid").length,
     cancelled: bookings.filter(b => b.status === "cancelled").length,
   }), [bookings]);
 
@@ -60,6 +60,19 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
       setEditingId(null);
     } catch {
       setMessage({ text: t("errorMsg"), type: "error" });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteTargetId === null) return;
+    try {
+      await deleteAppointment(deleteTargetId);
+      setBookings(bookings.filter(x => x.id !== deleteTargetId));
+      setMessage({ text: "Reserva eliminada correctamente", type: "success" });
+    } catch {
+      setMessage({ text: t("errorMsg"), type: "error" });
+    } finally {
+      setDeleteTargetId(null);
     }
   };
 
@@ -87,14 +100,13 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         </button>
       </div>
 
-      {/* 2. Grid de KPIs con 5 elementos */}
       <div className="kpi-grid">
         {[
-          { label: "Total", val: stats.total, sub: "Histórico", color: "var(--text)" },
-          { label: "Pendientes", val: stats.pending, sub: "Por confirmar", color: "var(--warning-text)" },
-          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda", color: "var(--success-text)" },
-          { label: "Pagadas", val: stats.paid, sub: "Completado", color: "var(--paid-text)" },
-          { label: "Canceladas", val: stats.cancelled, sub: "Anuladas", color: "#ef4444" },
+          { label: "Total",       val: stats.total,     sub: "Histórico",    color: "var(--text)" },
+          { label: "Pendientes",  val: stats.pending,   sub: "Por confirmar", color: "var(--warning-text)" },
+          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda",    color: "var(--success-text)" },
+          { label: "Pagadas",     val: stats.paid,      sub: "Completado",   color: "var(--paid-text)" },
+          { label: "Canceladas",  val: stats.cancelled, sub: "Anuladas",     color: "#ef4444" },
         ].map((kpi, i) => (
           <div key={i} className="kpi-card" style={{ borderLeft: "4px solid " + kpi.color }}>
             <p className="kpi-card__label">{kpi.label}</p>
@@ -107,7 +119,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
       <div className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">Próximas Citas</h3>
-          {/* 3. Filtros actualizados */}
           <div className="filter-row">
             {(["all", "pending", "confirmed", "paid", "cancelled"] as const).map((f) => (
               <button
@@ -115,9 +126,9 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 onClick={() => setStatusFilter(f)}
                 className={"filter-pill filter-pill--" + f + (statusFilter === f ? " active" : "")}
               >
-                {f === "all" ? "Ver todas" : 
-                 f === "paid" ? "Pagadas" : 
-                 f === "cancelled" ? "Canceladas" : 
+                {f === "all" ? "Ver todas" :
+                 f === "paid" ? "Pagadas" :
+                 f === "cancelled" ? "Canceladas" :
                  f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
@@ -146,10 +157,10 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </td>
                 <td>
                   <span className={"badge badge--" + b.status}>
-                    {b.status === "pending" && t("statusPending")}
+                    {b.status === "pending"   && t("statusPending")}
                     {b.status === "confirmed" && t("statusConfirmed")}
-                    {b.status === "paid" && t("statusPaid")}
-                    {b.status === "cancelled" && (t("statusCancelled"))}
+                    {b.status === "paid"      && t("statusPaid")}
+                    {b.status === "cancelled" && t("statusCancelled")}
                   </span>
                 </td>
                 <td style={{ textAlign: "right" }}>
@@ -167,12 +178,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                   <button
                     className="secondary-btn"
                     style={{ padding: "6px 12px" }}
-                    onClick={async () => {
-                      if (confirm(t("confirmDelete"))) {
-                        await deleteAppointment(b.id);
-                        setBookings(bookings.filter(x => x.id !== b.id));
-                      }
-                    }}
+                    onClick={() => setDeleteTargetId(b.id)}
                   >
                     {t("delete")}
                   </button>
@@ -183,6 +189,36 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         </table>
       </div>
 
+      {/* Modal de confirmación de borrado */}
+      {deleteTargetId !== null && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <div className="modal-icon">!</div>
+            <h3 className="modal-title">Eliminar reserva</h3>
+            <p className="modal-text">
+              ¿Seguro que quieres eliminar la reserva #{deleteTargetId}? Esta acción no se puede deshacer.
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setDeleteTargetId(null)}
+              >
+                {t("cancel")}
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={handleConfirmDelete}
+              >
+                {t("delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de formulario */}
       {isFormOpen && (
         <div className="modal-backdrop">
           <div className="modal-card">
@@ -190,7 +226,6 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
               {editingId ? t("updateAppointment") : t("newAppointment")}
             </h3>
             <p className="modal-text">{t("fillFields")}</p>
-
             <form onSubmit={handleSubmit}>
               <div className="page-stack">
                 <div>
@@ -226,24 +261,16 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-
-                {/* 4. Select de Estado con 4 opciones */}
-               <div>
-  <label className="kpi-card__label" style={{ fontSize: "11px" }}>
-    {t("statusLabel")}
-  </label>
-  <select
-    className="select"
-    value={form.status}
-    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}
-  >
-    <option value="pending">{t("statusPending")}</option>
-    <option value="confirmed">{t("statusConfirmed")}</option>
-    <option value="paid">{t("statusPaid")}</option>
-    {/* Añadimos la opción cancelada respetando el formato anterior */}
-    <option value="cancelled">{t("statusCancelled")}</option>
-  </select>
-</div>
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("statusLabel")}</label>
+                  <select className="select" value={form.status}
+                    onChange={e => setForm({ ...form, status: e.target.value as BookingStatus })}>
+                    <option value="pending">{t("statusPending")}</option>
+                    <option value="confirmed">{t("statusConfirmed")}</option>
+                    <option value="paid">{t("statusPaid")}</option>
+                    <option value="cancelled">{t("statusCancelled")}</option>
+                  </select>
+                </div>
                 <div className="modal-actions" style={{ marginTop: "20px" }}>
                   <button type="button" className="secondary-btn" onClick={() => setIsFormOpen(false)}>
                     {t("cancel")}
@@ -257,6 +284,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
           </div>
         </div>
       )}
+
     </div>
   );
 }

@@ -328,7 +328,7 @@ html.dark .bf-nav-item.active { background: var(--accent); }
 /* ════════════════════════════════════════════════════════
    KPI CARDS
 ════════════════════════════════════════════════════════ */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
 .kpi-card {
   background: var(--paper-2);
