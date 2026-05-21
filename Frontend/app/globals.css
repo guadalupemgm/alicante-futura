@@ -684,3 +684,14 @@ html.dark .bf-nav-item.active { background: var(--accent); }
   .form-grid, .kpi-grid, .customer-grid { grid-template-columns: 1fr; }
   .page-hero, .search-row { flex-direction: column; align-items: stretch; }
 }
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.65rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+}
