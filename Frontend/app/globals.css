@@ -482,9 +482,11 @@ html.dark .bf-nav-item.active { background: var(--accent); }
   display: inline-flex; align-items: center; justify-content: center;
   margin-left: 5px; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 999px; font-size: 10px; font-weight: 700;
-  background: rgba(0,0,0,.1);
+ background: var(--paper-3); color: var(--ink);
 }
-
+.filter-pill.active .filter-pill__count {
+ background: var(--paper-3); color: var(--ink);
+}
 /* ════════════════════════════════════════════════════════
    FORMS / INPUTS
 ════════════════════════════════════════════════════════ */
