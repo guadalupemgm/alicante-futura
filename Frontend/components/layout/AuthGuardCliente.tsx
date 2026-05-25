@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 
-const ALLOWED_PATHS = ["/empresas", "/reservas"];
+const ALLOWED_PATHS = ["/empresas", "/reservas", "/settings"];
 
 export default function AuthGuardCliente({
   children,
@@ -23,14 +23,12 @@ export default function AuthGuardCliente({
       return;
     }
 
-    // Solo clientes pueden acceder a esta sección
     if (user.role !== "customer") {
       if (user.role === "admin") router.push("/dashboard");
       else if (user.role === "business") router.push("/business-bookings");
       return;
     }
 
-    // Particular solo puede ver sus rutas permitidas
     const isAllowed = ALLOWED_PATHS.some((p) => pathname.startsWith(p));
     if (!isAllowed) {
       router.push("/empresas");

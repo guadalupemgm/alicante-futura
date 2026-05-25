@@ -9,23 +9,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 type Business = { id: number; name: string; category: string; address: string };
 
 function NuevaReservaForm() {
-  const router = useRouter();
+  const router       = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user }     = useAuth();
 
   const preBusinessId   = Number(searchParams.get("businessId") ?? 0);
   const preBusinessName = searchParams.get("businessName") ?? "";
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [form, setForm] = useState({
-    businessId: preBusinessId,
+    businessId:  preBusinessId,
     serviceName: "",
-    date: "",
-    time: "",
+    date:        "",
+    time:        "",
   });
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [success, setSuccess]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     fetch(API_URL + "/business")
@@ -39,13 +39,11 @@ function NuevaReservaForm() {
       setError("Completa todos los campos.");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
       const res = await fetch(API_URL + "/appointments", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           businessId:  form.businessId,
@@ -56,7 +54,6 @@ function NuevaReservaForm() {
           status:      "pending",
         }),
       });
-
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
@@ -103,7 +100,6 @@ function NuevaReservaForm() {
       <div className="section-card">
         <form onSubmit={handleSubmit}>
           <div className="page-stack">
-
             <div>
               <label className="kpi-card__label" style={{ fontSize: 11 }}>Negocio *</label>
               <select
@@ -114,9 +110,7 @@ function NuevaReservaForm() {
               >
                 <option value={0}>Selecciona un negocio</option>
                 {businesses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} — {b.category}
-                  </option>
+                  <option key={b.id} value={b.id}>{b.name} — {b.category}</option>
                 ))}
               </select>
               {preBusinessName && form.businessId === preBusinessId && (
@@ -163,23 +157,16 @@ function NuevaReservaForm() {
               </div>
             </div>
 
-            {error && (
-              <p style={{ color: "#b91c1c", fontSize: 13, margin: 0 }}>{error}</p>
-            )}
+            {error && <p style={{ color: "#b91c1c", fontSize: 13, margin: 0 }}>{error}</p>}
 
             <div className="modal-actions" style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={() => router.push("/empresas")}
-              >
+              <button type="button" className="secondary-btn" onClick={() => router.push("/empresas")}>
                 Cancelar
               </button>
               <button type="submit" className="primary-btn" disabled={loading}>
                 {loading ? "Enviando..." : "Confirmar reserva"}
               </button>
             </div>
-
           </div>
         </form>
       </div>

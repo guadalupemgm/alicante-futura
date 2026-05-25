@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 
 const clienteMenu = [
-  { label: "Empresas",     href: "/empresas", icon: "bi-shop-window" },
-  { label: "Mis Reservas", href: "/reservas", icon: "bi-calendar2-check" },
+  { label: "Empresas",     href: "/empresas",  icon: "bi-shop-window" },
+  { label: "Mis Reservas", href: "/reservas",  icon: "bi-calendar2-check" },
+  { label: "Nueva Reserva",href: "/reservas/nueva", icon: "bi-calendar2-plus" },
 ];
 
 export default function SidebarCliente() {
-  const pathname = usePathname();
-  const { user } = useAuth();
+  const pathname    = usePathname();
+  const { user, logout } = useAuth();
 
   const initial     = (user?.email?.[0] ?? "U").toUpperCase();
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
@@ -43,6 +44,15 @@ export default function SidebarCliente() {
             </Link>
           );
         })}
+
+        <div className="bf-nav-label" style={{ marginTop: 8 }}>Cuenta</div>
+        <Link
+          href="/settings"
+          className={`bf-nav-item${pathname === "/settings" ? " active" : ""}`}
+        >
+          <i className="bi bi-gear-fill" aria-hidden="true" />
+          <span>Ajustes</span>
+        </Link>
       </nav>
 
       <div className="bf-sidebar-bottom">
@@ -53,6 +63,14 @@ export default function SidebarCliente() {
             <div className="bf-user-role">Cliente</div>
           </div>
         </div>
+        <button
+          className="bf-nav-item"
+          style={{ width: "100%", marginTop: 8, background: "none", border: "none", cursor: "pointer", color: "#ef4444", textAlign: "left" }}
+          onClick={logout}
+        >
+          <i className="bi bi-box-arrow-right" aria-hidden="true" />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </aside>
   );
