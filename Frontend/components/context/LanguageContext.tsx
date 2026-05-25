@@ -22,6 +22,7 @@ export const translations = {
     darkMode:            "Modo oscuro",
     changeLanguage:      "Cambiar idioma",
     logout:              "Cerrar sesión",
+    headerSubtitle:      "Plataforma de gestión de reservas y cobros",
 
     // Sidebar
     dashboard:           "Dashboard",
@@ -32,7 +33,7 @@ export const translations = {
     adminWorkspace:      "Panel de administración",
 
     // Dashboard
-    dashboardTitle:      "Dashboard overview",
+    dashboardTitle:      "Panel de control",
     dashboardSubtitle:   "Control diario de reservas, actividad y pagos.",
     totalBookings:       "Total reservas",
     totalBookingsSub:    "Registros en base de datos",
@@ -94,7 +95,7 @@ export const translations = {
     filterAll:           "Ver todas",
 
     // Customers
-    customersTitle:      "Customer directory",
+    customersTitle:      "Listado de clientes",
     customersSubtitle:   "Gestión visual de clientes y próximas reservas.",
     newCustomer:         "Nuevo cliente",
     searchCustomer:      "Buscar cliente...",
@@ -217,6 +218,7 @@ export const translations = {
   },
 
   en: {
+    headerSubtitle:      "Booking and payment management platform",
     darkMode:            "Dark mode",
     changeLanguage:      "Change language",
     logout:              "Log out",
@@ -402,6 +404,7 @@ export const translations = {
   },
 
   fr: {
+    headerSubtitle:      "Plateforme de gestion des réservations et des paiements",
     darkMode:            "Mode sombre",
     changeLanguage:      "Changer de langue",
     logout:              "Se déconnecter",
