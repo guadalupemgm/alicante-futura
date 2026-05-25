@@ -4,6 +4,7 @@ export enum UserRole {
   ADMIN = 'admin',
   BUSINESS = 'business',
   CUSTOMER = 'customer',
+  PARTICULAR = 'particular',
 }
 
 @Entity()
@@ -20,8 +21,14 @@ export class User {
   @Column()
   password!: string;
 
+  @Column({ nullable: true })
+  name!: string;
+
+  @Column({ nullable: true })
+  phone!: string;
+
   @Column({ default: UserRole.ADMIN })
-  role!: UserRole;
+  role!: string;
 
   @Column({ default: true })
   isActive!: boolean;

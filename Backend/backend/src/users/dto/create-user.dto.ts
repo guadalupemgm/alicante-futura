@@ -2,12 +2,24 @@ import { IsString, MinLength, IsEmail, IsOptional, IsNumber } from 'class-valida
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserDto {
+  @IsOptional()
+  @IsString()
+  username?: string;
+
   @IsEmail()
   email!: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(4)
   password!: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
   @IsOptional()
   role?: UserRole;
@@ -15,4 +27,7 @@ export class CreateUserDto {
   @IsOptional()
   @IsNumber()
   businessId?: number;
+
+  @IsOptional()
+  isActive?: boolean;
 }
