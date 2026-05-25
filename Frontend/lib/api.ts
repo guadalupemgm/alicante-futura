@@ -99,3 +99,48 @@ export async function getCustomers(): Promise<Customer[]> {
   if (!res.ok) throw new Error("Error al obtener los clientes");
   return res.json();
 }
+
+export interface CreateCustomerDto {
+  name: string;
+  email: string;
+  phone: string;
+  business?: string;
+}
+
+export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Error del backend:", errorText);
+    throw new Error("Error al crear el cliente");
+  }
+  return res.json();
+}
+
+export interface CreateBusinessDto {
+  name: string;
+  address: string;
+  category?: string;
+  phone?: string;
+  status?: string;
+  ownerEmail: string;
+  ownerPassword: string;
+}
+
+export async function createBusiness(data: CreateBusinessDto): Promise<Business> {
+  const res = await fetch(`${API_URL}/business`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Error del backend:", errorText);
+    throw new Error("Error al crear el negocio");
+  }
+  return res.json();
+}

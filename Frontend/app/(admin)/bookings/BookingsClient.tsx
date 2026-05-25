@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
-import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
+import type { Booking, BookingStatus, CreateBookingDto, Business, Customer, CreateCustomerDto, CreateBusinessDto } from "@/lib/api";
+import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers, createCustomer, createBusiness } from "@/lib/api";
 import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
@@ -15,6 +15,14 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const [editingId, setEditingId]         = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [message, setMessage]             = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Sub-modales de creación rápida
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showNewBusiness, setShowNewBusiness] = useState(false);
+  const [newCustomerForm, setNewCustomerForm] = useState<CreateCustomerDto>({ name: "", email: "", phone: "", business: "" });
+  const [newBusinessForm, setNewBusinessForm] = useState<CreateBusinessDto>({ name: "", address: "", category: "", phone: "", status: "active", ownerEmail: "", ownerPassword: "" });
+  const [subModalError, setSubModalError] = useState<string | null>(null);
+  const [subModalLoading, setSubModalLoading] = useState(false);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -60,6 +68,48 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
       setEditingId(null);
     } catch {
       setMessage({ text: t("errorMsg"), type: "error" });
+    }
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomerForm.name.trim() || !newCustomerForm.email.trim() || !newCustomerForm.phone.trim()) {
+      setSubModalError("Nombre, email y teléfono son obligatorios.");
+      return;
+    }
+    setSubModalLoading(true);
+    setSubModalError(null);
+    try {
+      const created = await createCustomer(newCustomerForm);
+      setCustomers(prev => [...prev, created]);
+      setForm(f => ({ ...f, customerId: created.id }));
+      setShowNewCustomer(false);
+      setNewCustomerForm({ name: "", email: "", phone: "", business: "" });
+      setMessage({ text: "Cliente creado correctamente", type: "success" });
+    } catch {
+      setSubModalError("Error al crear el cliente. Inténtalo de nuevo.");
+    } finally {
+      setSubModalLoading(false);
+    }
+  };
+
+  const handleCreateBusiness = async () => {
+    if (!newBusinessForm.name.trim() || !newBusinessForm.address.trim() || !newBusinessForm.ownerEmail.trim() || !newBusinessForm.ownerPassword.trim()) {
+      setSubModalError("Nombre, dirección, email y contraseña del propietario son obligatorios.");
+      return;
+    }
+    setSubModalLoading(true);
+    setSubModalError(null);
+    try {
+      const created = await createBusiness(newBusinessForm);
+      setBusinesses(prev => [...prev, created]);
+      setForm(f => ({ ...f, businessId: created.id }));
+      setShowNewBusiness(false);
+      setNewBusinessForm({ name: "", address: "", category: "", phone: "", status: "active", ownerEmail: "", ownerPassword: "" });
+      setMessage({ text: "Negocio creado correctamente", type: "success" });
+    } catch {
+      setSubModalError("Error al crear el negocio. Inténtalo de nuevo.");
+    } finally {
+      setSubModalLoading(false);
     }
   };
 
@@ -247,19 +297,39 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("businessLabel")}</label>
-                  <select className="select" value={form.businessId}
-                    onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
-                    <option value={0}>{t("selectBusiness")}</option>
-                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select className="select" style={{ flex: 1 }} value={form.businessId}
+                      onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
+                      <option value={0}>{t("selectBusiness")}</option>
+                      {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      style={{ padding: "6px 10px", whiteSpace: "nowrap", fontSize: "12px" }}
+                      onClick={() => { setSubModalError(null); setShowNewBusiness(true); }}
+                    >
+                      + Nuevo
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("clientLabel")}</label>
-                  <select className="select" value={form.customerId}
-                    onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
-                    <option value={0}>{t("selectClient")}</option>
-                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select className="select" style={{ flex: 1 }} value={form.customerId}
+                      onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
+                      <option value={0}>{t("selectClient")}</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      style={{ padding: "6px 10px", whiteSpace: "nowrap", fontSize: "12px" }}
+                      onClick={() => { setSubModalError(null); setShowNewCustomer(true); }}
+                    >
+                      + Nuevo
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("statusLabel")}</label>
@@ -281,6 +351,114 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Nuevo Cliente */}
+      {showNewCustomer && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal-card" style={{ maxWidth: "420px" }}>
+            <h3 className="modal-title">Nuevo cliente</h3>
+            <p className="modal-text">Rellena los datos del nuevo cliente. Se guardará automáticamente.</p>
+            <div className="page-stack">
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+                <input className="input" type="text" placeholder="Nombre completo"
+                  value={newCustomerForm.name}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email *</label>
+                <input className="input" type="email" placeholder="correo@ejemplo.com"
+                  value={newCustomerForm.email}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono *</label>
+                <input className="input" type="tel" placeholder="612 345 678"
+                  value={newCustomerForm.phone}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Negocio (opcional)</label>
+                <input className="input" type="text" placeholder="Nombre del negocio"
+                  value={newCustomerForm.business ?? ""}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, business: e.target.value })} />
+              </div>
+              {subModalError && (
+                <p style={{ color: "#b91c1c", fontSize: "13px", margin: 0 }}>{subModalError}</p>
+              )}
+              <div className="modal-actions" style={{ marginTop: "16px" }}>
+                <button type="button" className="secondary-btn" onClick={() => { setShowNewCustomer(false); setSubModalError(null); }}>
+                  Cancelar
+                </button>
+                <button type="button" className="primary-btn" disabled={subModalLoading} onClick={handleCreateCustomer}>
+                  {subModalLoading ? "Guardando..." : "Crear cliente"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Nuevo Negocio */}
+      {showNewBusiness && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal-card" style={{ maxWidth: "420px" }}>
+            <h3 className="modal-title">Nuevo negocio</h3>
+            <p className="modal-text">Rellena los datos del nuevo negocio. Se guardará automáticamente.</p>
+            <div className="page-stack">
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Nombre *</label>
+                <input className="input" type="text" placeholder="Nombre del negocio"
+                  value={newBusinessForm.name}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Dirección *</label>
+                <input className="input" type="text" placeholder="Calle, número, ciudad"
+                  value={newBusinessForm.address}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, address: e.target.value })} />
+              </div>
+              <div className="form-grid">
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Categoría</label>
+                  <input className="input" type="text" placeholder="Peluquería, Spa..."
+                    value={newBusinessForm.category ?? ""}
+                    onChange={e => setNewBusinessForm({ ...newBusinessForm, category: e.target.value })} />
+                </div>
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>Teléfono</label>
+                  <input className="input" type="tel" placeholder="612 345 678"
+                    value={newBusinessForm.phone ?? ""}
+                    onChange={e => setNewBusinessForm({ ...newBusinessForm, phone: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Email del propietario *</label>
+                <input className="input" type="email" placeholder="propietario@ejemplo.com"
+                  value={newBusinessForm.ownerEmail}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, ownerEmail: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>Contraseña del propietario *</label>
+                <input className="input" type="password" placeholder="Mínimo 6 caracteres"
+                  value={newBusinessForm.ownerPassword}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, ownerPassword: e.target.value })} />
+              </div>
+              {subModalError && (
+                <p style={{ color: "#b91c1c", fontSize: "13px", margin: 0 }}>{subModalError}</p>
+              )}
+              <div className="modal-actions" style={{ marginTop: "16px" }}>
+                <button type="button" className="secondary-btn" onClick={() => { setShowNewBusiness(false); setSubModalError(null); }}>
+                  Cancelar
+                </button>
+                <button type="button" className="primary-btn" disabled={subModalLoading} onClick={handleCreateBusiness}>
+                  {subModalLoading ? "Guardando..." : "Crear negocio"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
