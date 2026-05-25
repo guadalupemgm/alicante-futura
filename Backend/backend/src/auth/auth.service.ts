@@ -2,12 +2,14 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { CustomersService } from '../customers/customers.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private customersService: CustomersService,
   ) {}
 
   async login(identifier: string, password: string) {
@@ -30,6 +32,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       businessId: user.businessId,
+      customerId: user.customerId,
     };
 
     return {
@@ -39,48 +42,52 @@ export class AuthService {
         email: user.email,
         role: user.role,
         businessId: user.businessId,
+        customerId: user.customerId,
       },
     };
   }
 
-  // Registro de nuevos usuarios (clientes particulares)
-  async register(body: { email: string; password: string; name: string; phone: string; role: any }) {
-    const { email, password, name, phone, role } = body;
+  async register(body: { email: string; password: string; name: string; phone: string }) {
+    const { email, password, name, phone } = body;
 
-    // Controlamos que el email no esté ya en uso
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
       throw new BadRequestException('El correo electrónico ya está registrado');
     }
 
-    // Llamamos al método create de usersService pasándole la contraseña en texto plano, 
-    // ya que el propio servicio de usuarios se encarga de aplicar el hash con bcrypt
+    // 1. Crear el cliente en la tabla customers
+    const newCustomer = await this.customersService.create({
+      name,
+      email,
+      phone,
+    });
+
+    // 2. Crear el usuario vinculado al cliente con rol customer
     const newUser = await this.usersService.create({
       email,
-      password, // Se encarga UsersService de encriptarla
-      username: email, // Usamos el email como username por defecto
+      password,
+      username: email,
       name,
       phone,
-      role: role || 'particular', 
-      isActive: true, 
-    } as any); // Ponemos el cast as any temporal por si el DTO valida tipos estrictos de roles
+      role: 'customer',
+      isActive: true,
+      customerId: newCustomer.id,
+    } as any);
 
-    // Generamos el payload para devolver el token directamente
     const payload = {
       sub: newUser.id,
       email: newUser.email,
       role: newUser.role,
-      businessId: newUser.businessId,
+      customerId: newUser.customerId,
     };
 
-    // Retornamos el token y los datos para que el front haga login automático
     return {
       access_token: this.jwtService.sign(payload),
       user: {
         id: newUser.id,
         email: newUser.email,
         role: newUser.role,
-        businessId: newUser.businessId,
+        customerId: newUser.customerId,
       },
     };
   }

@@ -32,7 +32,7 @@ export default function Header() {
     <header className="admin-header">
       <div>
         <h1 className="admin-header__title">BookFlow</h1>
-        <p className="admin-header__subtitle">Plataforma de gestión de reservas y cobros</p>
+        <p className="admin-header__subtitle">{t("headerSubtitle")}</p>
       </div>
 
       <div className="admin-header__actions">

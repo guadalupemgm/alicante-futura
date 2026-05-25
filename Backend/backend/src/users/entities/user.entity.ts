@@ -4,7 +4,6 @@ export enum UserRole {
   ADMIN = 'admin',
   BUSINESS = 'business',
   CUSTOMER = 'customer',
-  PARTICULAR = 'particular',
 }
 
 @Entity()
@@ -27,7 +26,7 @@ export class User {
   @Column({ nullable: true })
   phone!: string;
 
-  @Column({ default: UserRole.ADMIN })
+  @Column({ default: UserRole.CUSTOMER })
   role!: string;
 
   @Column({ default: true })
@@ -35,4 +34,7 @@ export class User {
 
   @Column({ nullable: true })
   businessId!: number;
+
+  @Column({ nullable: true })
+  customerId!: number;
 }
