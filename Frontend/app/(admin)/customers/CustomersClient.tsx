@@ -5,6 +5,7 @@ import { useLanguage } from "@/components/context/LanguageContext";
 import Pagination from "@/components/ui/Pagination";
 
 const PER_PAGE = 9;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface Customer {
   id: number;
@@ -35,10 +36,10 @@ export default function CustomersClient() {
   const [page, setPage]                 = useState(1);
 
   useEffect(() => {
-    fetch("http://localhost:3000/customers")
+    fetch(`${API_URL}/customers`)
       .then((res) => res.json())
       .then((data) => setCustomers(Array.isArray(data) ? data : []));
-    fetch("http://localhost:3000/appointments")
+    fetch(`${API_URL}/appointments`)
       .then((res) => res.json())
       .then((data) => setAppointments(Array.isArray(data) ? data : []));
   }, []);
@@ -50,18 +51,18 @@ export default function CustomersClient() {
     const future = appointments
       .filter((a) => a.customerId === customerId && a.date >= today)
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-    if (future.length === 0) return "Sin reservas próximas";
+    if (future.length === 0) return t("noNextBooking");
     const next = future[0];
     return next.date + " · " + next.time;
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!form.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
-    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) newErrors.phone = "El teléfono debe tener 9 dígitos";
-    if (!form.email.trim()) newErrors.email = "El email es obligatorio";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "El email no es válido";
+    if (!form.name.trim()) newErrors.name = t("errName");
+    if (!form.phone.trim()) newErrors.phone = t("errPhone");
+    else if (!/^\d{9}$/.test(form.phone.replace(/\s/g, ""))) newErrors.phone = t("errPhoneFormat");
+    if (!form.email.trim()) newErrors.email = t("errEmail");
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = t("errEmailFormat");
     return newErrors;
   };
 
@@ -69,7 +70,7 @@ export default function CustomersClient() {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
     setErrors({});
-    const res = await fetch("http://localhost:3000/customers", {
+    const res = await fetch(`${API_URL}/customers`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
@@ -79,7 +80,7 @@ export default function CustomersClient() {
       setCustomers([...customers, newCustomer]);
       setShowModal(false);
       setForm({ name: "", phone: "", email: "" });
-      setSuccess("Cliente creado correctamente");
+      setSuccess(t("customerCreated"));
       setTimeout(() => setSuccess(""), 3000);
     }
   };
@@ -97,8 +98,8 @@ export default function CustomersClient() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Customer directory</h2>
-          <p>Gestión visual de clientes y próximas reservas.</p>
+          <h2>{t("customersTitle")}</h2>
+          <p>{t("customersSubtitle")}</p>
         </div>
         <button className="primary-btn" type="button" onClick={() => setShowModal(true)}>
           {t("newCustomer")}
@@ -124,7 +125,7 @@ export default function CustomersClient() {
             <p className="customer-meta">{customer.phone}</p>
             <p className="customer-meta">{customer.email}</p>
             <div className="customer-next">
-              <strong>Próxima reserva:</strong> {getNextBooking(customer.id)}
+              <strong>{t("nextBooking")}</strong> {getNextBooking(customer.id)}
             </div>
           </div>
         ))}
@@ -137,12 +138,14 @@ export default function CustomersClient() {
           <div className="modal-card">
             <h3 className="modal-title">{t("newCustomerModal")}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              <input className="input" placeholder="Nombre" value={form.name}
+              <input className="input" placeholder={t("namePlaceholder")} value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })} />
               {errors.name && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.name}</p>}
-              <input className="input" placeholder="Teléfono" value={form.phone}
+
+              <input className="input" placeholder={t("phonePlaceholder")} value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               {errors.phone && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.phone}</p>}
+
               <input className="input" placeholder={t("emailPlaceholder")} value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })} />
               {errors.email && <p style={{ color: "red", fontSize: "0.8rem", margin: 0 }}>{errors.email}</p>}
