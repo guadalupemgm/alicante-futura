@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
+const ALLOWED_PATHS = ["/empresas", "/reservas"];
+
+export default function AuthGuardCliente({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -12,19 +18,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    // Sin sesión → login
     if (!user) {
       router.push("/login");
       return;
     }
 
-    // Business solo puede ver /business-bookings
-    if (user.role === "business" && pathname !== "/business-bookings") {
-      router.push("/business-bookings");
+    // Solo clientes pueden acceder a esta sección
+    if (user.role !== "customer") {
+      if (user.role === "admin") router.push("/dashboard");
+      else if (user.role === "business") router.push("/business-bookings");
+      return;
     }
 
-    // Customer solo puede ver su zona
-    if (user.role === "customer" && !pathname.startsWith("/empresas") && !pathname.startsWith("/reservas")) {
+    // Particular solo puede ver sus rutas permitidas
+    const isAllowed = ALLOWED_PATHS.some((p) => pathname.startsWith(p));
+    if (!isAllowed) {
       router.push("/empresas");
     }
   }, [user, isLoading, router, pathname]);

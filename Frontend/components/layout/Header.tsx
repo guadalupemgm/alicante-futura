@@ -15,7 +15,7 @@ export default function Header() {
 
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
   const initial     = displayName[0]?.toUpperCase() ?? "U";
-  const roleLabel   = user?.role === "business" ? "Negocio" : "Admin";
+  const roleLabel   = user?.role === "business" ? "Negocio" : user?.role === "customer" ? "Cliente" : "Admin";
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

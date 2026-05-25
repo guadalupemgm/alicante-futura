@@ -48,9 +48,9 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      // Enviamos los datos al backend (añadiendo el rol explícito de cliente particular si es necesario)
+      // Enviamos los datos al backend con el rol de cliente
       if (register) {
-        await register({ name, email, phone, password, role: "particular" });
+        await register({ name, email, phone, password, role: "customer" });
       } else {
         // Si aún no se tiene el contexto listo, se puede hacer un fetch directo aquí:
         // const res = await fetch('/api/register', { ... })
@@ -107,7 +107,7 @@ export default function LoginPage() {
           {isRegister ? "Crear cuenta" : "Iniciar sesión"}
         </div>
         <div className={s.formSub}>
-          {isRegister ? "Regístrate como cliente particular" : "Accede a tu panel"}
+          {isRegister ? "Regístrate como cliente" : "Accede a tu panel"}
         </div>
 
         {!isRegister ? (
