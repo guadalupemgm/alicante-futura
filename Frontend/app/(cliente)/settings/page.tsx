@@ -8,34 +8,31 @@ import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
 export default function SettingsPage() {
   const { user, logout, changePassword } = useAuth();
   const { theme, toggleTheme }           = useTheme();
-  const { lang, setLang }                = useLanguage();
+  const { lang, setLang, t }             = useLanguage();
 
-  // Cambiar contraseña
-  const [pwForm, setPwForm]   = useState({ current: "", nueva: "", confirmar: "" });
-  const [pwMsg, setPwMsg]     = useState<{ text: string; ok: boolean } | null>(null);
+  const [pwForm, setPwForm]       = useState({ current: "", nueva: "", confirmar: "" });
+  const [pwMsg, setPwMsg]         = useState<{ text: string; ok: boolean } | null>(null);
   const [pwLoading, setPwLoading] = useState(false);
-
-  // 2FA (simulado — visual only)
-  const [twoFA, setTwoFA]     = useState(false);
+  const [twoFA, setTwoFA]         = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwForm.nueva !== pwForm.confirmar) {
-      setPwMsg({ text: "Las contraseñas no coinciden.", ok: false });
+      setPwMsg({ text: t("settingsPwMismatch"), ok: false });
       return;
     }
     if (pwForm.nueva.length < 6) {
-      setPwMsg({ text: "Mínimo 6 caracteres.", ok: false });
+      setPwMsg({ text: t("settingsPwMinLen"), ok: false });
       return;
     }
     setPwLoading(true);
     try {
       await changePassword(pwForm.nueva);
-      setPwMsg({ text: "Contraseña actualizada correctamente.", ok: true });
+      setPwMsg({ text: t("settingsPwUpdated"), ok: true });
       setPwForm({ current: "", nueva: "", confirmar: "" });
     } catch {
-      setPwMsg({ text: "Error al cambiar la contraseña.", ok: false });
+      setPwMsg({ text: t("settingsPwError"), ok: false });
     } finally {
       setPwLoading(false);
     }
@@ -45,8 +42,8 @@ export default function SettingsPage() {
     <div className="page-stack" style={{ maxWidth: 600, margin: "0 auto" }}>
       <section className="page-hero">
         <div>
-          <h2>Ajustes</h2>
-          <p>Gestiona tu cuenta y preferencias.</p>
+          <h2>{t("settingsTitle")}</h2>
+          <p>{t("settingsSubtitle")}</p>
         </div>
       </section>
 
@@ -54,7 +51,7 @@ export default function SettingsPage() {
       <div className="section-card">
         <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
           <i className="bi bi-translate" style={{ marginRight: 8 }} />
-          Idioma
+          {t("settingsLanguage")}
         </h3>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {LANGUAGES.map((l) => (
@@ -76,10 +73,10 @@ export default function SettingsPage() {
       <div className="section-card">
         <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
           <i className="bi bi-moon-stars-fill" style={{ marginRight: 8 }} />
-          Apariencia
+          {t("settingsAppearance")}
         </h3>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>Modo oscuro</span>
+          <span>{t("settingsDarkMode")}</span>
           <button
             className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
             onClick={toggleTheme}
@@ -93,12 +90,12 @@ export default function SettingsPage() {
       <div className="section-card">
         <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
           <i className="bi bi-lock-fill" style={{ marginRight: 8 }} />
-          Cambiar contraseña
+          {t("settingsPassword")}
         </h3>
         <form onSubmit={handleChangePassword}>
           <div className="page-stack">
             <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>Contraseña actual</label>
+              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsCurrentPw")}</label>
               <input
                 className="input"
                 type="password"
@@ -109,22 +106,22 @@ export default function SettingsPage() {
               />
             </div>
             <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>Nueva contraseña</label>
+              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsNewPw")}</label>
               <input
                 className="input"
                 type="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder={t("settingsNewPwMin")}
                 value={pwForm.nueva}
                 onChange={(e) => setPwForm({ ...pwForm, nueva: e.target.value })}
                 required
               />
             </div>
             <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>Confirmar nueva contraseña</label>
+              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsConfirmPw")}</label>
               <input
                 className="input"
                 type="password"
-                placeholder="Repite la contraseña"
+                placeholder={t("settingsRepeatPw")}
                 value={pwForm.confirmar}
                 onChange={(e) => setPwForm({ ...pwForm, confirmar: e.target.value })}
                 required
@@ -137,31 +134,33 @@ export default function SettingsPage() {
             )}
             <div>
               <button type="submit" className="primary-btn" disabled={pwLoading}>
-                {pwLoading ? "Guardando..." : "Actualizar contraseña"}
+                {pwLoading ? t("settingsSaving") : t("settingsUpdatePw")}
               </button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* Autenticación de dos pasos */}
+      {/* 2FA */}
       <div className="section-card">
         <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
           <i className="bi bi-shield-lock-fill" style={{ marginRight: 8 }} />
-          Autenticación en dos pasos
+          {t("settings2FA")}
         </h3>
         <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          Añade una capa extra de seguridad a tu cuenta. Recibirás un código cada vez que inicies sesión.
+          {t("settings2FADesc")}
         </p>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 14 }}>
-            Estado: <strong style={{ color: twoFA ? "#15803d" : "var(--muted)" }}>{twoFA ? "Activada" : "Desactivada"}</strong>
+            {t("settings2FAStatus")} <strong style={{ color: twoFA ? "#15803d" : "var(--muted)" }}>
+              {twoFA ? t("settings2FAActive") : t("settings2FAInactive")}
+            </strong>
           </span>
           <button
             className={twoFA ? "secondary-btn" : "primary-btn"}
             onClick={() => setShow2FAModal(true)}
           >
-            {twoFA ? "Desactivar" : "Activar 2FA"}
+            {twoFA ? t("settings2FADisable") : t("settings2FAEnable")}
           </button>
         </div>
       </div>
@@ -170,13 +169,13 @@ export default function SettingsPage() {
       <div className="section-card">
         <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
           <i className="bi bi-box-arrow-right" style={{ marginRight: 8 }} />
-          Sesión
+          {t("settingsSession")}
         </h3>
         <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          Cierra tu sesión en este dispositivo.
+          {t("settingsSessionDesc")}
         </p>
         <button className="danger-btn" onClick={logout}>
-          Cerrar sesión
+          {t("settingsLogout")}
         </button>
       </div>
 
@@ -185,22 +184,20 @@ export default function SettingsPage() {
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3 className="modal-title">
-              {twoFA ? "Desactivar" : "Activar"} autenticación en dos pasos
+              {twoFA ? t("modal2FADisableTitle") : t("modal2FAEnableTitle")} {t("modal2FATitle")}
             </h3>
             <p className="modal-text">
-              {twoFA
-                ? "¿Seguro que quieres desactivar la autenticación en dos pasos? Tu cuenta será menos segura."
-                : "Al activar 2FA, recibirás un código por email cada vez que inicies sesión. ¿Continuar?"}
+              {twoFA ? t("modal2FADisableMsg") : t("modal2FAEnableMsg")}
             </p>
             <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setShow2FAModal(false)}>
-                Cancelar
+                {t("cancel")}
               </button>
               <button
                 className={twoFA ? "danger-btn" : "primary-btn"}
                 onClick={() => { setTwoFA(!twoFA); setShow2FAModal(false); }}
               >
-                {twoFA ? "Sí, desactivar" : "Sí, activar"}
+                {twoFA ? t("modal2FAConfirmDisable") : t("modal2FAConfirmEnable")}
               </button>
             </div>
           </div>

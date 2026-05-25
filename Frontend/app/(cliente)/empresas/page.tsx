@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Pagination from "@/components/ui/Pagination";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 const PER_PAGE = 8;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -21,6 +22,7 @@ type Business = {
 
 export default function EmpresasClientePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -57,25 +59,22 @@ export default function EmpresasClientePage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Empresas disponibles</h2>
-          <p>Encuentra un negocio y reserva tu cita al instante.</p>
+          <h2>{t("empresasTitle")}</h2>
+          <p>{t("empresasSubtitle")}</p>
         </div>
-        <button
-          className="primary-btn"
-          onClick={() => router.push("/reservas/nueva")}
-        >
-          + Nueva Reserva
+        <button className="primary-btn" onClick={() => router.push("/reservas/nueva")}>
+          {t("newReservation")}
         </button>
       </section>
 
       <section className="section-card">
         <div className="panel-title-row">
-          <h3 className="panel-title">Negocios activos</h3>
+          <h3 className="panel-title">{t("activeBusinesses")}</h3>
           <input
             className="input"
             style={{ maxWidth: 260, marginBottom: 0 }}
             type="text"
-            placeholder="Buscar por nombre, categoría..."
+            placeholder={t("searchBusinessPlaceholder")}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
@@ -83,21 +82,21 @@ export default function EmpresasClientePage() {
 
         {loading ? (
           <p style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>
-            Cargando negocios...
+            {t("loadingBusinesses")}
           </p>
         ) : paginated.length === 0 ? (
           <p style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>
-            No se encontraron negocios.
+            {t("noBusinessesFound")}
           </p>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Negocio</th>
-                <th>Categoría</th>
-                <th>Teléfono</th>
-                <th>Dirección</th>
-                <th style={{ textAlign: "right" }}>Reservar</th>
+                <th>{t("businessCol")}</th>
+                <th>{t("categoryCol")}</th>
+                <th>{t("phoneCol")}</th>
+                <th>{t("addressCol")}</th>
+                <th style={{ textAlign: "right" }}>{t("bookCol")}</th>
               </tr>
             </thead>
             <tbody>
@@ -116,7 +115,7 @@ export default function EmpresasClientePage() {
                       onClick={() => handleReservar(b)}
                     >
                       <i className="bi bi-calendar2-plus" style={{ marginRight: 6 }} />
-                      Reservar
+                      {t("bookNow")}
                     </button>
                   </td>
                 </tr>

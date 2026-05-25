@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,6 +13,7 @@ function NuevaReservaForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const { user }     = useAuth();
+  const { t }        = useLanguage();
 
   const preBusinessId   = Number(searchParams.get("businessId") ?? 0);
   const preBusinessName = searchParams.get("businessName") ?? "";
@@ -36,7 +38,7 @@ function NuevaReservaForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.businessId || !form.serviceName || !form.date || !form.time) {
-      setError("Completa todos los campos.");
+      setError(t("fillAllFields"));
       return;
     }
     setLoading(true);
@@ -57,7 +59,7 @@ function NuevaReservaForm() {
       if (!res.ok) throw new Error();
       setSuccess(true);
     } catch {
-      setError("Error al crear la reserva. Inténtalo de nuevo.");
+      setError(t("errorCrearReserva"));
     } finally {
       setLoading(false);
     }
@@ -68,16 +70,16 @@ function NuevaReservaForm() {
       <div className="page-stack" style={{ maxWidth: 480, margin: "0 auto", paddingTop: "2rem" }}>
         <div className="section-card" style={{ textAlign: "center", padding: "2.5rem" }}>
           <div style={{ fontSize: 48, marginBottom: "1rem" }}>✅</div>
-          <h3 style={{ marginBottom: "0.5rem" }}>¡Reserva creada!</h3>
+          <h3 style={{ marginBottom: "0.5rem" }}>{t("reservaCreada")}</h3>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem" }}>
-            Tu cita está pendiente de confirmación por el negocio.
+            {t("reservaCreadaMsg")}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
             <button className="secondary-btn" onClick={() => router.push("/reservas")}>
-              Ver mis reservas
+              {t("verMisReservas")}
             </button>
             <button className="primary-btn" onClick={() => router.push("/empresas")}>
-              Volver a empresas
+              {t("volverEmpresas")}
             </button>
           </div>
         </div>
@@ -89,11 +91,11 @@ function NuevaReservaForm() {
     <div className="page-stack" style={{ maxWidth: 520, margin: "0 auto", paddingTop: "2rem" }}>
       <section className="page-hero" style={{ marginBottom: 0 }}>
         <div>
-          <h2>Nueva Reserva</h2>
-          <p>Elige un negocio, el servicio y la fecha.</p>
+          <h2>{t("nuevaReservaTitle")}</h2>
+          <p>{t("nuevaReservaSubtitle")}</p>
         </div>
         <button className="secondary-btn" onClick={() => router.push("/empresas")}>
-          ← Volver
+          {t("goBack")}
         </button>
       </section>
 
@@ -101,14 +103,14 @@ function NuevaReservaForm() {
         <form onSubmit={handleSubmit}>
           <div className="page-stack">
             <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>Negocio *</label>
+              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("businessFieldLabel")}</label>
               <select
                 className="select"
                 value={form.businessId}
                 onChange={(e) => setForm({ ...form, businessId: Number(e.target.value) })}
                 required
               >
-                <option value={0}>Selecciona un negocio</option>
+                <option value={0}>{t("selectBusinessOption")}</option>
                 {businesses.map((b) => (
                   <option key={b.id} value={b.id}>{b.name} — {b.category}</option>
                 ))}
@@ -116,17 +118,17 @@ function NuevaReservaForm() {
               {preBusinessName && form.businessId === preBusinessId && (
                 <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
                   <i className="bi bi-check-circle-fill" style={{ color: "var(--success-text)", marginRight: 4 }} />
-                  {preBusinessName} seleccionado
+                  {preBusinessName} {t("preselectedBusiness")}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>Servicio *</label>
+              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("serviceFieldLabel")}</label>
               <input
                 className="input"
                 type="text"
-                placeholder="Ej: Corte de pelo, Masaje, Consulta..."
+                placeholder={t("servicePlaceholder")}
                 value={form.serviceName}
                 onChange={(e) => setForm({ ...form, serviceName: e.target.value })}
                 required
@@ -135,7 +137,7 @@ function NuevaReservaForm() {
 
             <div className="form-grid">
               <div>
-                <label className="kpi-card__label" style={{ fontSize: 11 }}>Fecha *</label>
+                <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("dateFieldLabel")}</label>
                 <input
                   className="input"
                   type="date"
@@ -146,7 +148,7 @@ function NuevaReservaForm() {
                 />
               </div>
               <div>
-                <label className="kpi-card__label" style={{ fontSize: 11 }}>Hora *</label>
+                <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("timeFieldLabel")}</label>
                 <input
                   className="input"
                   type="time"
@@ -161,10 +163,10 @@ function NuevaReservaForm() {
 
             <div className="modal-actions" style={{ marginTop: 8 }}>
               <button type="button" className="secondary-btn" onClick={() => router.push("/empresas")}>
-                Cancelar
+                {t("cancel")}
               </button>
               <button type="submit" className="primary-btn" disabled={loading}>
-                {loading ? "Enviando..." : "Confirmar reserva"}
+                {loading ? t("sendingText") : t("confirmReservation")}
               </button>
             </div>
           </div>

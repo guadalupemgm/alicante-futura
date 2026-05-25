@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
-
-const clienteMenu = [
-  { label: "Empresas",     href: "/empresas",  icon: "bi-shop-window" },
-  { label: "Mis Reservas", href: "/reservas",  icon: "bi-calendar2-check" },
-  { label: "Nueva Reserva",href: "/reservas/nueva", icon: "bi-calendar2-plus" },
-];
+import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function SidebarCliente() {
-  const pathname    = usePathname();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
+
+  const clienteMenu = [
+    { labelKey: "myBusinesses" as const, href: "/empresas",  icon: "bi-shop-window" },
+    { labelKey: "myBookings"   as const, href: "/reservas",  icon: "bi-calendar2-check" },
+  ];
 
   const initial     = (user?.email?.[0] ?? "U").toUpperCase();
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
@@ -24,15 +25,16 @@ export default function SidebarCliente() {
           <div className="bf-sidebar-mark">B</div>
           <div>
             <div className="bf-sidebar-name">BookFlow</div>
-            <div className="bf-sidebar-role">Portal de reservas</div>
+            <div className="bf-sidebar-role">{t("bookingPortal")}</div>
           </div>
         </div>
       </div>
 
       <nav className="bf-sidebar-nav">
-        <div className="bf-nav-label">Mi espacio</div>
+        <div className="bf-nav-label">{t("mySpace")}</div>
         {clienteMenu.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          // Exact match para /reservas para evitar que active también /reservas/nueva
+          const active = pathname === item.href;
           return (
             <Link
               key={item.href}
@@ -40,18 +42,18 @@ export default function SidebarCliente() {
               className={`bf-nav-item${active ? " active" : ""}`}
             >
               <i className={`bi ${item.icon}`} aria-hidden="true" />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </Link>
           );
         })}
 
-        <div className="bf-nav-label" style={{ marginTop: 8 }}>Cuenta</div>
+        <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("account")}</div>
         <Link
           href="/settings"
           className={`bf-nav-item${pathname === "/settings" ? " active" : ""}`}
         >
           <i className="bi bi-gear-fill" aria-hidden="true" />
-          <span>Ajustes</span>
+          <span>{t("settings")}</span>
         </Link>
       </nav>
 
@@ -60,7 +62,7 @@ export default function SidebarCliente() {
           <div className="bf-user-avatar">{initial}</div>
           <div>
             <div className="bf-user-name">{displayName}</div>
-            <div className="bf-user-role">Cliente</div>
+            <div className="bf-user-role">{t("clientRole")}</div>
           </div>
         </div>
         <button
@@ -69,7 +71,7 @@ export default function SidebarCliente() {
           onClick={logout}
         >
           <i className="bi bi-box-arrow-right" aria-hidden="true" />
-          <span>Cerrar sesión</span>
+          <span>{t("logout")}</span>
         </button>
       </div>
     </aside>

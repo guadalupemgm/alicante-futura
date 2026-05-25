@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -18,25 +19,25 @@ type Booking = {
   serviceName: string;
 };
 
-const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending:   "Pendiente",
-  confirmed: "Confirmada",
-  paid:      "Pagada",
-  cancelled: "Cancelada",
-};
-
 export default function MisReservasPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading]   = useState(true);
+
+  const STATUS_LABEL: Record<BookingStatus, string> = {
+    pending:   t("statusPending"),
+    confirmed: t("statusConfirmed"),
+    paid:      t("statusPaid"),
+    cancelled: t("statusCancelled"),
+  };
 
   useEffect(() => {
     fetch(API_URL + "/appointments")
       .then((r) => r.json())
       .then((d) => {
         const all = Array.isArray(d) ? d : [];
-        // Filtrar solo las reservas del cliente autenticado
         setBookings(all.filter((b: Booking) => b.customerId === user?.customerId));
       })
       .finally(() => setLoading(false));
@@ -46,48 +47,48 @@ export default function MisReservasPage() {
     <div className="page-stack">
       <section className="page-hero">
         <div>
-          <h2>Mis Reservas</h2>
-          <p>Historial de todas tus citas y su estado actual.</p>
+          <h2>{t("misReservasTitle")}</h2>
+          <p>{t("misReservasSubtitle")}</p>
         </div>
         <button
           className="primary-btn"
           onClick={() => router.push("/reservas/nueva")}
         >
-          + Nueva Reserva
+          {t("newReservation")}
         </button>
       </section>
 
       <section className="section-card">
         <div className="panel-title-row">
-          <h3 className="panel-title">Citas</h3>
+          <h3 className="panel-title">{t("appointments")}</h3>
           <span style={{ color: "var(--muted)", fontSize: 14 }}>
-            {bookings.length} reservas
+            {bookings.length} {t("reservasCount")}
           </span>
         </div>
 
         {loading ? (
           <p style={{ padding: "2rem", textAlign: "center", color: "var(--muted)" }}>
-            Cargando...
+            {t("loadingText")}
           </p>
         ) : bookings.length === 0 ? (
           <div style={{ padding: "3rem", textAlign: "center" }}>
             <p style={{ color: "var(--muted)", marginBottom: "1rem" }}>
-              Aún no tienes reservas.
+              {t("noReservas")}
             </p>
             <button
               className="primary-btn"
               onClick={() => router.push("/empresas")}
             >
-              Explorar negocios
+              {t("exploreBusinesses")}
             </button>
           </div>
         ) : (
           <table className="data-table">
             <thead>
               <tr>
-                <th>Servicio</th>
-                <th>Fecha y hora</th>
-                <th>Estado</th>
+                <th>{t("service")}</th>
+                <th>{t("dateTime")}</th>
+                <th>{t("status")}</th>
               </tr>
             </thead>
             <tbody>

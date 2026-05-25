@@ -45,7 +45,7 @@ export default function Sidebar() {
       <nav className="bf-sidebar-nav">
         {isBusinessUser ? (
           <>
-            <div className="bf-nav-label">Mi negocio</div>
+            <div className="bf-nav-label">{t("myBusiness")}</div>
             {menuItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -59,19 +59,18 @@ export default function Sidebar() {
                 </Link>
               );
             })}
-            {/* Configuración */}
-            <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
+            <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("sidebarSystem")}</div>
             <Link
               href="/configuracion"
               className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
             >
               <i className="bi bi-gear-fill" aria-hidden="true" />
-              <span>Configuración</span>
+              <span>{t("sidebarConfig")}</span>
             </Link>
           </>
         ) : (
           <>
-            <div className="bf-nav-label">Gestión</div>
+            <div className="bf-nav-label">{t("sidebarManagement")}</div>
             {adminMenu.slice(0, 4).map((item) => {
               const active = pathname === item.href;
               return (
@@ -85,7 +84,7 @@ export default function Sidebar() {
                 </Link>
               );
             })}
-            <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
+            <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("sidebarSystem")}</div>
             {adminMenu.slice(4).map((item) => {
               const active = pathname === item.href;
               return (
@@ -99,13 +98,12 @@ export default function Sidebar() {
                 </Link>
               );
             })}
-            {/* Configuración */}
             <Link
               href="/configuracion"
               className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
             >
               <i className="bi bi-gear-fill" aria-hidden="true" />
-              <span>Configuración</span>
+              <span>{t("sidebarConfig")}</span>
             </Link>
           </>
         )}
@@ -120,7 +118,7 @@ export default function Sidebar() {
           <div>
             <div className="bf-user-name">{displayName}</div>
             <div className="bf-user-role">
-              {isBusinessUser ? "Negocio verificado" : "Administrador"}
+              {isBusinessUser ? t("sidebarBusinessRole") : t("sidebarAdminRole")}
             </div>
           </div>
         </div>
