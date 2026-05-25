@@ -159,6 +159,61 @@ export const translations = {
     email:               "Email",
     phone:               "Teléfono",
     statusBusiness:      "Estado",
+
+    // Export
+    exportReport:             "Exportar informe",
+    noBookingsExport:         "No hay reservas para exportar.",
+
+    // Bookings KPIs
+    kpiCancelled:             "Canceladas",
+    kpiCancelledSub:          "Anuladas",
+    upcomingAppointmentsPanel:"Próximas Citas",
+
+    // Filter pills
+    filterPaid:               "Pagadas",
+    filterCancelled:          "Canceladas",
+
+    // Delete modal
+    deleteModalTitle:         "Eliminar reserva",
+    deleteModalText:          "¿Seguro que quieres eliminar la reserva",
+    deleteModalUndo:          "Esta acción no se puede deshacer.",
+    deletedOk:                "Reserva eliminada correctamente",
+
+    // Quick create shared
+    quickSaving:              "Guardando...",
+    quickAddNew:              "+ Nuevo",
+
+    // Quick create customer
+    quickNewCustomer:         "Nuevo cliente",
+    quickNewCustomerDesc:     "Rellena los datos del nuevo cliente. Se guardará automáticamente.",
+    quickNameLabel:           "Nombre *",
+    quickNamePlaceholder:     "Nombre completo",
+    quickEmailLabel:          "Email *",
+    quickEmailPlaceholder:    "correo@ejemplo.com",
+    quickPhoneLabel:          "Teléfono *",
+    quickPhonePlaceholder:    "612 345 678",
+    quickBusinessOptLabel:    "Negocio (opcional)",
+    quickBusinessPlaceholder: "Nombre del negocio",
+    quickCreateCustomer:      "Crear cliente",
+    quickCustomerCreated:     "Cliente creado correctamente",
+    quickCustomerError:       "Error al crear el cliente. Inténtalo de nuevo.",
+    quickCustomerValidation:  "Nombre, email y teléfono son obligatorios.",
+
+    // Quick create business
+    quickNewBusiness:         "Nuevo negocio",
+    quickNewBusinessDesc:     "Rellena los datos del nuevo negocio. Se guardará automáticamente.",
+    quickAddressLabel:        "Dirección *",
+    quickAddressPlaceholder:  "Calle, número, ciudad",
+    quickCategoryLabel:       "Categoría",
+    quickCategoryPlaceholder: "Peluquería, Spa...",
+    quickOwnerEmailLabel:     "Email del propietario *",
+    quickOwnerEmailPlaceholder:"propietario@ejemplo.com",
+    quickOwnerPassLabel:      "Contraseña del propietario *",
+    quickOwnerPassPlaceholder:"Mínimo 6 caracteres",
+    quickCreateBusiness:      "Crear negocio",
+    quickBusinessCreated:     "Negocio creado correctamente",
+    quickBusinessError:       "Error al crear el negocio. Inténtalo de nuevo.",
+    quickBusinessValidation:  "Nombre, dirección, email y contraseña del propietario son obligatorios.",
   },
 
   en: {
@@ -289,6 +344,61 @@ export const translations = {
     email:               "Email",
     phone:               "Phone",
     statusBusiness:      "Status",
+
+    // Export
+    exportReport:             "Export report",
+    noBookingsExport:         "No bookings to export.",
+
+    // Bookings KPIs
+    kpiCancelled:             "Cancelled",
+    kpiCancelledSub:          "Cancelled",
+    upcomingAppointmentsPanel:"Upcoming Appointments",
+
+    // Filter pills
+    filterPaid:               "Paid",
+    filterCancelled:          "Cancelled",
+
+    // Delete modal
+    deleteModalTitle:         "Delete booking",
+    deleteModalText:          "Are you sure you want to delete booking",
+    deleteModalUndo:          "This action cannot be undone.",
+    deletedOk:                "Booking deleted successfully",
+
+    // Quick create shared
+    quickSaving:              "Saving...",
+    quickAddNew:              "+ New",
+
+    // Quick create customer
+    quickNewCustomer:         "New customer",
+    quickNewCustomerDesc:     "Fill in the new customer's details. It will be saved automatically.",
+    quickNameLabel:           "Name *",
+    quickNamePlaceholder:     "Full name",
+    quickEmailLabel:          "Email *",
+    quickEmailPlaceholder:    "mail@example.com",
+    quickPhoneLabel:          "Phone *",
+    quickPhonePlaceholder:    "612 345 678",
+    quickBusinessOptLabel:    "Business (optional)",
+    quickBusinessPlaceholder: "Business name",
+    quickCreateCustomer:      "Create customer",
+    quickCustomerCreated:     "Customer created successfully",
+    quickCustomerError:       "Error creating the customer. Please try again.",
+    quickCustomerValidation:  "Name, email and phone are required.",
+
+    // Quick create business
+    quickNewBusiness:         "New business",
+    quickNewBusinessDesc:     "Fill in the new business details. It will be saved automatically.",
+    quickAddressLabel:        "Address *",
+    quickAddressPlaceholder:  "Street, number, city",
+    quickCategoryLabel:       "Category",
+    quickCategoryPlaceholder: "Hair salon, Spa...",
+    quickOwnerEmailLabel:     "Owner email *",
+    quickOwnerEmailPlaceholder:"owner@example.com",
+    quickOwnerPassLabel:      "Owner password *",
+    quickOwnerPassPlaceholder:"At least 6 characters",
+    quickCreateBusiness:      "Create business",
+    quickBusinessCreated:     "Business created successfully",
+    quickBusinessError:       "Error creating the business. Please try again.",
+    quickBusinessValidation:  "Name, address, email and owner password are required.",
   },
 
   fr: {
@@ -419,6 +529,61 @@ export const translations = {
     email:               "Email",
     phone:               "Téléphone",
     statusBusiness:      "Statut",
+
+    // Export
+    exportReport:             "Exporter le rapport",
+    noBookingsExport:         "Aucune réservation à exporter.",
+
+    // Bookings KPIs
+    kpiCancelled:             "Annulées",
+    kpiCancelledSub:          "Annulées",
+    upcomingAppointmentsPanel:"Prochains rendez-vous",
+
+    // Filter pills
+    filterPaid:               "Payées",
+    filterCancelled:          "Annulées",
+
+    // Delete modal
+    deleteModalTitle:         "Supprimer la réservation",
+    deleteModalText:          "Voulez-vous vraiment supprimer la réservation",
+    deleteModalUndo:          "Cette action est irréversible.",
+    deletedOk:                "Réservation supprimée avec succès",
+
+    // Quick create shared
+    quickSaving:              "Enregistrement...",
+    quickAddNew:              "+ Nouveau",
+
+    // Quick create customer
+    quickNewCustomer:         "Nouveau client",
+    quickNewCustomerDesc:     "Remplissez les données du nouveau client. Il sera enregistré automatiquement.",
+    quickNameLabel:           "Nom *",
+    quickNamePlaceholder:     "Nom complet",
+    quickEmailLabel:          "Email *",
+    quickEmailPlaceholder:    "mail@exemple.com",
+    quickPhoneLabel:          "Téléphone *",
+    quickPhonePlaceholder:    "612 345 678",
+    quickBusinessOptLabel:    "Entreprise (optionnel)",
+    quickBusinessPlaceholder: "Nom de l'entreprise",
+    quickCreateCustomer:      "Créer le client",
+    quickCustomerCreated:     "Client créé avec succès",
+    quickCustomerError:       "Erreur lors de la création du client. Réessayez.",
+    quickCustomerValidation:  "Nom, email et téléphone sont obligatoires.",
+
+    // Quick create business
+    quickNewBusiness:         "Nouvelle entreprise",
+    quickNewBusinessDesc:     "Remplissez les données de la nouvelle entreprise. Elle sera enregistrée automatiquement.",
+    quickAddressLabel:        "Adresse *",
+    quickAddressPlaceholder:  "Rue, numéro, ville",
+    quickCategoryLabel:       "Catégorie",
+    quickCategoryPlaceholder: "Coiffeur, Spa...",
+    quickOwnerEmailLabel:     "Email du propriétaire *",
+    quickOwnerEmailPlaceholder:"proprietaire@exemple.com",
+    quickOwnerPassLabel:      "Mot de passe du propriétaire *",
+    quickOwnerPassPlaceholder:"6 caractères minimum",
+    quickCreateBusiness:      "Créer l'entreprise",
+    quickBusinessCreated:     "Entreprise créée avec succès",
+    quickBusinessError:       "Erreur lors de la création de l'entreprise. Réessayez.",
+    quickBusinessValidation:  "Nom, adresse, email et mot de passe du propriétaire sont obligatoires.",
   },
 } satisfies Record<LangCode, Record<string, string>>;
 
