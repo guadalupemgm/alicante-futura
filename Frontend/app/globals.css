@@ -155,9 +155,9 @@ button, input, select { font: inherit; }
 .bf-sidebar-logo  { display: flex; align-items: center; gap: 8px; }
 
 .bf-sidebar-mark {
-  width: 28px; height: 28px;
+  width: 30px; height: 30px;
   background: var(--ink);
-  border-radius: 6px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
   font-weight: 700; font-size: 14px;
@@ -165,7 +165,7 @@ button, input, select { font: inherit; }
   flex-shrink: 0;
 }
 
-html.dark .bf-sidebar-mark { background: var(--accent); }
+html.dark .bf-sidebar-mark { background: solid white; }
 
 .bf-sidebar-name {
   font-family: var(--font-display);

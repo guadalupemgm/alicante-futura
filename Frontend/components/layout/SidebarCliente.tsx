@@ -2,27 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/components/context/AuthContext";
 import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function SidebarCliente() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
   const { t } = useLanguage();
 
   const clienteMenu = [
-    { labelKey: "myBusinesses" as const, href: "/empresas",  icon: "bi-shop-window" },
-    { labelKey: "myBookings"   as const, href: "/reservas",  icon: "bi-calendar2-check" },
+    { labelKey: "myBusinesses" as const, href: "/empresas", icon: "bi-shop-window" },
+    { labelKey: "myBookings"   as const, href: "/reservas", icon: "bi-calendar2-check" },
   ];
-
-  const initial     = (user?.email?.[0] ?? "U").toUpperCase();
-  const displayName = user?.email?.split("@")[0] ?? "Usuario";
 
   return (
     <aside className="bf-sidebar">
       <div className="bf-sidebar-brand">
         <div className="bf-sidebar-logo">
-          <div className="bf-sidebar-mark">B</div>
+          <div className="bf-sidebar-mark">
+            <img src="/favicon.ico" style={{ width: "28px", height: "28px" }} alt="logo" />
+          </div>
           <div>
             <div className="bf-sidebar-name">BookFlow</div>
             <div className="bf-sidebar-role">{t("bookingPortal")}</div>
@@ -33,7 +30,6 @@ export default function SidebarCliente() {
       <nav className="bf-sidebar-nav">
         <div className="bf-nav-label">{t("mySpace")}</div>
         {clienteMenu.map((item) => {
-          // Exact match para /reservas para evitar que active también /reservas/nueva
           const active = pathname === item.href;
           return (
             <Link
@@ -56,24 +52,6 @@ export default function SidebarCliente() {
           <span>{t("settings")}</span>
         </Link>
       </nav>
-
-      <div className="bf-sidebar-bottom">
-        <div className="bf-user-pill">
-          <div className="bf-user-avatar">{initial}</div>
-          <div>
-            <div className="bf-user-name">{displayName}</div>
-            <div className="bf-user-role">{t("clientRole")}</div>
-          </div>
-        </div>
-        <button
-          className="bf-nav-item"
-          style={{ width: "100%", marginTop: 8, background: "none", border: "none", cursor: "pointer", color: "#ef4444", textAlign: "left" }}
-          onClick={logout}
-        >
-          <i className="bi bi-box-arrow-right" aria-hidden="true" />
-          <span>{t("logout")}</span>
-        </button>
-      </div>
     </aside>
   );
 }
