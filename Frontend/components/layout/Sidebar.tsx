@@ -114,19 +114,21 @@ export default function Sidebar() {
       </nav>
 
       {/* User pill at bottom */}
-      <div className="bf-sidebar-bottom">
-        <div className="bf-user-pill">
-          <div className={`bf-user-avatar${isBusinessUser ? " bf-user-avatar--biz" : ""}`}>
-            {initial}
-          </div>
-          <div>
-            <div className="bf-user-name">{displayName}</div>
-            <div className="bf-user-role">
-              {isBusinessUser ? t("sidebarBusinessRole") : t("sidebarAdminRole")}
+      {!isBusinessUser && (
+        <div className="bf-sidebar-bottom">
+          <div className="bf-user-pill">
+            <div className="bf-user-avatar">
+              {initial}
+            </div>
+            <div>
+              <div className="bf-user-name">{displayName}</div>
+              <div className="bf-user-role">
+                {t("sidebarAdminRole")}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </aside>
   );
 }

@@ -64,11 +64,7 @@ export default function Header() {
       </div>
 
       <div className="admin-header__actions">
-        {/* Search */}
-        <div className="bf-topbar-search">
-          <i className="bi bi-search" style={{ fontSize: 13 }} />
-          <span>Buscar...</span>
-        </div>
+        {/* Search removed by user request */}
 
         {/* Notifications */}
         <div style={{ position: "relative" }} ref={notifRef}>
