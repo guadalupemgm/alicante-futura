@@ -29,6 +29,14 @@ export class AppointmentsService {
     });
   }
 
+  // 🆕 Devuelve solo las reservas de un cliente concreto
+  findByCustomer(customerId: number) {
+    return this.appointmentsRepository.find({
+      where: { customerId },
+      order: { date: 'ASC', time: 'ASC' },
+    });
+  }
+
   findOne(id: number) {
     return this.appointmentsRepository.findOneBy({ id });
   }

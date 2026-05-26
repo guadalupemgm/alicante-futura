@@ -34,12 +34,13 @@ export default function MisReservasPage() {
   };
 
   useEffect(() => {
-    fetch(API_URL + "/appointments")
+    if (!user?.customerId) return;
+    fetch(API_URL + "/appointments/customer/" + user.customerId)
       .then((r) => r.json())
       .then((d) => {
-        const all = Array.isArray(d) ? d : [];
-        setBookings(all.filter((b: Booking) => b.customerId === user?.customerId));
+        setBookings(Array.isArray(d) ? d : []);
       })
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [user]);
 

@@ -187,3 +187,27 @@ export async function updateBusiness(id: number, data: UpdateBusinessDto, token?
   if (!res.ok) throw new Error("Error al actualizar el negocio");
   return res.json();
 }
+
+export interface Payment {
+  id: number;
+  amount: number;
+  method: string;
+  status: "pending" | "paid" | "cancelled";
+  appointmentId: number;
+}
+
+export async function getAppointmentsByBusiness(businessId: number): Promise<Booking[]> {
+  const res = await fetch(`${API_URL}/appointments/business/${businessId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Error al obtener las reservas del negocio");
+  return res.json();
+}
+
+export async function getPaymentsByBusiness(businessId: number): Promise<Payment[]> {
+  const res = await fetch(`${API_URL}/payments/business/${businessId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Error al obtener los pagos del negocio");
+  return res.json();
+}

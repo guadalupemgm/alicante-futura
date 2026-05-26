@@ -35,6 +35,13 @@ export class AppointmentsController {
     return this.appointmentsService.findByBusiness(businessId);
   }
 
+  // 🆕 Endpoint: GET /appointments/customer/:customerId
+  @Get('customer/:customerId')
+  @ApiOkResponse({ description: 'Reservas de un cliente' })
+  findByCustomer(@Param('customerId', ParseIntPipe) customerId: number) {
+    return this.appointmentsService.findByCustomer(customerId);
+  }
+
   @Get(':id')
   @ApiOkResponse({ description: 'Detalle de una reserva' })
   findOne(@Param('id', ParseIntPipe) id: number) {

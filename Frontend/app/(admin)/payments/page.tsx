@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "@/components/context/LanguageContext";
+import { useAuth } from "@/components/context/AuthContext";
 import Pagination from "@/components/ui/Pagination";
 
 const PER_PAGE = 8;
@@ -20,6 +21,7 @@ function Badge({ status, label }: { status: PaymentStatus; label: string }) {
 }
 
 export default function PaymentsPage() {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [payments, setPayments]         = useState<Payment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -36,9 +38,14 @@ export default function PaymentsPage() {
   ];
 
   useEffect(() => {
-    fetch(API_URL + "/payments").then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
-    fetch(API_URL + "/appointments").then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
-  }, []);
+    if (user?.role === "business" && user?.businessId) {
+      fetch(API_URL + "/payments/business/" + user.businessId).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
+      fetch(API_URL + "/appointments/business/" + user.businessId).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
+    } else {
+      fetch(API_URL + "/payments").then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
+      fetch(API_URL + "/appointments").then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
+    }
+  }, [user]);
 
   useEffect(() => { setPage(1); }, [statusFilter]);
 

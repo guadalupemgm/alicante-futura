@@ -14,7 +14,9 @@ const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
 ];
 
 const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
-  { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
+  { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
+  { key: "bookings",   href: "/business-bookings",   icon: "bi-calendar2-check" },
+  { key: "payments",   href: "/payments",   icon: "bi-credit-card-2-front-fill" },
 ];
 
 export default function Sidebar() {
@@ -31,7 +33,9 @@ export default function Sidebar() {
       {/* Brand */}
       <div className="bf-sidebar-brand">
         <div className="bf-sidebar-logo">
-          <div className="bf-sidebar-mark">B</div>
+          <div className="bf-sidebar-mark">
+            <img src="/favicon.ico" style={{ width: "28px", height: "28px" }} alt="logo" />
+          </div>
           <div>
             <div className="bf-sidebar-name">BookFlow</div>
             <div className="bf-sidebar-role">

@@ -24,6 +24,17 @@ export class PaymentsService {
     return this.paymentRepository.find();
   }
 
+  async findByBusiness(businessId: number) {
+    return this.paymentRepository.find({
+      where: {
+        appointment: {
+          businessId: businessId,
+        },
+      },
+      relations: ['appointment'],
+    });
+  }
+
   findOne(id: number) {
     return this.paymentRepository.findOneBy({ id });
   }
