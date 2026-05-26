@@ -8,49 +8,79 @@ import Pagination from "@/components/ui/Pagination";
 const PER_PAGE = 8;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-type PaymentStatus = "pending" | "paid";
-type Payment = { id: number; amount: number; method: string; status: PaymentStatus; appointmentId: number; };
-type Appointment = { id: number; date: string; time: string; serviceName: string; status?: string; };
+type PaymentStatus = "pending" | "paid" | "cancelled";
+type Payment = {
+  id: number;
+  amount: number;
+  method: string;
+  status: PaymentStatus;
+  appointmentId: number;
+};
+type Appointment = {
+  id: number;
+  date: string;
+  time: string;
+  serviceName: string;
+  status?: string;
+};
+
+const METHODS = ["Tarjeta", "Efectivo", "Bizum", "Transferencia"];
 
 function Badge({ status, label }: { status: PaymentStatus; label: string }) {
-  return (
-    <span className={"badge badge--" + (status === "pending" ? "pending" : "confirmed")}>
-      {label}
-    </span>
-  );
+  const cls =
+    status === "paid"
+      ? "badge--confirmed"
+      : status === "cancelled"
+      ? "badge--cancelled"
+      : "badge--pending";
+  return <span className={`badge ${cls}`}>{label}</span>;
 }
 
 export default function PaymentsPage() {
   const { user } = useAuth();
   const { t } = useLanguage();
+
   const [payments, setPayments]         = useState<Payment[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<"all" | PaymentStatus>("all");
   const [showModal, setShowModal]       = useState(false);
   const [success, setSuccess]           = useState("");
   const [page, setPage]                 = useState(1);
+
+  // Formulario crear manualmente
   const [form, setForm] = useState({ amount: "", method: "", status: "pending", appointmentId: "" });
 
+  // Modal editar pago
+  const [editTarget, setEditTarget] = useState<Payment | null>(null);
+  const [editForm, setEditForm]     = useState({ amount: "", method: "", status: "pending" as PaymentStatus });
+
   const FILTERS = [
-    { key: "all",     label: t("seeAll"),        className: "filter-pill--all" },
-    { key: "pending", label: t("pendingFilter"), className: "filter-pill--pending" },
-    { key: "paid",    label: t("paidFilter"),    className: "filter-pill--paid" },
+    { key: "all",       label: t("seeAll"),        cls: "filter-pill--all" },
+    { key: "pending",   label: t("pendingFilter"), cls: "filter-pill--pending" },
+    { key: "paid",      label: t("paidFilter"),    cls: "filter-pill--paid" },
+    { key: "cancelled", label: t("filterCancelled") ?? "Cancelados", cls: "filter-pill--cancelled" },
   ];
+
+  const flash = (msg: string) => {
+    setSuccess(msg);
+    setTimeout(() => setSuccess(""), 3000);
+  };
 
   useEffect(() => {
     if (user?.role === "business" && user?.businessId) {
-      fetch(API_URL + "/payments/business/" + user.businessId).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
-      fetch(API_URL + "/appointments/business/" + user.businessId).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
+      fetch(`${API_URL}/payments/business/${user.businessId}`).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
+      fetch(`${API_URL}/appointments/business/${user.businessId}`).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
     } else {
-      fetch(API_URL + "/payments").then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
-      fetch(API_URL + "/appointments").then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
+      fetch(`${API_URL}/payments`).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
+      fetch(`${API_URL}/appointments`).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
     }
   }, [user]);
 
   useEffect(() => { setPage(1); }, [statusFilter]);
 
+  // Crear pago manualmente
   const handleCreate = async () => {
-    const res = await fetch(API_URL + "/payments", {
+    const res = await fetch(`${API_URL}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -62,24 +92,49 @@ export default function PaymentsPage() {
     });
     if (res.ok) {
       const newPayment = await res.json();
-      setPayments([...payments, newPayment]);
+      setPayments(prev => [...prev, newPayment]);
       setShowModal(false);
       setForm({ amount: "", method: "", status: "pending", appointmentId: "" });
-      setSuccess(t("paymentRegistered"));
-      setTimeout(() => setSuccess(""), 3000);
+      flash(t("paymentRegistered"));
     }
   };
 
+  // Cambio rápido de estado (botón en tabla)
   const handleStatusChange = async (id: number, newStatus: PaymentStatus) => {
-    const res = await fetch(API_URL + "/payments/" + id, {
+    const res = await fetch(`${API_URL}/payments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
     if (res.ok) {
-      setPayments(payments.map(p => p.id === id ? { ...p, status: newStatus } : p));
-      setSuccess(newStatus === "paid" ? t("markedPaid") : t("markedPending"));
-      setTimeout(() => setSuccess(""), 3000);
+      setPayments(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      flash(newStatus === "paid" ? t("markedPaid") : t("markedPending"));
+    }
+  };
+
+  // Abrir modal editar
+  const openEdit = (p: Payment) => {
+    setEditTarget(p);
+    setEditForm({ amount: String(p.amount), method: p.method, status: p.status });
+  };
+
+  // Guardar edición completa
+  const handleEdit = async () => {
+    if (!editTarget) return;
+    const res = await fetch(`${API_URL}/payments/${editTarget.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: parseFloat(editForm.amount),
+        method: editForm.method,
+        status: editForm.status,
+      }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setPayments(prev => prev.map(p => p.id === updated.id ? updated : p));
+      setEditTarget(null);
+      flash("Pago actualizado correctamente");
     }
   };
 
@@ -94,6 +149,11 @@ export default function PaymentsPage() {
 
   const totalPaid    = payments.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0);
   const totalPending = payments.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0);
+
+  const appointmentLabel = (id: number) => {
+    const a = appointments.find(a => a.id === id);
+    return a ? `#${a.id} — ${a.date} ${a.time} · ${a.serviceName}` : `#${id}`;
+  };
 
   return (
     <div className="page-stack">
@@ -113,12 +173,16 @@ export default function PaymentsPage() {
         <div className="kpi-card">
           <p className="kpi-card__label">{t("collected")}</p>
           <h3 className="kpi-card__value">{totalPaid.toFixed(2)} €</h3>
-          <p className="kpi-card__meta kpi-card__meta--positive">{payments.filter(p => p.status === "paid").length} {t("operations")}</p>
+          <p className="kpi-card__meta kpi-card__meta--positive">
+            {payments.filter(p => p.status === "paid").length} {t("operations")}
+          </p>
         </div>
         <div className="kpi-card">
           <p className="kpi-card__label">{t("pending")}</p>
           <h3 className="kpi-card__value">{totalPending.toFixed(2)} €</h3>
-          <p className="kpi-card__meta kpi-card__meta--warning">{payments.filter(p => p.status === "pending").length} {t("toReview")}</p>
+          <p className="kpi-card__meta kpi-card__meta--warning">
+            {payments.filter(p => p.status === "pending").length} {t("toReview")}
+          </p>
         </div>
       </section>
 
@@ -128,8 +192,8 @@ export default function PaymentsPage() {
           <div className="filter-row">
             {FILTERS.map(f => (
               <button key={f.key} type="button"
-                onClick={() => setStatusFilter(f.key as "all" | PaymentStatus)}
-                className={"filter-pill " + f.className + (statusFilter === f.key ? " active" : "")}
+                onClick={() => setStatusFilter(f.key as any)}
+                className={`filter-pill ${f.cls}${statusFilter === f.key ? " active" : ""}`}
               >
                 {f.label}
                 {f.key !== "all" && (
@@ -162,16 +226,36 @@ export default function PaymentsPage() {
                   <td style={{ fontWeight: 600 }}>COB-{String(p.id).padStart(3, "0")}</td>
                   <td>{Number(p.amount).toFixed(2)} €</td>
                   <td>{p.method}</td>
-                  <td>#{p.appointmentId}</td>
-                  <td><Badge status={p.status} label={p.status === "pending" ? t("toPay") : t("statusPaid")} /></td>
-                  <td style={{ textAlign: "right" }}>
+                  <td style={{ fontSize: "0.82rem", color: "var(--muted)" }}>{appointmentLabel(p.appointmentId)}</td>
+                  <td>
+                    <Badge
+                      status={p.status}
+                      label={
+                        p.status === "paid" ? t("statusPaid") :
+                        p.status === "cancelled" ? t("statusCancelled") :
+                        t("toPay")
+                      }
+                    />
+                  </td>
+                  <td style={{ textAlign: "right", display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                    <button
+                      className="secondary-btn"
+                      style={{ padding: "4px 10px", fontSize: "12px" }}
+                      onClick={() => openEdit(p)}
+                    >
+                      ✏️ Editar
+                    </button>
                     {p.status === "pending" ? (
-                      <button className="primary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "paid")}>{t("markPaid")}</button>
-                    ) : (
-                      <button className="secondary-btn" style={{ padding: "4px 12px", fontSize: "12px" }}
-                        onClick={() => handleStatusChange(p.id, "pending")}>{t("markPending")}</button>
-                    )}
+                      <button className="primary-btn" style={{ padding: "4px 10px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "paid")}>
+                        {t("markPaid")}
+                      </button>
+                    ) : p.status === "paid" ? (
+                      <button className="secondary-btn" style={{ padding: "4px 10px", fontSize: "12px" }}
+                        onClick={() => handleStatusChange(p.id, "pending")}>
+                        {t("markPending")}
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -182,24 +266,27 @@ export default function PaymentsPage() {
         <Pagination total={filtered.length} page={page} perPage={PER_PAGE} onPageChange={setPage} />
       </section>
 
+      {/* Modal Crear pago manual */}
       {showModal && (
         <div className="modal-backdrop">
           <div className="modal-card">
             <h3 className="modal-title">{t("registerPaymentModal")}</h3>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+              Los pagos se crean automáticamente al crear una reserva. Usa este formulario solo para añadir pagos extra.
+            </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              <input className="input" type="number" placeholder={t("amountPlaceholder")} value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+              <input className="input" type="number" placeholder={t("amountPlaceholder")}
+                value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
               <select className="input" value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
                 <option value="">{t("paymentMethod")}</option>
-                <option value="Tarjeta">{t("card")}</option>
-                <option value="Efectivo">{t("cash")}</option>
-                <option value="Bizum">Bizum</option>
-                <option value="Transferencia">{t("transfer")}</option>
+                {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
               <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
                 <option value="pending">{t("toPay")}</option>
                 <option value="paid">{t("statusPaid")}</option>
               </select>
-              <select className="input" value={form.appointmentId} onChange={e => setForm({ ...form, appointmentId: e.target.value })}>
+              <select className="input" value={form.appointmentId}
+                onChange={e => setForm({ ...form, appointmentId: e.target.value })}>
                 <option value="">{t("selectReservation")}</option>
                 {appointments.map(a => (
                   <option key={a.id} value={a.id}>#{a.id} — {a.date} {a.time} · {a.serviceName}</option>
@@ -209,6 +296,53 @@ export default function PaymentsPage() {
             <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setShowModal(false)}>{t("cancel")}</button>
               <button className="primary-btn" onClick={handleCreate}>{t("save")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar pago */}
+      {editTarget && (
+        <div className="modal-backdrop">
+          <div className="modal-card">
+            <h3 className="modal-title">✏️ Editar pago COB-{String(editTarget.id).padStart(3, "0")}</h3>
+            <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+              Reserva vinculada: {appointmentLabel(editTarget.appointmentId)}<br />
+              <strong>El estado de la reserva se actualizará automáticamente.</strong>
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
+              <div>
+                <label style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Importe (€)
+                </label>
+                <input className="input" type="number" step="0.01"
+                  value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Método de pago
+                </label>
+                <select className="input" value={editForm.method}
+                  onChange={e => setEditForm({ ...editForm, method: e.target.value })}>
+                  <option value="Pendiente">Sin definir</option>
+                  {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Estado del pago
+                </label>
+                <select className="input" value={editForm.status}
+                  onChange={e => setEditForm({ ...editForm, status: e.target.value as PaymentStatus })}>
+                  <option value="pending">{t("toPay")}</option>
+                  <option value="paid">{t("statusPaid")}</option>
+                  <option value="cancelled">{t("statusCancelled")}</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="secondary-btn" onClick={() => setEditTarget(null)}>{t("cancel")}</button>
+              <button className="primary-btn" onClick={handleEdit}>{t("save")}</button>
             </div>
           </div>
         </div>
