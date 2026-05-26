@@ -28,6 +28,12 @@ export class BusinessController {
     return this.businessService.create(createBusinessDto);
   }
 
+  /** POST /business/register — público (registro de empresas con pasarela) */
+  @Post('register')
+  registerPublic(@Body() createBusinessDto: CreateBusinessDto) {
+    return this.businessService.create(createBusinessDto);
+  }
+
   /** GET /business — público (clientes necesitan listar negocios) */
   @Get()
   findAll() {

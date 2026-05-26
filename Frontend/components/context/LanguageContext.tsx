@@ -394,6 +394,18 @@ export const translations = {
     configTabCustomer:        "Mi Cuenta",
     saveChanges:              "Guardar cambios",
     configSavedText:          "¡Guardado!",
+
+    // Admin User Management
+    adminManageUsers:         "Gestión de Usuarios",
+    adminEmail:               "Email",
+    adminNewPassword:         "Nueva contraseña (dejar en blanco para no cambiar)",
+    adminEditUser:            "Editar",
+    adminDeleteUser:          "Eliminar",
+    adminSaveUser:            "Guardar",
+    adminCancel:              "Cancelar",
+    adminConfirmDelete:       "¿Estás seguro de que quieres eliminar este usuario? Esta acción es irreversible.",
+    adminNoUsers:             "No se encontraron otros usuarios.",
+    adminLoadingUsers:        "Cargando usuarios...",
   },
 
   en: {
@@ -760,6 +772,18 @@ export const translations = {
     configTabCustomer:        "My Account",
     saveChanges:              "Save changes",
     configSavedText:          "Saved!",
+
+    // Admin User Management
+    adminManageUsers:         "User Management",
+    adminEmail:               "Email",
+    adminNewPassword:         "New password (leave blank to keep current)",
+    adminEditUser:            "Edit",
+    adminDeleteUser:          "Delete",
+    adminSaveUser:            "Save",
+    adminCancel:              "Cancel",
+    adminConfirmDelete:       "Are you sure you want to delete this user? This action cannot be undone.",
+    adminNoUsers:             "No other users found.",
+    adminLoadingUsers:        "Loading users...",
   },
 
   fr: {
@@ -1126,6 +1150,18 @@ export const translations = {
     configTabCustomer:        "Mon Compte",
     saveChanges:              "Enregistrer les modifications",
     configSavedText:          "Enregistré !",
+
+    // Admin User Management
+    adminManageUsers:         "Gestion des utilisateurs",
+    adminEmail:               "Email",
+    adminNewPassword:         "Nouveau mot de passe (laisser vide pour ne pas changer)",
+    adminEditUser:            "Modifier",
+    adminDeleteUser:          "Supprimer",
+    adminSaveUser:            "Enregistrer",
+    adminCancel:              "Annuler",
+    adminConfirmDelete:       "Voulez-vous vraiment supprimer cet utilisateur ? Cette action est irréversible.",
+    adminNoUsers:             "Aucun autre utilisateur trouvé.",
+    adminLoadingUsers:        "Chargement des utilisateurs...",
   },
 } satisfies Record<LangCode, Record<string, string>>;
 

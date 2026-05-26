@@ -14,16 +14,30 @@ interface Notification {
   read: boolean;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 export default function Header() {
   const { theme, toggleTheme }        = useTheme();
   const { lang, setLang, t }          = useLanguage();
-  const { logout, user }              = useAuth();
+  const { logout, user, token }       = useAuth();
   const [open, setOpen]               = useState(false);
   const [langOpen, setLangOpen]       = useState(false);
   const [notifOpen, setNotifOpen]     = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("auth_user");
+      if (storedUser) {
+        try {
+          const u = JSON.parse(storedUser);
+          const saved = localStorage.getItem(`bf_notifications_${u.id}`);
+          if (saved) return JSON.parse(saved);
+        } catch (_) {}
+      }
+    }
+    return [];
+  });
+  const [toast, setToast]             = useState<{ title: string; desc: string } | null>(null);
   const menuRef                       = useRef<HTMLDivElement>(null);
   const notifRef                      = useRef<HTMLDivElement>(null);
 
@@ -46,6 +60,118 @@ export default function Header() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Save to localStorage when notifications change
+  useEffect(() => {
+    if (!user) return;
+    localStorage.setItem(`bf_notifications_${user.id}`, JSON.stringify(notifications));
+  }, [notifications, user]);
+
+  // Load from backend on mount if localStorage is empty or cleared
+  useEffect(() => {
+    if (!user || !token) return;
+    const storageKey = `bf_notifications_${user.id}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved && JSON.parse(saved).length > 0) return;
+
+    const loadInitialData = async () => {
+      try {
+        let url = `${API_URL}/appointments`;
+        if (user.role === "business" && user.businessId) {
+          url = `${API_URL}/appointments/business/${user.businessId}`;
+        } else if (user.role === "customer" && user.customerId) {
+          url = `${API_URL}/appointments/customer/${user.customerId}`;
+        }
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error("Failed to fetch appointments");
+        const appts = await res.json();
+        
+        const initialNotifs: Notification[] = [];
+        
+        if (Array.isArray(appts)) {
+          appts.slice(0, 4).forEach((appt: any, idx: number) => {
+            const dateStr = appt.date ? new Date(appt.date).toLocaleDateString() : "";
+            const isConfirmed = appt.status === "confirmed" || appt.status === "paid";
+            const isCustomer = user.role === "customer";
+            
+            initialNotifs.push({
+              id: Date.now() - idx * 60000,
+              icon: isConfirmed ? "bi-calendar2-check-fill" : "bi-calendar-event-fill",
+              title: isCustomer 
+                ? (isConfirmed ? "Cita Confirmada" : "Cita Solicitada") 
+                : (isConfirmed ? "Reserva Confirmada" : "Reserva Pendiente"),
+              desc: isCustomer
+                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr || appt.date} a las ${appt.time} ${isConfirmed ? "está confirmada" : "está pendiente"}.`
+                : `${appt.serviceName || "Servicio"} programado para el ${dateStr || appt.date} a las ${appt.time}`,
+              time: `Hace ${idx * 20 + 5} min`,
+              read: false
+            });
+          });
+        }
+        
+        if (initialNotifs.length === 0) {
+          initialNotifs.push({
+            id: Date.now(),
+            icon: "bi-info-circle-fill",
+            title: "Sistema inicializado",
+            desc: "No hay reservas recientes registradas en tu panel.",
+            time: "Hace unos instantes",
+            read: false
+          });
+        }
+        
+        setNotifications(initialNotifs);
+      } catch (err) {
+        console.error("Failed to generate initial notifications:", err);
+      }
+    };
+
+    loadInitialData();
+  }, [user, token]);
+
+  // Simulate a live notification arriving after 10 seconds
+  useEffect(() => {
+    if (!user) return;
+    const timer = setTimeout(() => {
+      const isBusiness = user.role === "business";
+      const isCustomer = user.role === "customer";
+      
+      let title = "Nuevo Registro de Negocio";
+      let desc = "El negocio 'Alicante Tech Center' ha completado su registro.";
+      let icon = "bi-lightning-charge-fill";
+
+      if (isBusiness) {
+        title = "Nueva Cita Recibida";
+        desc = "Un cliente ha solicitado una cita para 'Asesoría VIP' mañana.";
+      } else if (isCustomer) {
+        title = "Recordatorio de Cita";
+        desc = "Recuerda que tienes una cita programada para mañana a las 10:00.";
+        icon = "bi-clock-fill";
+      }
+
+      const liveNotif: Notification = {
+        id: Date.now() + 99,
+        icon,
+        title,
+        desc,
+        time: "Ahora mismo",
+        read: false
+      };
+      
+      setNotifications(prev => {
+        if (prev.some(n => n.title === liveNotif.title)) return prev;
+        setToast({ title: liveNotif.title, desc: liveNotif.desc });
+        setTimeout(() => setToast(null), 5000);
+        return [liveNotif, ...prev];
+      });
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [user]);
 
   const markAllRead = () =>
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -226,6 +352,50 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideIn { 
+          from { transform: translateX(120%); opacity: 0; } 
+          to { transform: translateX(0); opacity: 1; } 
+        }
+      `}</style>
+
+      {toast && (
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "var(--paper)",
+          borderLeft: "4px solid var(--primary)",
+          padding: "12px 16px",
+          borderRadius: "var(--r-md)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          animation: "slideIn 0.3s ease-out"
+        }}>
+          <i className="bi bi-bell-fill" style={{ color: "var(--primary)", fontSize: "1.2rem" }} />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--ink)" }}>{toast.title}</div>
+            <div style={{ fontSize: "0.8rem", color: "var(--ink-3)", marginTop: "2px" }}>{toast.desc}</div>
+          </div>
+          <button 
+            onClick={() => setToast(null)} 
+            style={{ 
+              background: "transparent", 
+              border: "none", 
+              color: "var(--ink-3)", 
+              cursor: "pointer", 
+              fontSize: "1.1rem", 
+              paddingLeft: "10px" 
+            }}
+          >
+            <i className="bi bi-x-lg" />
+          </button>
+        </div>
+      )}
     </header>
   );
 }

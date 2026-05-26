@@ -25,8 +25,6 @@ export default function Sidebar() {
   const { t }           = useLanguage();
   const isBusinessUser  = user?.role === "business";
   const menuItems       = isBusinessUser ? businessMenu : adminMenu;
-  const initial         = (user?.email?.[0] ?? "U").toUpperCase();
-  const displayName     = user?.email?.split("@")[0] ?? "Usuario";
 
   return (
     <aside className="bf-sidebar">
@@ -75,7 +73,7 @@ export default function Sidebar() {
         ) : (
           <>
             <div className="bf-nav-label">{t("sidebarManagement")}</div>
-            {adminMenu.slice(0, 4).map((item) => {
+            {adminMenu.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -89,19 +87,6 @@ export default function Sidebar() {
               );
             })}
             <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("sidebarSystem")}</div>
-            {adminMenu.slice(4).map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`bf-nav-item${active ? " active" : ""}`}
-                >
-                  <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>{t(item.key)}</span>
-                </Link>
-              );
-            })}
             <Link
               href="/configuracion"
               className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
@@ -112,23 +97,6 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-
-      {/* User pill at bottom */}
-      {!isBusinessUser && (
-        <div className="bf-sidebar-bottom">
-          <div className="bf-user-pill">
-            <div className="bf-user-avatar">
-              {initial}
-            </div>
-            <div>
-              <div className="bf-user-name">{displayName}</div>
-              <div className="bf-user-role">
-                {t("sidebarAdminRole")}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }
