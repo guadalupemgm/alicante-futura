@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Business } from './entities/business.entity';
 import { CreateBusinessDto } from './dto/create-business.dto';
+import { UpdateBusinessDto } from './dto/update-business.dto';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../users/entities/user.entity';
 
@@ -33,6 +34,11 @@ export class BusinessService {
   }
 
   findOne(id: number) {
+    return this.businessRepository.findOneBy({ id });
+  }
+
+  async update(id: number, updateBusinessDto: UpdateBusinessDto) {
+    await this.businessRepository.update(id, updateBusinessDto);
     return this.businessRepository.findOneBy({ id });
   }
 
