@@ -12,20 +12,22 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    // Sin sesión → login
     if (!user) {
       router.push("/login");
       return;
     }
 
-    // Business solo puede ver /business-bookings
     if (user.role === "business" && pathname !== "/business-bookings") {
       router.push("/business-bookings");
     }
 
-    // Customer solo puede ver su zona
-    if (user.role === "customer" && !pathname.startsWith("/empresas") && !pathname.startsWith("/reservas")) {
-      router.push("/empresas");
+    if (
+      user.role === "customer" &&
+      !pathname.startsWith("/empresas") &&
+      !pathname.startsWith("/reservas") &&
+      !pathname.startsWith("/settings")
+    ) {
+      router.push("/reservas");
     }
   }, [user, isLoading, router, pathname]);
 
