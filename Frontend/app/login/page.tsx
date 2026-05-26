@@ -272,7 +272,7 @@ export default function LoginPage() {
               onClick={() => switchMode("business-register")}
               style={{ marginTop: "6px", borderColor: "rgba(200,82,42,0.3)" }}
             >
-              💼 Registrar mi empresa (Premium)
+              Registrar mi empresa (Premium)
             </button>
           </form>
         )}
@@ -313,9 +313,9 @@ export default function LoginPage() {
                 id="reg-phone"
                 className={s.input}
                 type="tel"
-                placeholder="600 000 000"
+                placeholder="600000000"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                 required
               />
             </div>
@@ -413,9 +413,9 @@ export default function LoginPage() {
                       id="biz-phone"
                       className={s.input}
                       type="tel"
-                      placeholder="600 000 000"
+                      placeholder="600000000"
                       value={bizPhone}
-                      onChange={(e) => setBizPhone(e.target.value)}
+                      onChange={(e) => setBizPhone(e.target.value.replace(/\D/g, ""))}
                     />
                   </div>
                 </div>
