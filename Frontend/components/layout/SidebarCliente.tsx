@@ -9,8 +9,8 @@ export default function SidebarCliente() {
   const { t } = useLanguage();
 
   const clienteMenu = [
-    { labelKey: "myBusinesses" as const, href: "/empresas", icon: "bi-shop-window" },
     { labelKey: "myBookings"   as const, href: "/reservas", icon: "bi-calendar2-check" },
+    { labelKey: "myBusinesses" as const, href: "/empresas", icon: "bi-shop-window" },
   ];
 
   return (

@@ -31,7 +31,7 @@ export default function AuthGuardCliente({
 
     const isAllowed = ALLOWED_PATHS.some((p) => pathname.startsWith(p));
     if (!isAllowed) {
-      router.push("/empresas");
+      router.push("/reservas");
     }
   }, [user, isLoading, router, pathname]);
 
