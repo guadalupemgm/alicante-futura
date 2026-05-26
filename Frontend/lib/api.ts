@@ -144,3 +144,46 @@ export async function createBusiness(data: CreateBusinessDto): Promise<Business>
   }
   return res.json();
 }
+// ─── Admin: editar usuario (cliente) ────────────────────────────────────────
+export interface UpdateCustomerDto {
+  name?: string;
+  email?: string;
+  phone?: string;
+  business?: string;
+}
+
+export async function updateCustomer(id: number, data: UpdateCustomerDto, token?: string): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al actualizar el cliente");
+  return res.json();
+}
+
+// ─── Admin: editar negocio ───────────────────────────────────────────────────
+export interface UpdateBusinessDto {
+  name?: string;
+  address?: string;
+  category?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+}
+
+export async function updateBusiness(id: number, data: UpdateBusinessDto, token?: string): Promise<Business> {
+  const res = await fetch(`${API_URL}/business/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al actualizar el negocio");
+  return res.json();
+}

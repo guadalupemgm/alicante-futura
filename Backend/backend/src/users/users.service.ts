@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -35,6 +36,18 @@ export class UsersService {
 
   findByUsername(username: string) {
     return this.userRepository.findOneBy({ username });
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const data: Partial<User> = { ...updateUserDto } as any;
+
+    // Si se envía una nueva contraseña, la hasheamos antes de guardar
+    if (updateUserDto.password) {
+      data.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    await this.userRepository.update(id, data);
+    return this.userRepository.findOneBy({ id });
   }
 
   remove(id: number) {
