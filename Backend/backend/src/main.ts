@@ -2,10 +2,32 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { UsersService } from './users/users.service';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
+
+  
+  const SWAGGER_USER = process.env.SWAGGER_USER ?? 'admin';
+  const SWAGGER_PASS = process.env.SWAGGER_PASS ?? 'alicante2025';
+
+  app.use(['/api', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
+    const auth = req.headers['authorization'];
+    if (auth) {
+      const [type, credentials] = auth.split(' ');
+      if (type === 'Basic') {
+        const [user, pass] = Buffer.from(credentials, 'base64')
+          .toString()
+          .split(':');
+        if (user === SWAGGER_USER && pass === SWAGGER_PASS) {
+          return next();
+        }
+      }
+    }
+    res.setHeader('WWW-Authenticate', 'Basic realm="Swagger"');
+    res.status(401).send('Acceso no autorizado');
+  });
 
   // Swagger
   const config = new DocumentBuilder()
