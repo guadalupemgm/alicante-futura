@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 
+// Menú de administrador
 const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
   { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
   { key: "bookings",   href: "/bookings",   icon: "bi-calendar2-check" },
@@ -13,18 +14,20 @@ const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
   { key: "business",   href: "/business",   icon: "bi-shop-window" },
 ];
 
+// Menú de negocio (Business)
 const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
-  { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
-  { key: "bookings",   href: "/business-bookings",   icon: "bi-calendar2-check" },
-  { key: "payments",   href: "/payments",   icon: "bi-credit-card-2-front-fill" },
+  { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
 ];
 
 export default function Sidebar() {
-  const pathname        = usePathname();
+  const pathname       = usePathname();
   const { user }        = useAuth();
   const { t }           = useLanguage();
-  const isBusinessUser  = user?.role === "business";
+  
+  const isBusinessUser   = user?.role === "business";
   const menuItems       = isBusinessUser ? businessMenu : adminMenu;
+  const initial         = (user?.email?.[0] ?? "U").toUpperCase();
+  const displayName     = user?.email?.split("@")[0] ?? "Usuario";
 
   return (
     <aside className="bf-sidebar">
@@ -46,8 +49,11 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="bf-sidebar-nav">
         {isBusinessUser ? (
+          /* ==========================================
+             VISTA NEGOCIO (BUSINESS)
+             ========================================== */
           <>
-            <div className="bf-nav-label">{t("myBusiness")}</div>
+            <div className="bf-nav-label">Mi negocio</div>
             {menuItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -57,11 +63,17 @@ export default function Sidebar() {
                   className={`bf-nav-item${active ? " active" : ""}`}
                 >
                   <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>{t(item.key)}</span>
+                  <span>
+                    {item.href === "/dashboard" && "Panel General"}
+                    {item.href === "/dashboard/agenda" && "Agenda de Citas"}
+                    {item.href === "/dashboard/servicios" && "Mis Servicios"}
+                    {item.href === "/dashboard/config-empresa" && "Datos de Empresa"}
+                  </span>
                 </Link>
               );
             })}
-            <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("sidebarSystem")}</div>
+            {/* Configuración */}
+            <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
             <Link
               href="/configuracion"
               className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
@@ -71,6 +83,9 @@ export default function Sidebar() {
             </Link>
           </>
         ) : (
+          /* ==========================================
+             VISTA ADMINISTRADOR ORIGINAL
+             ========================================== */
           <>
             <div className="bf-nav-label">{t("sidebarManagement")}</div>
             {adminMenu.map((item) => {
@@ -86,7 +101,21 @@ export default function Sidebar() {
                 </Link>
               );
             })}
-            <div className="bf-nav-label" style={{ marginTop: 8 }}>{t("sidebarSystem")}</div>
+            <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
+            {adminMenu.slice(4).map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`bf-nav-item${active ? " active" : ""}`}
+                >
+                  <i className={`bi ${item.icon}`} aria-hidden="true" />
+                  <span>{t(item.key)}</span>
+                </Link>
+              );
+            })}
+            {/* Configuración */}
             <Link
               href="/configuracion"
               className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
@@ -97,6 +126,21 @@ export default function Sidebar() {
           </>
         )}
       </nav>
+
+      {/* User pill at bottom */}
+      <div className="bf-sidebar-bottom">
+        <div className="bf-user-pill">
+          <div className={`bf-user-avatar${isBusinessUser ? " bf-user-avatar--biz" : ""}`}>
+            {initial}
+          </div>
+          <div>
+            <div className="bf-user-name">{displayName}</div>
+            <div className="bf-user-role">
+              {isBusinessUser ? "Negocio verificado" : "Administrador"}
+            </div>
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }

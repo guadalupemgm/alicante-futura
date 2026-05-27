@@ -48,7 +48,15 @@ export default function Header() {
 
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
   const initial     = displayName[0]?.toUpperCase() ?? "U";
-  const roleLabel   = user?.role === "business" ? "Negocio" : user?.role === "customer" ? "Cliente" : "Admin";
+
+  // Obtenemos de forma limpia la etiqueta de rol correcta para la interfaz
+  const getRoleLabel = () => {
+    if (user?.role === "particular") return "Particular";
+    if (user?.role === "business") return "Negocio";
+    return "Admin";
+  };
+
+  const roleLabel = getRoleLabel();
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
