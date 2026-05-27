@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 interface User {
   id: number;
   email: string;
-  role: "admin" | "business" | "particular"; // Agregado el rol de particular para los clientes
+  role: "admin" | "business" | "customer";
   businessId?: number;
-  name?: string;  
+  customerId?: number;
+  name?: string;
   phone?: string;
 }
 
@@ -16,7 +17,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>; // Nueva función para registrar clientes
+  register: (userData: any) => Promise<void>;
   logout: () => void;
   changePassword: (newPassword: string) => Promise<void>;
   isLoading: boolean;
@@ -26,13 +27,19 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   login: async () => {},
-  register: async () => {}, 
+  register: async () => {},
   logout: () => {},
   changePassword: async () => {},
   isLoading: true,
 });
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
+  if (role === "customer") router.push("/empresas");
+  else if (role === "business") router.push("/business-bookings");
+  else router.push("/dashboard");
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -64,10 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
     localStorage.setItem("auth_token", data.access_token);
     localStorage.setItem("auth_user", JSON.stringify(data.user));
-    router.push("/dashboard");
+    redirectByRole(data.user.role, router);
   };
 
-  // Petición POST al backend para registrar un nuevo cliente particular
   const register = async (userData: any) => {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
@@ -75,23 +81,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(userData),
     });
 
-    // Si el backend da error (ej. email duplicado), lanzamos el error para capturarlo en el formulario
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || "Error al crear la cuenta");
     }
 
     const data = await res.json();
-    
-    // Si el backend ya nos devuelve el token al registrarse, lo logueamos directamente
+
     if (data.access_token && data.user) {
       setToken(data.access_token);
       setUser(data.user);
       localStorage.setItem("auth_token", data.access_token);
       localStorage.setItem("auth_user", JSON.stringify(data.user));
-      router.push("/dashboard");
+      redirectByRole(data.user.role, router);
     } else {
-      // Si no devuelve token, forzamos el login con las credenciales que acaba de crear
       await login(userData.email, userData.password);
     }
   };

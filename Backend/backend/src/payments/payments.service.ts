@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
@@ -24,33 +24,46 @@ export class PaymentsService {
     return this.paymentRepository.find();
   }
 
+  async findByBusiness(businessId: number) {
+    return this.paymentRepository.find({
+      where: { appointment: { businessId } },
+      relations: ['appointment'],
+    });
+  }
+
   findOne(id: number) {
     return this.paymentRepository.findOneBy({ id });
   }
 
+  /**
+   * Actualiza el pago. Si cambia el estado, sincroniza la reserva:
+   *   pago → paid      ⟹  reserva → paid
+   *   pago → cancelled ⟹  reserva → cancelled
+   *   pago → pending   ⟹  reserva → pending
+   *
+   * Si cambia el importe u otros campos, solo actualiza el pago.
+   */
   async update(id: number, updatePaymentDto: UpdatePaymentDto) {
+    const payment = await this.paymentRepository.findOneBy({ id });
+    if (!payment) throw new NotFoundException(`No existe el pago con id ${id}`);
+
     await this.paymentRepository.update(id, updatePaymentDto);
 
-    // Sincronizar el appointment vinculado si cambia el status del payment
-    if (updatePaymentDto.status !== undefined) {
-      const payment = await this.paymentRepository.findOneBy({ id });
-      
-      if (payment?.appointmentId) {
-        let newAppointmentStatus: AppointmentStatus;
+    // Sincronizar reserva si cambia el estado del pago
+    if (updatePaymentDto.status !== undefined && payment.appointmentId) {
+      let newAppointmentStatus: AppointmentStatus;
 
-        // Nueva lógica de estados
-        if (updatePaymentDto.status === 'paid') {
-          newAppointmentStatus = AppointmentStatus.PAID;
-        } else if (updatePaymentDto.status === 'cancelled') {
-          newAppointmentStatus = AppointmentStatus.CANCELLED; // <--- Sincroniza cancelación
-        } else {
-          newAppointmentStatus = AppointmentStatus.PENDING;
-        }
-
-        await this.appointmentRepository.update(payment.appointmentId, {
-          status: newAppointmentStatus,
-        });
+      if (updatePaymentDto.status === 'paid') {
+        newAppointmentStatus = AppointmentStatus.PAID;
+      } else if (updatePaymentDto.status === 'cancelled') {
+        newAppointmentStatus = AppointmentStatus.CANCELLED;
+      } else {
+        newAppointmentStatus = AppointmentStatus.PENDING;
       }
+
+      await this.appointmentRepository.update(payment.appointmentId, {
+        status: newAppointmentStatus,
+      });
     }
 
     return this.paymentRepository.findOneBy({ id });

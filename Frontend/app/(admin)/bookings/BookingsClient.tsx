@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import type { Booking, BookingStatus, CreateBookingDto, Business, Customer } from "@/lib/api";
-import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers } from "@/lib/api";
+import type { Booking, BookingStatus, CreateBookingDto, Business, Customer, CreateCustomerDto, CreateBusinessDto } from "@/lib/api";
+import { createAppointment, deleteAppointment, updateAppointment, getBusinesses, getCustomers, createCustomer, createBusiness } from "@/lib/api";
 import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
@@ -15,6 +15,14 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const [editingId, setEditingId]         = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
   const [message, setMessage]             = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Sub-modales de creación rápida
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showNewBusiness, setShowNewBusiness] = useState(false);
+  const [newCustomerForm, setNewCustomerForm] = useState<CreateCustomerDto>({ name: "", email: "", phone: "", business: "" });
+  const [newBusinessForm, setNewBusinessForm] = useState<CreateBusinessDto>({ name: "", address: "", category: "", phone: "", status: "active", ownerEmail: "", ownerPassword: "" });
+  const [subModalError, setSubModalError] = useState<string | null>(null);
+  const [subModalLoading, setSubModalLoading] = useState(false);
 
   const [form, setForm] = useState<CreateBookingDto>({
     date: "", time: "", status: "pending", customerId: 0, businessId: 0, serviceName: "",
@@ -63,12 +71,54 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     }
   };
 
+  const handleCreateCustomer = async () => {
+    if (!newCustomerForm.name.trim() || !newCustomerForm.email.trim() || !newCustomerForm.phone.trim()) {
+      setSubModalError(t("quickCustomerValidation"));
+      return;
+    }
+    setSubModalLoading(true);
+    setSubModalError(null);
+    try {
+      const created = await createCustomer(newCustomerForm);
+      setCustomers(prev => [...prev, created]);
+      setForm(f => ({ ...f, customerId: created.id }));
+      setShowNewCustomer(false);
+      setNewCustomerForm({ name: "", email: "", phone: "", business: "" });
+      setMessage({ text: t("quickCustomerCreated"), type: "success" });
+    } catch {
+      setSubModalError(t("quickCustomerError"));
+    } finally {
+      setSubModalLoading(false);
+    }
+  };
+
+  const handleCreateBusiness = async () => {
+    if (!newBusinessForm.name.trim() || !newBusinessForm.address.trim() || !newBusinessForm.ownerEmail.trim() || !newBusinessForm.ownerPassword.trim()) {
+      setSubModalError(t("quickBusinessValidation"));
+      return;
+    }
+    setSubModalLoading(true);
+    setSubModalError(null);
+    try {
+      const created = await createBusiness(newBusinessForm);
+      setBusinesses(prev => [...prev, created]);
+      setForm(f => ({ ...f, businessId: created.id }));
+      setShowNewBusiness(false);
+      setNewBusinessForm({ name: "", address: "", category: "", phone: "", status: "active", ownerEmail: "", ownerPassword: "" });
+      setMessage({ text: t("quickBusinessCreated"), type: "success" });
+    } catch {
+      setSubModalError(t("quickBusinessError"));
+    } finally {
+      setSubModalLoading(false);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (deleteTargetId === null) return;
     try {
       await deleteAppointment(deleteTargetId);
       setBookings(bookings.filter(x => x.id !== deleteTargetId));
-      setMessage({ text: "Reserva eliminada correctamente", type: "success" });
+      setMessage({ text: t("deletedOk"), type: "success" });
     } catch {
       setMessage({ text: t("errorMsg"), type: "error" });
     } finally {
@@ -102,11 +152,11 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
 
       <div className="kpi-grid">
         {[
-          { label: "Total",       val: stats.total,     sub: "Histórico",    color: "var(--text)" },
-          { label: "Pendientes",  val: stats.pending,   sub: "Por confirmar", color: "var(--warning-text)" },
-          { label: "Confirmadas", val: stats.confirmed, sub: "En agenda",    color: "var(--success-text)" },
-          { label: "Pagadas",     val: stats.paid,      sub: "Completado",   color: "var(--paid-text)" },
-          { label: "Canceladas",  val: stats.cancelled, sub: "Anuladas",     color: "#ef4444" },
+          { label: t("total"),      val: stats.total,     sub: t("historical"),  color: "var(--text)" },
+          { label: t("pending"),    val: stats.pending,   sub: t("pendingSub"),  color: "var(--warning-text)" },
+          { label: t("confirmed"),  val: stats.confirmed, sub: t("inAgenda"),    color: "var(--success-text)" },
+          { label: t("paid"),       val: stats.paid,      sub: t("completed"),   color: "var(--paid-text)" },
+          { label: t("kpiCancelled"), val: stats.cancelled, sub: t("kpiCancelledSub"), color: "#ef4444" },
         ].map((kpi, i) => (
           <div key={i} className="kpi-card" style={{ borderLeft: "4px solid " + kpi.color }}>
             <p className="kpi-card__label">{kpi.label}</p>
@@ -118,7 +168,7 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
 
       <div className="section-card">
         <div className="panel-title-row">
-          <h3 className="panel-title">Próximas Citas</h3>
+          <h3 className="panel-title">{t("upcomingAppointmentsPanel")}</h3>
           <div className="filter-row">
             {(["all", "pending", "confirmed", "paid", "cancelled"] as const).map((f) => (
               <button
@@ -126,10 +176,11 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 onClick={() => setStatusFilter(f)}
                 className={"filter-pill filter-pill--" + f + (statusFilter === f ? " active" : "")}
               >
-                {f === "all" ? "Ver todas" :
-                 f === "paid" ? "Pagadas" :
-                 f === "cancelled" ? "Canceladas" :
-                 f.charAt(0).toUpperCase() + f.slice(1)}
+                {f === "all"       ? t("filterAll") :
+                 f === "pending"   ? t("statusPending") :
+                 f === "confirmed" ? t("statusConfirmed") :
+                 f === "paid"      ? t("filterPaid") :
+                                    t("filterCancelled")}
               </button>
             ))}
           </div>
@@ -194,9 +245,9 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         <div className="modal-backdrop">
           <div className="modal-card">
             <div className="modal-icon">!</div>
-            <h3 className="modal-title">Eliminar reserva</h3>
+            <h3 className="modal-title">{t("deleteModalTitle")}</h3>
             <p className="modal-text">
-              ¿Seguro que quieres eliminar la reserva #{deleteTargetId}? Esta acción no se puede deshacer.
+              {t("deleteModalText")} #{deleteTargetId}? {t("deleteModalUndo")}
             </p>
             <div className="modal-actions">
               <button
@@ -247,19 +298,39 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("businessLabel")}</label>
-                  <select className="select" value={form.businessId}
-                    onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
-                    <option value={0}>{t("selectBusiness")}</option>
-                    {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select className="select" style={{ flex: 1 }} value={form.businessId}
+                      onChange={e => setForm({ ...form, businessId: Number(e.target.value) })} required>
+                      <option value={0}>{t("selectBusiness")}</option>
+                      {businesses.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      style={{ padding: "6px 10px", whiteSpace: "nowrap", fontSize: "12px" }}
+                      onClick={() => { setSubModalError(null); setShowNewBusiness(true); }}
+                    >
+                      {t("quickAddNew")}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("clientLabel")}</label>
-                  <select className="select" value={form.customerId}
-                    onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
-                    <option value={0}>{t("selectClient")}</option>
-                    {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <select className="select" style={{ flex: 1 }} value={form.customerId}
+                      onChange={e => setForm({ ...form, customerId: Number(e.target.value) })} required>
+                      <option value={0}>{t("selectClient")}</option>
+                      {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      style={{ padding: "6px 10px", whiteSpace: "nowrap", fontSize: "12px" }}
+                      onClick={() => { setSubModalError(null); setShowNewCustomer(true); }}
+                    >
+                      {t("quickAddNew")}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("statusLabel")}</label>
@@ -281,6 +352,114 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Nuevo Cliente */}
+      {showNewCustomer && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal-card" style={{ maxWidth: "420px" }}>
+            <h3 className="modal-title">{t("quickNewCustomer")}</h3>
+            <p className="modal-text">{t("quickNewCustomerDesc")}</p>
+            <div className="page-stack">
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickNameLabel")}</label>
+                <input className="input" type="text" placeholder={t("quickNamePlaceholder")}
+                  value={newCustomerForm.name}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickEmailLabel")}</label>
+                <input className="input" type="email" placeholder={t("quickEmailPlaceholder")}
+                  value={newCustomerForm.email}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickPhoneLabel")}</label>
+                <input className="input" type="tel" placeholder={t("quickPhonePlaceholder")}
+                  value={newCustomerForm.phone}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickBusinessOptLabel")}</label>
+                <input className="input" type="text" placeholder={t("quickBusinessPlaceholder")}
+                  value={newCustomerForm.business ?? ""}
+                  onChange={e => setNewCustomerForm({ ...newCustomerForm, business: e.target.value })} />
+              </div>
+              {subModalError && (
+                <p style={{ color: "#b91c1c", fontSize: "13px", margin: 0 }}>{subModalError}</p>
+              )}
+              <div className="modal-actions" style={{ marginTop: "16px" }}>
+                <button type="button" className="secondary-btn" onClick={() => { setShowNewCustomer(false); setSubModalError(null); }}>
+                  {t("cancel")}
+                </button>
+                <button type="button" className="primary-btn" disabled={subModalLoading} onClick={handleCreateCustomer}>
+                  {subModalLoading ? t("quickSaving") : t("quickCreateCustomer")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Nuevo Negocio */}
+      {showNewBusiness && (
+        <div className="modal-backdrop" style={{ zIndex: 9999 }}>
+          <div className="modal-card" style={{ maxWidth: "420px" }}>
+            <h3 className="modal-title">{t("quickNewBusiness")}</h3>
+            <p className="modal-text">{t("quickNewBusinessDesc")}</p>
+            <div className="page-stack">
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickNameLabel")}</label>
+                <input className="input" type="text" placeholder={t("nameBusiness")}
+                  value={newBusinessForm.name}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickAddressLabel")}</label>
+                <input className="input" type="text" placeholder={t("quickAddressPlaceholder")}
+                  value={newBusinessForm.address}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, address: e.target.value })} />
+              </div>
+              <div className="form-grid">
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickCategoryLabel")}</label>
+                  <input className="input" type="text" placeholder={t("quickCategoryPlaceholder")}
+                    value={newBusinessForm.category ?? ""}
+                    onChange={e => setNewBusinessForm({ ...newBusinessForm, category: e.target.value })} />
+                </div>
+                <div>
+                  <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickPhoneLabel")}</label>
+                  <input className="input" type="tel" placeholder={t("quickPhonePlaceholder")}
+                    value={newBusinessForm.phone ?? ""}
+                    onChange={e => setNewBusinessForm({ ...newBusinessForm, phone: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickOwnerEmailLabel")}</label>
+                <input className="input" type="email" placeholder={t("quickOwnerEmailPlaceholder")}
+                  value={newBusinessForm.ownerEmail}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, ownerEmail: e.target.value })} />
+              </div>
+              <div>
+                <label className="kpi-card__label" style={{ fontSize: "11px" }}>{t("quickOwnerPassLabel")}</label>
+                <input className="input" type="password" placeholder={t("quickOwnerPassPlaceholder")}
+                  value={newBusinessForm.ownerPassword}
+                  onChange={e => setNewBusinessForm({ ...newBusinessForm, ownerPassword: e.target.value })} />
+              </div>
+              {subModalError && (
+                <p style={{ color: "#b91c1c", fontSize: "13px", margin: 0 }}>{subModalError}</p>
+              )}
+              <div className="modal-actions" style={{ marginTop: "16px" }}>
+                <button type="button" className="secondary-btn" onClick={() => { setShowNewBusiness(false); setSubModalError(null); }}>
+                  {t("cancel")}
+                </button>
+                <button type="button" className="primary-btn" disabled={subModalLoading} onClick={handleCreateBusiness}>
+                  {subModalLoading ? t("quickSaving") : t("quickCreateBusiness")}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

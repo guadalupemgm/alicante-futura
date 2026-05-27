@@ -155,9 +155,9 @@ button, input, select { font: inherit; }
 .bf-sidebar-logo  { display: flex; align-items: center; gap: 8px; }
 
 .bf-sidebar-mark {
-  width: 28px; height: 28px;
+  width: 30px; height: 30px;
   background: var(--ink);
-  border-radius: 6px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
   font-weight: 700; font-size: 14px;
@@ -165,7 +165,7 @@ button, input, select { font: inherit; }
   flex-shrink: 0;
 }
 
-html.dark .bf-sidebar-mark { background: var(--accent); }
+html.dark .bf-sidebar-mark { background: solid white; }
 
 .bf-sidebar-name {
   font-family: var(--font-display);
@@ -482,9 +482,11 @@ html.dark .bf-nav-item.active { background: var(--accent); }
   display: inline-flex; align-items: center; justify-content: center;
   margin-left: 5px; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 999px; font-size: 10px; font-weight: 700;
-  background: rgba(0,0,0,.1);
+ background: var(--paper-3); color: var(--ink);
 }
-
+.filter-pill.active .filter-pill__count {
+ background: var(--paper-3); color: var(--ink);
+}
 /* ════════════════════════════════════════════════════════
    FORMS / INPUTS
 ════════════════════════════════════════════════════════ */
@@ -683,4 +685,15 @@ html.dark .bf-nav-item.active { background: var(--accent); }
   .bf-sidebar  { width: 100%; height: auto; position: relative; }
   .form-grid, .kpi-grid, .customer-grid { grid-template-columns: 1fr; }
   .page-hero, .search-row { flex-direction: column; align-items: stretch; }
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 0.65rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.input-error {
+  border-color: #dc2626 !important;
 }

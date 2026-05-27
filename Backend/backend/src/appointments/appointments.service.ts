@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Appointment } from './appointment.entity';
+import { Appointment, AppointmentStatus } from './appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { Payment } from '../payments/entities/payment.entity';
@@ -21,10 +21,16 @@ export class AppointmentsService {
     });
   }
 
-  // 🆕 Devuelve solo las reservas de un negocio concreto
   findByBusiness(businessId: number) {
     return this.appointmentsRepository.find({
       where: { businessId },
+      order: { date: 'ASC', time: 'ASC' },
+    });
+  }
+
+  findByCustomer(customerId: number) {
+    return this.appointmentsRepository.find({
+      where: { customerId },
       order: { date: 'ASC', time: 'ASC' },
     });
   }
@@ -33,31 +39,53 @@ export class AppointmentsService {
     return this.appointmentsRepository.findOneBy({ id });
   }
 
-  create(createAppointmentDto: CreateAppointmentDto) {
+  /**
+   * Crea la reserva y automáticamente genera un pago asociado en estado "pending".
+   * El importe inicial es 0 (editable desde el panel de pagos).
+   */
+  async create(createAppointmentDto: CreateAppointmentDto) {
     const appointment = this.appointmentsRepository.create(createAppointmentDto);
-    return this.appointmentsRepository.save(appointment);
+    const saved = await this.appointmentsRepository.save(appointment);
+
+    // Crear pago automático vinculado a la reserva
+    const payment = this.paymentRepository.create({
+      amount: 0,
+      method: 'Pendiente',
+      status: 'pending',
+      appointmentId: saved.id,
+    });
+    await this.paymentRepository.save(payment);
+
+    return saved;
   }
 
+  /**
+   * Actualiza la reserva. Si cambia el estado, sincroniza el pago:
+   *   reserva → paid      ⟹  pago → paid
+   *   reserva → cancelled ⟹  pago → cancelled
+   *   reserva → pending/confirmed ⟹ pago → pending
+   */
   async update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
     const appointment = await this.appointmentsRepository.findOneBy({ id });
-
     if (!appointment) {
       throw new NotFoundException(`No existe la reserva con id ${id}`);
     }
 
-    const updatedAppointment = this.appointmentsRepository.merge(
-      appointment,
-      updateAppointmentDto,
-    );
+    const updated = this.appointmentsRepository.merge(appointment, updateAppointmentDto);
+    const saved = await this.appointmentsRepository.save(updated);
 
-    const saved = await this.appointmentsRepository.save(updatedAppointment);
-
+    // Sincronizar pago si cambia el estado
     if (updateAppointmentDto.status !== undefined) {
-      const newPaymentStatus =
-        updateAppointmentDto.status === 'paid' ? 'paid' : 'pending';
+      const paymentStatus =
+        updateAppointmentDto.status === AppointmentStatus.PAID
+          ? 'paid'
+          : updateAppointmentDto.status === AppointmentStatus.CANCELLED
+          ? 'cancelled'
+          : 'pending';
+
       await this.paymentRepository.update(
         { appointmentId: id },
-        { status: newPaymentStatus },
+        { status: paymentStatus },
       );
     }
 
@@ -66,13 +94,10 @@ export class AppointmentsService {
 
   async remove(id: number) {
     const appointment = await this.appointmentsRepository.findOneBy({ id });
-
     if (!appointment) {
       throw new NotFoundException(`No existe la reserva con id ${id}`);
     }
-
     await this.appointmentsRepository.remove(appointment);
-
     return { message: `Reserva ${id} eliminada correctamente` };
   }
 }

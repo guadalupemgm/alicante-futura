@@ -17,6 +17,11 @@ export class PaymentsController {
     return this.paymentsService.findAll();
   }
 
+  @Get('business/:businessId')
+  findByBusiness(@Param('businessId') businessId: string) {
+    return this.paymentsService.findByBusiness(+businessId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.paymentsService.findOne(+id);

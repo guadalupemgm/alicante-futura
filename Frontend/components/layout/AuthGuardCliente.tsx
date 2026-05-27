@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
+const ALLOWED_PATHS = ["/empresas", "/reservas", "/settings"];
+
+export default function AuthGuardCliente({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -17,17 +23,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const allowedBusinessPaths = ["/business-bookings", "/dashboard", "/payments", "/configuracion"];
-    if (user.role === "business" && !allowedBusinessPaths.includes(pathname)) {
-      router.push("/business-bookings");
+    if (user.role !== "customer") {
+      if (user.role === "admin") router.push("/dashboard");
+      else if (user.role === "business") router.push("/business-bookings");
+      return;
     }
 
-    if (
-      user.role === "customer" &&
-      !pathname.startsWith("/empresas") &&
-      !pathname.startsWith("/reservas") &&
-      !pathname.startsWith("/settings")
-    ) {
+    const isAllowed = ALLOWED_PATHS.some((p) => pathname.startsWith(p));
+    if (!isAllowed) {
       router.push("/reservas");
     }
   }, [user, isLoading, router, pathname]);

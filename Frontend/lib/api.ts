@@ -99,3 +99,115 @@ export async function getCustomers(): Promise<Customer[]> {
   if (!res.ok) throw new Error("Error al obtener los clientes");
   return res.json();
 }
+
+export interface CreateCustomerDto {
+  name: string;
+  email: string;
+  phone: string;
+  business?: string;
+}
+
+export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Error del backend:", errorText);
+    throw new Error("Error al crear el cliente");
+  }
+  return res.json();
+}
+
+export interface CreateBusinessDto {
+  name: string;
+  address: string;
+  category?: string;
+  phone?: string;
+  status?: string;
+  ownerEmail: string;
+  ownerPassword: string;
+}
+
+export async function createBusiness(data: CreateBusinessDto): Promise<Business> {
+  const res = await fetch(`${API_URL}/business`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error("Error del backend:", errorText);
+    throw new Error("Error al crear el negocio");
+  }
+  return res.json();
+}
+// ─── Admin: editar usuario (cliente) ────────────────────────────────────────
+export interface UpdateCustomerDto {
+  name?: string;
+  email?: string;
+  phone?: string;
+  business?: string;
+}
+
+export async function updateCustomer(id: number, data: UpdateCustomerDto, token?: string): Promise<Customer> {
+  const res = await fetch(`${API_URL}/customers/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al actualizar el cliente");
+  return res.json();
+}
+
+// ─── Admin: editar negocio ───────────────────────────────────────────────────
+export interface UpdateBusinessDto {
+  name?: string;
+  address?: string;
+  category?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+}
+
+export async function updateBusiness(id: number, data: UpdateBusinessDto, token?: string): Promise<Business> {
+  const res = await fetch(`${API_URL}/business/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Error al actualizar el negocio");
+  return res.json();
+}
+
+export interface Payment {
+  id: number;
+  amount: number;
+  method: string;
+  status: "pending" | "paid" | "cancelled";
+  appointmentId: number;
+}
+
+export async function getAppointmentsByBusiness(businessId: number): Promise<Booking[]> {
+  const res = await fetch(`${API_URL}/appointments/business/${businessId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Error al obtener las reservas del negocio");
+  return res.json();
+}
+
+export async function getPaymentsByBusiness(businessId: number): Promise<Payment[]> {
+  const res = await fetch(`${API_URL}/payments/business/${businessId}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Error al obtener los pagos del negocio");
+  return res.json();
+}

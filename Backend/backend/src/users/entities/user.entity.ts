@@ -20,12 +20,21 @@ export class User {
   @Column()
   password!: string;
 
-  @Column({ default: UserRole.ADMIN })
-  role!: UserRole;
+  @Column({ nullable: true })
+  name!: string;
+
+  @Column({ nullable: true })
+  phone!: string;
+
+  @Column({ default: UserRole.CUSTOMER })
+  role!: string;
 
   @Column({ default: true })
   isActive!: boolean;
 
   @Column({ nullable: true })
   businessId!: number;
+
+  @Column({ nullable: true })
+  customerId!: number;
 }

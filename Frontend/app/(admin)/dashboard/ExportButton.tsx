@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
+import { useLanguage } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function ExportButton() {
+  const { t } = useLanguage();
+
   const handleExport = useCallback(async () => {
     const res = await fetch(`${API_URL}/appointments`, {
       cache: "no-store",
@@ -12,11 +15,11 @@ export default function ExportButton() {
     const bookings = await res.json();
 
     if (!bookings.length) {
-      alert("No hay reservas para exportar.");
+      alert(t("noBookingsExport"));
       return;
     }
 
-    const headers = ["ID", "Fecha", "Hora", "Servicio", "Estado", "Cliente ID", "Negocio ID"];
+    const headers = ["ID", t("date"), t("time"), t("service"), t("status"), t("clientId"), t("businessLabel")];
     const rows = bookings.map((b: any) => [
       b.id,
       b.date,
@@ -38,11 +41,11 @@ export default function ExportButton() {
     a.download = "Lista_Reservas.csv";
     a.click();
     URL.revokeObjectURL(url);
-  }, []);
+  }, [t]);
 
   return (
     <button className="primary-btn" type="button" onClick={handleExport}>
-      Export report
+      {t("exportReport")}
     </button>
   );
 }

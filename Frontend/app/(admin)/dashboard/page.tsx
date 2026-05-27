@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getAppointments } from "@/lib/api";
+import { getAppointments, getAppointmentsByBusiness } from "@/lib/api";
 import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
+import { useAuth } from "@/components/context/AuthContext";
 import ExportButton from "./ExportButton";
 
 type DashboardBookingStatus = "pending" | "confirmed" | "paid";
@@ -44,12 +45,17 @@ function KpiCard({
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   useEffect(() => {
-    getAppointments().then(setBookings).catch(console.error);
-  }, []);
+    if (user?.role === "business" && user?.businessId) {
+      getAppointmentsByBusiness(user.businessId).then(setBookings).catch(console.error);
+    } else {
+      getAppointments().then(setBookings).catch(console.error);
+    }
+  }, [user]);
 
   const total     = bookings.length;
   const pending   = bookings.filter(b => b.status === "pending").length;
@@ -78,7 +84,7 @@ export default function DashboardPage() {
         <div className="section-card">
           <div className="panel-title-row">
             <h3 className="panel-title">{t("upcomingBookings")}</h3>
-            <Link href="/bookings" className="panel-subtle-link">{t("viewAll")}</Link>
+            <Link href={user?.role === "business" ? "/business-bookings" : "/bookings"} className="panel-subtle-link">{t("viewAll")}</Link>
           </div>
 
           {bookings.length === 0 ? (
