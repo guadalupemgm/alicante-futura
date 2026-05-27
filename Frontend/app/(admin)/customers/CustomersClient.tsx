@@ -44,7 +44,7 @@ export default function CustomersClient() {
   const [search, setSearch]   = useState("");
   const [page, setPage]       = useState(1);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const authHeaders = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
