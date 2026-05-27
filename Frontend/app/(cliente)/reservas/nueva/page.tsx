@@ -7,6 +7,18 @@ import { useLanguage } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const MONTH_NAMES = {
+  es: ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  fr: ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
+};
+
+const WEEKDAY_NAMES = {
+  es: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"],
+  en: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+  fr: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"]
+};
+
 type Business = { id: number; name: string; category: string; address: string };
 
 function NuevaReservaForm() {
@@ -32,6 +44,10 @@ function NuevaReservaForm() {
   
   // Option state for Step 2
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  // Calendar states
+  const [currentMonth, setCurrentMonth] = useState(() => new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(() => new Date().getFullYear());
 
   // Loading, Errors, Success
   const [loading, setLoading] = useState(false);
@@ -59,6 +75,23 @@ function NuevaReservaForm() {
     }
   }, [preBusinessId, businesses]);
 
+  const businessServices = useMemo(() => {
+    if (!form.businessId) return [];
+    
+    // Check if the business has services stored in localStorage
+    const saved = localStorage.getItem(`bf_services_by_business_${form.businessId}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      } catch (_) {}
+    }
+
+    return [];
+  }, [form.businessId]);
+
   // Sync selectedOption when step is 2 or when form.serviceName / businessServices change
   useEffect(() => {
     if (step === 2) {
@@ -73,6 +106,85 @@ function NuevaReservaForm() {
       }
     }
   }, [step, form.serviceName, businessServices]);
+
+  // Calendar logic
+  const calendarDays = useMemo(() => {
+    const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+    const startDayOfWeek = (firstDayIndex + 6) % 7;
+    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const prevMonthTotalDays = new Date(currentYear, currentMonth, 0).getDate();
+
+    const days = [];
+
+    // Prefix days from previous month
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      days.push({
+        day: prevMonthTotalDays - i,
+        isCurrentMonth: false,
+        isPast: true
+      });
+    }
+
+    // Current month days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let i = 1; i <= totalDays; i++) {
+      const dateToCheck = new Date(currentYear, currentMonth, i);
+      days.push({
+        day: i,
+        isCurrentMonth: true,
+        isPast: dateToCheck < today
+      });
+    }
+
+    // Suffix days from next month
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({
+        day: i,
+        isCurrentMonth: false,
+        isPast: false
+      });
+    }
+
+    return days;
+  }, [currentMonth, currentYear]);
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(y => y - 1);
+    } else {
+      setCurrentMonth(m => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(y => y + 1);
+    } else {
+      setCurrentMonth(m => m + 1);
+    }
+  };
+
+  const isPrevMonthDisabled = useMemo(() => {
+    const now = new Date();
+    return currentYear < now.getFullYear() || (currentYear === now.getFullYear() && currentMonth <= now.getMonth());
+  }, [currentMonth, currentYear]);
+
+  const isSelectedDate = (day: number) => {
+    if (!form.date) return false;
+    const d = new Date(form.date + "T00:00:00");
+    return d.getDate() === day && d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  };
+
+  const handleDateClick = (day: number) => {
+    const mm = String(currentMonth + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    setForm(f => ({ ...f, date: `${currentYear}-${mm}-${dd}`, time: "" }));
+  };
 
   const selectedBusinessObj = useMemo(() => {
     return businesses.find(b => b.id === form.businessId);
@@ -99,23 +211,6 @@ function NuevaReservaForm() {
     }
     return ["Servicio Estándar", "Consulta General", "Soporte Premium", "Asesoría Personalizada"];
   };
-
-  const businessServices = useMemo(() => {
-    if (!form.businessId) return [];
-    
-    // Check if the business has services stored in localStorage
-    const saved = localStorage.getItem(`bf_services_by_business_${form.businessId}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-      } catch (_) {}
-    }
-
-    return [];
-  }, [form.businessId]);
 
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
@@ -427,61 +522,112 @@ este comprobante el día de tu cita.
         )}
 
         {/* STEP 3: CHOOSE DATE & TIME */}
-        {step === 3 && (
-          <div className="animate-slideIn">
-            <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "1.25rem" }}>
-              {lang.code === "es" ? "Paso 3: Elige Fecha y Hora" : "Step 3: Choose Date & Time"}
-            </h3>
+        {step === 3 && (() => {
+          const months = MONTH_NAMES[lang.code as keyof typeof MONTH_NAMES] || MONTH_NAMES.en;
+          const weekdays = WEEKDAY_NAMES[lang.code as keyof typeof WEEKDAY_NAMES] || WEEKDAY_NAMES.en;
 
-            <div className="page-stack">
-              <div>
-                <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 6 }}>{t("dateFieldLabel")}</label>
-                <input
-                  className="input"
-                  type="date"
-                  min={new Date().toISOString().split("T")[0]}
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  required
-                />
-              </div>
+          return (
+            <div className="animate-slideIn">
+              <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "1.25rem" }}>
+                {lang.code === "es" ? "Paso 3: Elige Fecha y Hora" : "Step 3: Choose Date & Time"}
+              </h3>
 
-              {form.date && (
+              <div className="page-stack">
                 <div>
-                  <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 8 }}>
-                    {lang.code === "es" ? "Horas disponibles para el día elegido:" : "Available slots for the selected day:"}
+                  <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 8, display: "block", textAlign: "center" }}>
+                    {lang.code === "es" ? "Selecciona un día en el calendario *" : "Select a day on the calendar *"}
                   </label>
-                  <div className="time-grid-picker">
-                    {timeSlots.map((ts) => (
-                      <button
-                        key={ts}
-                        type="button"
-                        onClick={() => setForm({ ...form, time: ts })}
-                        className={`time-slot-pill ${form.time === ts ? "selected" : ""}`}
+                  
+                  {/* Interactive Calendar Widget */}
+                  <div className="calendar-widget">
+                    <div className="calendar-header">
+                      <button 
+                        type="button" 
+                        onClick={handlePrevMonth} 
+                        disabled={isPrevMonthDisabled}
+                        className="calendar-nav-btn"
+                        style={{ opacity: isPrevMonthDisabled ? 0.35 : 1 }}
                       >
-                        {ts}
+                        <i className="bi bi-chevron-left" />
                       </button>
-                    ))}
+                      <span className="calendar-month-title">
+                        {months[currentMonth]} {currentYear}
+                      </span>
+                      <button 
+                        type="button" 
+                        onClick={handleNextMonth} 
+                        className="calendar-nav-btn"
+                      >
+                        <i className="bi bi-chevron-right" />
+                      </button>
+                    </div>
+
+                    <div className="calendar-weekdays">
+                      {weekdays.map(d => (
+                        <span key={d} className="calendar-weekday">{d}</span>
+                      ))}
+                    </div>
+
+                    <div className="calendar-days-grid">
+                      {calendarDays.map((item, index) => {
+                        const isSelected = item.isCurrentMonth && isSelectedDate(item.day);
+                        const isDisabled = item.isPast || !item.isCurrentMonth;
+                        
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              if (!isDisabled) handleDateClick(item.day);
+                            }}
+                            disabled={isDisabled}
+                            className={`calendar-day-btn${isSelected ? " selected" : ""}${isDisabled ? " disabled" : " active-day"}`}
+                          >
+                            {item.day}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
-                <button type="button" className="secondary-btn" onClick={() => setStep(2)}>
-                  {lang.code === "es" ? "Anterior" : "Previous"}
-                </button>
-                <button 
-                  type="button" 
-                  className="primary-btn" 
-                  disabled={!form.date || !form.time} 
-                  onClick={() => setStep(4)}
-                >
-                  {lang.code === "es" ? "Siguiente" : "Next"}
-                </button>
+                {form.date && (
+                  <div className="animate-fadeIn">
+                    <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 8 }}>
+                      {lang.code === "es" ? `Horas disponibles para el día ${form.date.split("-").reverse().join("/")}:` : `Available slots for ${form.date.split("-").reverse().join("/")}:`}
+                    </label>
+                    <div className="time-grid-picker">
+                      {timeSlots.map((ts) => (
+                        <button
+                          key={ts}
+                          type="button"
+                          onClick={() => setForm({ ...form, time: ts })}
+                          className={`time-slot-pill ${form.time === ts ? "selected" : ""}`}
+                        >
+                          {ts}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="modal-actions" style={{ marginTop: "1.5rem" }}>
+                  <button type="button" className="secondary-btn" onClick={() => setStep(2)}>
+                    {lang.code === "es" ? "Anterior" : "Previous"}
+                  </button>
+                  <button 
+                    type="button" 
+                    className="primary-btn" 
+                    disabled={!form.date || !form.time} 
+                    onClick={() => setStep(4)}
+                  >
+                    {lang.code === "es" ? "Siguiente" : "Next"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* STEP 4: STRIPE PRE-PAYMENT AND CONFIRMATION */}
         {step === 4 && (
@@ -845,6 +991,95 @@ este comprobante el día de tu cita.
         @keyframes slideIn {
           from { transform: translateY(12px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Interactive Calendar styles */
+        .calendar-widget {
+          background: var(--paper);
+          border: 1px solid var(--border);
+          border-radius: var(--r-md);
+          padding: 1.25rem;
+          width: 100%;
+          max-width: 380px;
+          margin: 0 auto 1rem auto;
+          box-shadow: var(--shadow-sm);
+        }
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+        .calendar-nav-btn {
+          background: transparent;
+          border: 1px solid var(--border);
+          border-radius: var(--r);
+          color: var(--ink);
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .calendar-nav-btn:hover:not(:disabled) {
+          background: var(--paper-3);
+          border-color: var(--ink-3);
+        }
+        .calendar-month-title {
+          font-weight: 700;
+          font-size: 14px;
+          color: var(--ink);
+        }
+        .calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          text-align: center;
+          margin-bottom: 0.5rem;
+        }
+        .calendar-weekday {
+          font-size: 10px;
+          font-weight: 700;
+          color: var(--ink-3);
+          text-transform: uppercase;
+        }
+        .calendar-days-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+          text-align: center;
+        }
+        .calendar-day-btn {
+          background: transparent;
+          border: none;
+          border-radius: var(--r);
+          height: 34px;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          transition: all 0.15s ease;
+          outline: none;
+        }
+        .calendar-day-btn.active-day {
+          color: var(--ink);
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .calendar-day-btn.active-day:hover {
+          background: var(--paper-3);
+        }
+        .calendar-day-btn.selected {
+          background: var(--primary);
+          color: #fff !important;
+          font-weight: 700;
+        }
+        .calendar-day-btn.disabled {
+          color: var(--muted);
+          opacity: 0.25;
+          cursor: not-allowed;
         }
 
         /* Spinning loader inside buttons */
