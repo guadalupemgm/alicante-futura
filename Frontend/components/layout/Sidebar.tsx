@@ -16,7 +16,9 @@ const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
 
 // Menú de negocio (Business)
 const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
-  { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
+  { key: "dashboard",          href: "/dashboard",          icon: "bi-speedometer2" },
+  { key: "myBusinessBookings", href: "/business-bookings",  icon: "bi-calendar2-check" },
+  { key: "payments",           href: "/payments",           icon: "bi-credit-card-2-front-fill" },
 ];
 
 export default function Sidebar() {
@@ -53,7 +55,7 @@ export default function Sidebar() {
              VISTA NEGOCIO (BUSINESS)
              ========================================== */
           <>
-            <div className="bf-nav-label">Mi negocio</div>
+            <div className="bf-nav-label">{t("myBusiness")}</div>
             {menuItems.map((item) => {
               const active = pathname === item.href;
               return (
@@ -63,12 +65,7 @@ export default function Sidebar() {
                   className={`bf-nav-item${active ? " active" : ""}`}
                 >
                   <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>
-                    {item.href === "/dashboard" && "Panel General"}
-                    {item.href === "/dashboard/agenda" && "Agenda de Citas"}
-                    {item.href === "/dashboard/servicios" && "Mis Servicios"}
-                    {item.href === "/dashboard/config-empresa" && "Datos de Empresa"}
-                  </span>
+                  <span>{t(item.key)}</span>
                 </Link>
               );
             })}
