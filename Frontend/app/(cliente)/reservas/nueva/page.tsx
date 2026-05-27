@@ -54,6 +54,11 @@ function NuevaReservaForm() {
   const [error,   setError]   = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Payment timing: "now" | "later"
+  const [paymentTiming, setPaymentTiming] = useState<"now" | "later" | null>(null);
+  // Payment method when paying later: "card" | "bizum" | "transfer" | "cash"
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "bizum" | "transfer" | "cash" | null>(null);
+
   // Simulated Stripe Payment State
   const [cardNumber, setCardNumber] = useState("");
   const [cardName, setCardName] = useState("");
@@ -264,40 +269,53 @@ function NuevaReservaForm() {
     }
 
     const isPending = selectedOption === "Otro";
+    const isPayingNow = paymentTiming === "now" && !isPending;
 
-    if (!isPending) {
+    if (isPayingNow) {
       if (!cardNumber || !cardName || !cardExpiry || cardCvc.length < 3) {
         setError(lang.code === "es" ? "Por favor rellena los datos de pago válidos." : "Please fill in valid payment details.");
         return;
       }
     }
 
+    if (!isPending && paymentTiming === null) {
+      setError(lang.code === "es" ? "Por favor selecciona cuándo deseas pagar." : "Please select when you want to pay.");
+      return;
+    }
+
+    if (paymentTiming === "later" && !paymentMethod) {
+      setError(lang.code === "es" ? "Por favor selecciona el método de pago." : "Please select a payment method.");
+      return;
+    }
+
     setLoading(true);
     setError("");
     
-    // Simulate Stripe payment request delay (2s) if not pending
-    if (!isPending) {
+    if (isPayingNow) {
       await new Promise(r => setTimeout(r, 2000));
     } else {
       await new Promise(r => setTimeout(r, 800));
     }
+
+    const appointmentStatus = isPayingNow ? "paid" : "pending";
 
     try {
       const res = await fetch(API_URL + "/appointments", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          businessId:  form.businessId,
-          customerId:  user?.customerId ?? 0,
-          serviceName: form.serviceName,
-          date:        form.date,
-          time:        form.time,
-          status:      isPending ? "pending" : "paid", // "pending" if custom service, "paid" if prepaid!
-          price:       isPending ? 0 : servicePrice,
+          businessId:   form.businessId,
+          customerId:   user?.customerId ?? 0,
+          serviceName:  form.serviceName,
+          date:         form.date,
+          time:         form.time,
+          status:       appointmentStatus,
+          price:        isPayingNow ? servicePrice : 0,
+          paymentMethod: isPayingNow ? "card_online" : (paymentMethod ?? "pending"),
         }),
       });
       if (!res.ok) throw new Error();
-      setPaymentSuccess(!isPending);
+      setPaymentSuccess(isPayingNow);
       setSuccess(true);
     } catch {
       setError(t("errorCrearReserva"));
@@ -308,17 +326,26 @@ function NuevaReservaForm() {
 
   const handleDownloadReceipt = () => {
     const isPending = selectedOption === "Otro";
+    const isPayingNow = paymentTiming === "now" && !isPending;
     const subtotal = servicePrice / 1.21;
     const tax = servicePrice - subtotal;
 
-    const receiptContent = isPending ? `
+    const paymentMethodLabel: Record<string, string> = {
+      card: "Tarjeta de crédito/débito",
+      bizum: "Bizum",
+      transfer: "Transferencia bancaria",
+      cash: "Efectivo en el local",
+    };
+
+    const receiptContent = (isPending || paymentTiming === "later") ? `
 ==================================================
         CONFIRMACIÓN DE RESERVA BookFlow
 ==================================================
 Código de Reserva:     BF-RES-${Math.random().toString(36).substring(2, 8).toUpperCase()}
 Fecha de Confirmación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
-Estado del Pago:       PENDIENTE DE PRESUPUESTAR
-Monto a Pagar:         Por determinar en el local
+Estado del Pago:       ${isPending ? "PENDIENTE DE PRESUPUESTAR" : "PAGO PENDIENTE EN LOCAL"}
+Método de Pago:        ${isPending ? "Por determinar en el local" : (paymentMethodLabel[paymentMethod ?? ""] ?? "Por determinar")}
+Monto a Pagar:         ${isPending ? "Por determinar en el local" : `${servicePrice.toFixed(2)} €`}
 --------------------------------------------------
 DATOS DEL CLIENTE:
 Nombre de Usuario:    ${user?.email?.split("@")[0] ?? "Usuario"}
@@ -361,8 +388,8 @@ Hora Programada:      ${form.time} hs
 DETALLES DEL COBRO:
 Subtotal:             ${subtotal.toFixed(2)} €
 I.V.A (21%):          ${tax.toFixed(2)} €
-Total Cobrado:        ${servicePrice.toFixed(2)} € (Pago Anticipado)
-Método de Pago:       Tarjeta de Crédito (•••• ${cardNumber.slice(-4) || "4242"})
+Total Cobrado:        ${servicePrice.toFixed(2)} € (Pago Anticipado Online)
+Método de Pago:       Tarjeta de Crédito Online (•••• ${cardNumber.slice(-4) || "4242"})
 ==================================================
 ¡Gracias por tu reserva en BookFlow! Presenta 
 este comprobante el día de tu cita.
@@ -372,45 +399,63 @@ este comprobante el día de tu cita.
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = isPending ? `Confirmacion_Reserva_${form.date}_BookFlow.txt` : `Recibo_Reserva_${form.date}_BookFlow.txt`;
+    link.download = (isPending || paymentTiming === "later") ? `Confirmacion_Reserva_${form.date}_BookFlow.txt` : `Recibo_Reserva_${form.date}_BookFlow.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
   if (success) {
+    const isPending = selectedOption === "Otro";
+    const isPayingNow = paymentTiming === "now" && !isPending;
+    const paymentMethodLabels: Record<string, string> = {
+      card: lang.code === "es" ? "Tarjeta en el local" : "Card at the venue",
+      bizum: "Bizum",
+      transfer: lang.code === "es" ? "Transferencia bancaria" : "Bank transfer",
+      cash: lang.code === "es" ? "Efectivo en el local" : "Cash at the venue",
+    };
+
     return (
       <div className="page-stack animate-fadeIn" style={{ maxWidth: 480, margin: "0 auto", paddingTop: "2rem" }}>
         <div className="section-card" style={{ textAlign: "center", padding: "2.5rem", borderRadius: "var(--r-lg)", boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
           <div className="success-icon-container" style={{
-            width: 72, height: 72, background: "rgba(16, 185, 129, 0.1)", color: "#10b981", borderRadius: "50%",
+            width: 72, height: 72, background: `rgba(${isPayingNow ? "16, 185, 129" : "99, 102, 241"}, 0.1)`, color: isPayingNow ? "#10b981" : "var(--primary)", borderRadius: "50%",
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 1.5rem"
           }}>
-            <i className="bi bi-shield-fill-check"></i>
+            <i className={`bi ${isPayingNow ? "bi-shield-fill-check" : "bi-calendar2-check-fill"}`}></i>
           </div>
           <h3 style={{ marginBottom: "0.5rem", fontWeight: 700 }}>{t("reservaCreada")}</h3>
-          <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: 14 }}>
-            {selectedOption === "Otro" ? (
-              lang.code === "es"
-                ? "Tu cita ha sido guardada en tu panel de control. El pago ha quedado pendiente de presupuestar por la empresa."
-                : "Your appointment has been saved to your dashboard. The payment is pending quotation by the business."
-            ) : (
-              lang.code === "es" 
-                ? "Tu cita ha sido prepagada con éxito a través de Stripe y guardada en tu panel de control." 
-                : "Your appointment was successfully prepaid via Stripe and saved to your dashboard."
-            )}
+          <p style={{ color: "var(--muted)", marginBottom: "1rem", fontSize: 14 }}>
+            {isPending
+              ? (lang.code === "es"
+                  ? "Tu cita ha sido guardada. El precio será presupuestado por la empresa y el pago se realizará en el local."
+                  : "Your appointment has been saved. The price will be quoted by the business and paid at the venue.")
+              : isPayingNow
+              ? (lang.code === "es"
+                  ? "Tu cita ha sido prepagada con éxito a través de Stripe y guardada en tu panel de control."
+                  : "Your appointment was successfully prepaid via Stripe and saved to your dashboard.")
+              : (lang.code === "es"
+                  ? `Tu reserva ha sido confirmada. El pago se realizará en el local con: ${paymentMethodLabels[paymentMethod ?? ""] ?? ""}.`
+                  : `Your booking is confirmed. Payment will be made at the venue via: ${paymentMethodLabels[paymentMethod ?? ""] ?? ""}.`)
+            }
           </p>
-          
+
+          {!isPayingNow && paymentTiming === "later" && paymentMethod && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--paper-2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: "8px 16px", marginBottom: "1.25rem", fontSize: 13, fontWeight: 600 }}>
+              <i className={`bi ${paymentMethod === "card" ? "bi-credit-card" : paymentMethod === "bizum" ? "bi-phone" : paymentMethod === "transfer" ? "bi-bank" : "bi-cash-stack"}`} style={{ color: "var(--primary)" }} />
+              {paymentMethodLabels[paymentMethod]}
+            </div>
+          )}
+
           <button 
             onClick={handleDownloadReceipt}
             className="secondary-btn" 
             style={{ width: "100%", padding: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: "1.5rem", border: "1px dashed var(--border)" }}
           >
             <i className="bi bi-file-earmark-arrow-down-fill"></i>
-            {selectedOption === "Otro" ? (
-              lang.code === "es" ? "Descargar Confirmación de Reserva" : "Download Booking Confirmation"
-            ) : (
-              lang.code === "es" ? "Descargar Recibo de Compra" : "Download Purchase Receipt"
-            )}
+            {(isPending || paymentTiming === "later")
+              ? (lang.code === "es" ? "Descargar Confirmación de Reserva" : "Download Booking Confirmation")
+              : (lang.code === "es" ? "Descargar Recibo de Compra" : "Download Purchase Receipt")
+            }
           </button>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -695,11 +740,11 @@ este comprobante el día de tu cita.
           );
         })()}
 
-        {/* STEP 4: STRIPE PRE-PAYMENT AND CONFIRMATION */}
+        {/* STEP 4: PAYMENT TIMING & CONFIRMATION */}
         {step === 4 && (
           <div className="animate-slideIn">
             <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "1.25rem" }}>
-              {lang.code === "es" ? "Paso 4: Confirmación y Pago Anticipado" : "Step 4: Confirmation & Prepayment"}
+              {lang.code === "es" ? "Paso 4: Confirmación y Pago" : "Step 4: Confirmation & Payment"}
             </h3>
 
             {/* Selection Summary */}
@@ -722,122 +767,184 @@ este comprobante el día de tu cita.
                   <strong style={{ color: "var(--ink)" }}>{form.time} hs</strong>
                 </div>
               </div>
-              <div style={{ borderTop: "1px dashed var(--border)", marginTop: "1rem", paddingTop: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "12px", color: "var(--muted)" }}>
-                  {selectedOption === "Otro" ? (
-                    lang.code === "es" ? "Estado del cobro:" : "Payment status:"
-                  ) : (
-                    lang.code === "es" ? "Total a pagar (prepago):" : "Total to pay (prepayment):"
-                  )}
-                </span>
-                <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--primary)" }}>
-                  {selectedOption === "Otro" ? (
-                    lang.code === "es" ? "Pendiente de presupuestar" : "Pending quotation"
-                  ) : (
-                    `${servicePrice.toFixed(2)} €`
-                  )}
-                </span>
-              </div>
+              {selectedOption !== "Otro" && (
+                <div style={{ borderTop: "1px dashed var(--border)", marginTop: "1rem", paddingTop: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    {lang.code === "es" ? "Total del servicio:" : "Service total:"}
+                  </span>
+                  <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--primary)" }}>
+                    {`${servicePrice.toFixed(2)} €`}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Simulated Stripe Checkout Form */}
             <form onSubmit={handleSubmit}>
               <div className="page-stack">
-                
-                {selectedOption !== "Otro" ? (
-                  <>
-                    {/* Credit Card Graphic mockup */}
-                    <div className="cc-card-graphic">
-                      <div className="cc-card-header">
-                        <span className="cc-card-logo">BookFlow Pay</span>
-                        <i className="bi bi-wifi-2" style={{ fontSize: "20px" }} />
-                      </div>
-                      <div className="cc-card-chip" />
-                      <div className="cc-card-number">
-                        {cardNumber || "•••• •••• •••• ••••"}
-                      </div>
-                      <div className="cc-card-footer">
-                        <div className="cc-card-field">
-                          <span className="cc-card-label">CARDHOLDER</span>
-                          <span className="cc-card-value">{cardName.toUpperCase() || "NOMBRE DEL TITULAR"}</span>
-                        </div>
-                        <div className="cc-card-field">
-                          <span className="cc-card-label">EXPIRES</span>
-                          <span className="cc-card-value">{cardExpiry || "MM/AA"}</span>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", marginBottom: 8, justifyContent: "center" }}>
-                      <i className="bi bi-lock-fill" style={{ color: "var(--success-text)" }} />
-                      <span>Pasarela de Pago Stripe simulada (Entorno seguro de pruebas)</span>
-                    </div>
-
-                    <div>
-                      <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Titular de la tarjeta</label>
-                      <input
-                        className="input"
-                        type="text"
-                        placeholder="Ej. Juan Pérez"
-                        value={cardName}
-                        onChange={(e) => setCardName(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Número de tarjeta</label>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          className="input"
-                          type="text"
-                          placeholder="4242 4242 4242 4242"
-                          value={cardNumber}
-                          onChange={(e) => handleCardNumberChange(e.target.value)}
-                          required
-                          style={{ paddingRight: "40px" }}
-                        />
-                        <i className="bi bi-credit-card-2-front" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "18px" }} />
-                      </div>
-                    </div>
-
-                    <div className="form-grid">
-                      <div>
-                        <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Fecha de caducidad</label>
-                        <input
-                          className="input"
-                          type="text"
-                          placeholder="MM/AA"
-                          value={cardExpiry}
-                          onChange={(e) => handleExpiryChange(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Código CVC</label>
-                        <input
-                          className="input"
-                          type="password"
-                          placeholder="123"
-                          value={cardCvc}
-                          onChange={(e) => handleCvcChange(e.target.value)}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ padding: "1.25rem", background: "var(--paper-2)", borderRadius: "var(--r)", border: "1px dashed var(--border)", display: "flex", gap: "12px", alignItems: "flex-start", margin: "0.5rem 0 1rem 0" }}>
+                {selectedOption === "Otro" ? (
+                  /* Custom service → always pending */
+                  <div style={{ padding: "1.25rem", background: "var(--paper-2)", borderRadius: "var(--r)", border: "1px dashed var(--border)", display: "flex", gap: "12px", alignItems: "flex-start" }}>
                     <i className="bi bi-info-circle-fill" style={{ color: "var(--primary)", fontSize: "18px", marginTop: "2px" }} />
                     <div>
                       <h4 style={{ margin: 0, fontSize: "13px", fontWeight: 600 }}>{lang.code === "es" ? "Reserva con pago pendiente" : "Booking with pending payment"}</h4>
                       <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--muted)", lineHeight: 1.4 }}>
                         {lang.code === "es"
-                          ? "Al haber seleccionado un servicio personalizado ('Otro'), no se requiere pago anticipado. El precio final será presupuestado por la empresa y el pago se abonará directamente en el local."
-                          : "Because you selected a custom service ('Other'), no prepayment is required. The final price will be quoted by the business and paid directly at the location."}
+                          ? "Al haber seleccionado un servicio personalizado ('Otro'), el precio final será presupuestado por la empresa y el pago se abonará directamente en el local."
+                          : "Because you selected a custom service ('Other'), the final price will be quoted by the business and paid directly at the location."}
                       </p>
                     </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Payment timing choice */}
+                    <div>
+                      <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 10, display: "block" }}>
+                        {lang.code === "es" ? "¿Cuándo quieres pagar?" : "When do you want to pay?"}
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                        <button
+                          type="button"
+                          onClick={() => { setPaymentTiming("now"); setPaymentMethod(null); }}
+                          className={`payment-timing-btn${paymentTiming === "now" ? " active" : ""}`}
+                        >
+                          <i className="bi bi-lightning-charge-fill" style={{ fontSize: 20, marginBottom: 4, display: "block" }} />
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{lang.code === "es" ? "Pagar ahora" : "Pay now"}</span>
+                          <span style={{ fontSize: 11, opacity: 0.8 }}>{lang.code === "es" ? "Prepago online" : "Online prepayment"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setPaymentTiming("later"); setCardNumber(""); setCardName(""); setCardExpiry(""); setCardCvc(""); }}
+                          className={`payment-timing-btn${paymentTiming === "later" ? " active" : ""}`}
+                        >
+                          <i className="bi bi-clock-fill" style={{ fontSize: 20, marginBottom: 4, display: "block" }} />
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{lang.code === "es" ? "Pagar más tarde" : "Pay later"}</span>
+                          <span style={{ fontSize: 11, opacity: 0.8 }}>{lang.code === "es" ? "En el local" : "At the venue"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Pay NOW → Stripe card form */}
+                    {paymentTiming === "now" && (
+                      <div className="animate-fadeIn">
+                        {/* Credit Card Graphic mockup */}
+                        <div className="cc-card-graphic">
+                          <div className="cc-card-header">
+                            <span className="cc-card-logo">BookFlow Pay</span>
+                            <i className="bi bi-wifi-2" style={{ fontSize: "20px" }} />
+                          </div>
+                          <div className="cc-card-chip" />
+                          <div className="cc-card-number">
+                            {cardNumber || "•••• •••• •••• ••••"}
+                          </div>
+                          <div className="cc-card-footer">
+                            <div className="cc-card-field">
+                              <span className="cc-card-label">CARDHOLDER</span>
+                              <span className="cc-card-value">{cardName.toUpperCase() || "NOMBRE DEL TITULAR"}</span>
+                            </div>
+                            <div className="cc-card-field">
+                              <span className="cc-card-label">EXPIRES</span>
+                              <span className="cc-card-value">{cardExpiry || "MM/AA"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", marginBottom: 12, justifyContent: "center" }}>
+                          <i className="bi bi-lock-fill" style={{ color: "var(--success-text)" }} />
+                          <span>Pasarela de Pago Stripe simulada (Entorno seguro de pruebas)</span>
+                        </div>
+
+                        <div>
+                          <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Titular de la tarjeta</label>
+                          <input
+                            className="input"
+                            type="text"
+                            placeholder="Ej. Juan Pérez"
+                            value={cardName}
+                            onChange={(e) => setCardName(e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Número de tarjeta</label>
+                          <div style={{ position: "relative" }}>
+                            <input
+                              className="input"
+                              type="text"
+                              placeholder="4242 4242 4242 4242"
+                              value={cardNumber}
+                              onChange={(e) => handleCardNumberChange(e.target.value)}
+                              required
+                              style={{ paddingRight: "40px" }}
+                            />
+                            <i className="bi bi-credit-card-2-front" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "18px" }} />
+                          </div>
+                        </div>
+
+                        <div className="form-grid">
+                          <div>
+                            <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Fecha de caducidad</label>
+                            <input
+                              className="input"
+                              type="text"
+                              placeholder="MM/AA"
+                              value={cardExpiry}
+                              onChange={(e) => handleExpiryChange(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Código CVC</label>
+                            <input
+                              className="input"
+                              type="password"
+                              placeholder="123"
+                              value={cardCvc}
+                              onChange={(e) => handleCvcChange(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pay LATER → choose method */}
+                    {paymentTiming === "later" && (
+                      <div className="animate-fadeIn">
+                        <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 10, display: "block" }}>
+                          {lang.code === "es" ? "¿Cómo prefieres pagar en el local?" : "How would you like to pay at the venue?"}
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                          {[
+                            { key: "card",     icon: "bi-credit-card",  label: lang.code === "es" ? "Tarjeta" : "Card" },
+                            { key: "bizum",    icon: "bi-phone",         label: "Bizum" },
+                            { key: "transfer", icon: "bi-bank",          label: lang.code === "es" ? "Transferencia" : "Transfer" },
+                            { key: "cash",     icon: "bi-cash-stack",    label: lang.code === "es" ? "Efectivo" : "Cash" },
+                          ].map(({ key, icon, label }) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => setPaymentMethod(key as any)}
+                              className={`payment-method-btn${paymentMethod === key ? " active" : ""}`}
+                            >
+                              <i className={`bi ${icon}`} style={{ fontSize: 22, display: "block", marginBottom: 4 }} />
+                              <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {paymentMethod && (
+                          <div className="animate-fadeIn" style={{ marginTop: 12, padding: "10px 14px", background: "var(--paper-2)", borderRadius: "var(--r)", border: "1px solid var(--border)", fontSize: 12, color: "var(--muted)", display: "flex", gap: 8, alignItems: "center" }}>
+                            <i className="bi bi-info-circle" style={{ color: "var(--primary)" }} />
+                            {paymentMethod === "bizum" && (lang.code === "es" ? "Te facilitarán el número de teléfono Bizum en el local." : "They will provide the Bizum phone number at the venue.")}
+                            {paymentMethod === "transfer" && (lang.code === "es" ? "Te facilitarán los datos bancarios en el local o por email." : "Bank details will be provided at the venue or by email.")}
+                            {paymentMethod === "card" && (lang.code === "es" ? "Pago con tarjeta disponible en el terminal del local." : "Card payment available at the venue's terminal.")}
+                            {paymentMethod === "cash" && (lang.code === "es" ? "Paga en efectivo el día de tu cita en el local." : "Pay in cash on the day of your appointment at the venue.")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {error && <p style={{ color: "#b91c1c", fontSize: 13, margin: "8px 0 0" }}>{error}</p>}
@@ -853,9 +960,11 @@ este comprobante el día de tu cita.
                         {lang.code === "es" ? "Procesando..." : "Processing..."}
                       </span>
                     ) : selectedOption === "Otro" ? (
-                      `${lang.code === "es" ? "Confirmar Reserva" : "Confirm Booking"}`
+                      lang.code === "es" ? "Confirmar Reserva" : "Confirm Booking"
+                    ) : paymentTiming === "now" ? (
+                      lang.code === "es" ? `Pagar ${servicePrice.toFixed(2)} € y Reservar` : `Pay ${servicePrice.toFixed(2)} € & Book`
                     ) : (
-                      `${lang.code === "es" ? `Pagar ${servicePrice.toFixed(2)} € y Reservar` : `Pay ${servicePrice.toFixed(2)} € & Book`}`
+                      lang.code === "es" ? "Confirmar Reserva" : "Confirm Booking"
                     )}
                   </button>
                 </div>
@@ -916,10 +1025,10 @@ este comprobante el día de tu cita.
           transition: color 0.3s;
         }
         .stepper-step.active .step-circle {
-          background: var(--primary);
-          border-color: var(--primary);
-          color: #fff;
-          box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+          background: #6b7280;
+          border-color: #6b7280;
+          color: #111;
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
         }
         .stepper-step.active .step-label {
           color: var(--ink);
@@ -990,10 +1099,10 @@ este comprobante el día de tu cita.
           transform: translateY(-1px);
         }
         .time-slot-pill.selected {
-          background: var(--primary);
-          color: #fff;
-          border-color: var(--primary);
-          box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+          background: #6b7280;
+          color: #111;
+          border-color: #6b7280;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
         }
 
         /* Stripe Credit Card preview card */
@@ -1168,14 +1277,76 @@ este comprobante el día de tu cita.
           background: var(--paper-3);
         }
         .calendar-day-btn.selected {
-          background: var(--primary);
-          color: #fff !important;
+          background: #6b7280;
+          color: #111 !important;
           font-weight: 700;
         }
         .calendar-day-btn.disabled {
           color: var(--muted);
           opacity: 0.25;
           cursor: not-allowed;
+        }
+
+        /* Payment timing buttons */
+        .payment-timing-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 16px 12px;
+          border-radius: var(--r-md);
+          border: 2px solid var(--border);
+          background: var(--paper);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          gap: 2px;
+          color: var(--ink);
+        }
+        .payment-timing-btn:hover {
+          border-color: var(--primary);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(99,102,241,0.12);
+        }
+        .payment-timing-btn.active {
+          background: #6b7280;
+          border-color: #6b7280;
+          color: #111 !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        }
+        .payment-timing-btn.active i,
+        .payment-timing-btn.active span {
+          color: #111 !important;
+        }
+
+        /* Payment method buttons */
+        .payment-method-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 14px 10px;
+          border-radius: var(--r-md);
+          border: 2px solid var(--border);
+          background: var(--paper);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          gap: 2px;
+          color: var(--ink);
+        }
+        .payment-method-btn:hover {
+          border-color: var(--primary);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(99,102,241,0.12);
+        }
+        .payment-method-btn.active {
+          background: #6b7280;
+          border-color: #6b7280;
+          color: #111 !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        }
+        .payment-method-btn.active i,
+        .payment-method-btn.active span {
+          color: #111 !important;
         }
 
         /* Spinning loader inside buttons */
