@@ -45,10 +45,12 @@ export class AppointmentsService {
    * Si está pendiente (ej. opción 'Otro'), el pago queda pendiente de presupuestar.
    */
   async create(createAppointmentDto: CreateAppointmentDto) {
+    console.log('[Create Appointment] Payload recibido:', createAppointmentDto);
     const appointment = this.appointmentsRepository.create(createAppointmentDto);
     const saved = await this.appointmentsRepository.save(appointment);
 
     const isPrepaid = createAppointmentDto.status === AppointmentStatus.PAID;
+    console.log('[Create Appointment] ¿Es prepago?:', isPrepaid, '| Estado:', createAppointmentDto.status, '| Precio:', createAppointmentDto.price);
 
     // Crear pago automático vinculado a la reserva
     const payment = this.paymentRepository.create({
@@ -57,6 +59,7 @@ export class AppointmentsService {
       status: isPrepaid ? 'paid' : 'pending',
       appointmentId: saved.id,
     });
+    console.log('[Create Appointment] Pago generado:', payment);
     await this.paymentRepository.save(payment);
 
     return saved;
