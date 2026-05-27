@@ -182,10 +182,10 @@ export default function Header() {
   }, [user]);
 
   const markAllRead = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications([]);
 
   const markOneRead = (id: number) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => prev.filter(n => n.id !== id));
 
   const deleteOne = (id: number) =>
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -253,7 +253,7 @@ export default function Header() {
                 </span>
                 {unread > 0 && (
                   <button onClick={markAllRead} style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                    Marcar todas leídas
+                    Eliminar todas
                   </button>
                 )}
               </div>

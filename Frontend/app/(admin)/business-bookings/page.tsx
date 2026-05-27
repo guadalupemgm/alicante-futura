@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function BusinessBookingsPage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const STATUS_LABELS: Record<BookingStatus | "all", string> = {
     all:       t("bbStatusAll"),
@@ -137,6 +137,26 @@ export default function BusinessBookingsPage() {
     return list;
   }, [bookings, statusFilter, search]);
 
+  const conflictIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (let i = 0; i < bookings.length; i++) {
+      const b1 = bookings[i];
+      if (b1.status === "cancelled") continue;
+      for (let j = i + 1; j < bookings.length; j++) {
+        const b2 = bookings[j];
+        if (b2.status === "cancelled") continue;
+        if (
+          b1.date === b2.date &&
+          b1.time === b2.time
+        ) {
+          ids.add(b1.id);
+          ids.add(b2.id);
+        }
+      }
+    }
+    return ids;
+  }, [bookings]);
+
   const customerName = (id: number) => customers.find((c) => c.id === id)?.name ?? `#${id}`;
 
   if (!user) return null;
@@ -171,6 +191,32 @@ export default function BusinessBookingsPage() {
           </div>
         ))}
       </div>
+
+      {conflictIds.size > 0 && (
+        <div style={{
+          background: "rgba(239, 68, 68, 0.08)",
+          border: "1px solid rgba(239, 68, 68, 0.2)",
+          borderRadius: "var(--r-md)",
+          padding: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          color: "#b91c1c",
+          marginBottom: "16px"
+        }}>
+          <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: "20px" }} />
+          <div>
+            <h4 style={{ margin: 0, fontWeight: 700, fontSize: "14px" }}>
+              {lang.code === "es" ? "Conflictos detectados" : "Conflicts detected"}
+            </h4>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "rgba(185, 28, 28, 0.85)" }}>
+              {lang.code === "es"
+                ? `Se han detectado ${conflictIds.size} citas programadas a la misma hora.`
+                : `We detected ${conflictIds.size} appointments scheduled at the same time.`}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="section-card">
         <div className="panel-title-row">
@@ -227,9 +273,32 @@ export default function BusinessBookingsPage() {
                     <td style={{ fontWeight: 600 }}>{b.serviceName}</td>
                     <td>{customerName(b.customerId)}</td>
                     <td>
-                      {new Date(b.date).toLocaleDateString("es-ES", {
-                        day: "numeric", month: "short", year: "numeric",
-                      })}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span>
+                          {new Date(b.date).toLocaleDateString("es-ES", {
+                            day: "numeric", month: "short", year: "numeric",
+                          })}
+                        </span>
+                        {conflictIds.has(b.id) && (
+                          <span 
+                            title={lang.code === "es" ? "Conflicto: Hay otra cita a esta misma hora" : "Conflict: Another appointment is at the same time"}
+                            style={{
+                              background: "#ef4444",
+                              color: "#fff",
+                              borderRadius: "4px",
+                              padding: "2px 6px",
+                              fontSize: "10px",
+                              fontWeight: 700,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "3px"
+                            }}
+                          >
+                            <i className="bi bi-exclamation-circle-fill" />
+                            {lang.code === "es" ? "Conflicto" : "Conflict"}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>{b.time} hs</td>
                     <td>

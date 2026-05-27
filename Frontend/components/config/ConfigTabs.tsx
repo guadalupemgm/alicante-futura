@@ -226,7 +226,44 @@ function AdminConfig() {
 }
 
 function BusinessConfig() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const { user } = useAuth();
+  
+  const [services, setServices] = useState<string[]>([]);
+  const [newService, setNewService] = useState("");
+
+  const storageKey = user?.businessId ? `bf_services_by_business_${user.businessId}` : null;
+
+  useEffect(() => {
+    if (!storageKey) return;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      setServices(JSON.parse(saved));
+    } else {
+      // Default initial services based on General recommendations
+      const defaults = ["Servicio Estándar", "Consulta General", "Asesoría Premium"];
+      setServices(defaults);
+      localStorage.setItem(storageKey, JSON.stringify(defaults));
+    }
+  }, [storageKey]);
+
+  const handleAddService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newService.trim() || !storageKey) return;
+    if (services.includes(newService.trim())) return;
+    const updated = [...services, newService.trim()];
+    setServices(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    setNewService("");
+  };
+
+  const handleDeleteService = (srv: string) => {
+    if (!storageKey) return;
+    const updated = services.filter(s => s !== srv);
+    setServices(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+  };
+
   return (
     <div className="config-section" style={{ padding: "1rem", animation: "fadeIn 0.4s ease" }}>
       <h3 style={{ marginBottom: "1rem", color: "var(--ink)" }}>{t("configBusinessSettingsTitle" as TranslationKey)}</h3>
@@ -258,6 +295,59 @@ function BusinessConfig() {
               <input type="number" className="input" defaultValue={2} min={1} />
             </div>
           </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.5rem" }}>
+          <h4 style={{ color: "var(--ink-2)", marginBottom: "0.5rem" }}>
+            {lang.code === "es" ? "Gestión de Servicios" : "Manage Services"}
+          </h4>
+          <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "1rem" }}>
+            {lang.code === "es"
+              ? "Define los servicios que ofreces para que tus clientes puedan seleccionarlos al reservar."
+              : "Define the services you offer so your clients can select them when booking."}
+          </p>
+
+          <form onSubmit={handleAddService} style={{ display: "flex", gap: "8px", marginBottom: "1rem" }}>
+            <input
+              type="text"
+              className="input"
+              placeholder={lang.code === "es" ? "Ej: Corte caballero, Tinte, Masaje..." : "E.g. Haircut, Massage..."}
+              value={newService}
+              onChange={e => setNewService(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="primary-btn" style={{ marginTop: 0 }}>
+              {lang.code === "es" ? "Añadir" : "Add"}
+            </button>
+          </form>
+
+          {services.length === 0 ? (
+            <p style={{ fontSize: "13px", color: "var(--muted)", textAlign: "center", padding: "1rem" }}>
+              {lang.code === "es" ? "No tienes servicios creados." : "No services created."}
+            </p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {services.map(s => (
+                <div key={s} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "8px 12px", background: "var(--paper-2)", borderRadius: "var(--r)",
+                  border: "1px solid var(--border)"
+                }}>
+                  <span style={{ fontSize: "13.5px", fontWeight: 500, color: "var(--ink)" }}>{s}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteService(s)}
+                    style={{
+                      background: "none", border: "none", color: "#ef4444", cursor: "pointer",
+                      fontSize: "12px", fontWeight: 600, padding: "2px 6px"
+                    }}
+                  >
+                    {lang.code === "es" ? "Eliminar" : "Delete"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
