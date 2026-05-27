@@ -48,7 +48,10 @@ export default function PaymentsPage() {
   const [page, setPage]                 = useState(1);
 
   // Formulario crear manualmente
-  const [form, setForm] = useState({ amount: "", method: "", status: "pending", appointmentId: "" });
+  const [form, setForm] = useState({ amount: "", method: "", status: "pending" as PaymentStatus, appointmentId: "" });
+
+  // Estado visual para la pasarela de tarjeta (no funcional de momento)
+  const [cardForm, setCardForm] = useState({ number: "", expiry: "", cvv: "", name: "" });
 
   // Modal editar pago
   const [editTarget, setEditTarget] = useState<Payment | null>(null);
@@ -66,28 +69,50 @@ export default function PaymentsPage() {
     setTimeout(() => setSuccess(""), 3000);
   };
 
+  // Carga de datos evitando condiciones de carrera (Race Conditions)
   useEffect(() => {
-    if (user?.role === "business" && user?.businessId) {
-      fetch(`${API_URL}/payments/business/${user.businessId}`).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
-      fetch(`${API_URL}/appointments/business/${user.businessId}`).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
-    } else {
-      fetch(`${API_URL}/payments`).then(r => r.json()).then(d => setPayments(Array.isArray(d) ? d : []));
-      fetch(`${API_URL}/appointments`).then(r => r.json()).then(d => setAppointments(Array.isArray(d) ? d : []));
-    }
+    let ignore = false;
+    const endpointPayments = user?.role === "business" ? `${API_URL}/payments/business/${user.businessId}` : `${API_URL}/payments`;
+    const endpointAppointments = user?.role === "business" ? `${API_URL}/appointments/business/${user.businessId}` : `${API_URL}/appointments`;
+
+    Promise.all([
+      fetch(endpointPayments).then(r => r.json()),
+      fetch(endpointAppointments).then(r => r.json())
+    ]).then(([paymentsData, appointmentsData]) => {
+      if (!ignore) {
+        setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+        setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+      }
+    }).catch(err => console.error("Error cargando datos", err));
+
+    return () => {
+      ignore = true;
+    };
   }, [user]);
 
   useEffect(() => { setPage(1); }, [statusFilter]);
 
-  // Crear pago manualmente
+  // Crear pago manualmente con validaciones e interfaz de tarjeta simulada
   const handleCreate = async () => {
+    const appId = parseInt(form.appointmentId);
+    if (!form.amount || !form.method || isNaN(appId)) {
+      alert("Por favor, rellena todos los campos obligatorios.");
+      return;
+    }
+
+    if (form.method === "Tarjeta" && (!cardForm.number || !cardForm.cvv)) {
+      alert("Por favor, introduce los datos simulados de la tarjeta.");
+      return;
+    }
+
     const res = await fetch(`${API_URL}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         amount: parseFloat(form.amount),
         method: form.method,
-        status: form.status,
-        appointmentId: parseInt(form.appointmentId),
+        status: form.method === "Tarjeta" ? "paid" : form.status, // Si es tarjeta se asume pagado directamente
+        appointmentId: appId,
       }),
     });
     if (res.ok) {
@@ -95,6 +120,7 @@ export default function PaymentsPage() {
       setPayments(prev => [...prev, newPayment]);
       setShowModal(false);
       setForm({ amount: "", method: "", status: "pending", appointmentId: "" });
+      setCardForm({ number: "", expiry: "", cvv: "", name: "" });
       flash(t("paymentRegistered"));
     }
   };
@@ -138,6 +164,17 @@ export default function PaymentsPage() {
     }
   };
 
+  // Contadores y sumatorios optimizados con useMemo
+  const { totalPaid, totalPending, counts } = useMemo(() => {
+    return payments.reduce((acc, p) => {
+      const amt = Number(p.amount) || 0;
+      if (p.status === "paid") acc.totalPaid += amt;
+      if (p.status === "pending") acc.totalPending += amt;
+      if (p.status in acc.counts) acc.counts[p.status] += 1;
+      return acc;
+    }, { totalPaid: 0, totalPending: 0, counts: { paid: 0, pending: 0, cancelled: 0 } });
+  }, [payments]);
+
   const filtered = useMemo(() =>
     statusFilter === "all" ? payments : payments.filter(p => p.status === statusFilter)
   , [payments, statusFilter]);
@@ -146,9 +183,6 @@ export default function PaymentsPage() {
     const start = (page - 1) * PER_PAGE;
     return filtered.slice(start, start + PER_PAGE);
   }, [filtered, page]);
-
-  const totalPaid    = payments.filter(p => p.status === "paid").reduce((s, p) => s + Number(p.amount), 0);
-  const totalPending = payments.filter(p => p.status === "pending").reduce((s, p) => s + Number(p.amount), 0);
 
   const appointmentLabel = (id: number) => {
     const a = appointments.find(a => a.id === id);
@@ -174,14 +208,14 @@ export default function PaymentsPage() {
           <p className="kpi-card__label">{t("collected")}</p>
           <h3 className="kpi-card__value">{totalPaid.toFixed(2)} €</h3>
           <p className="kpi-card__meta kpi-card__meta--positive">
-            {payments.filter(p => p.status === "paid").length} {t("operations")}
+            {counts.paid} {t("operations")}
           </p>
         </div>
         <div className="kpi-card">
           <p className="kpi-card__label">{t("pending")}</p>
           <h3 className="kpi-card__value">{totalPending.toFixed(2)} €</h3>
           <p className="kpi-card__meta kpi-card__meta--warning">
-            {payments.filter(p => p.status === "pending").length} {t("toReview")}
+            {counts.pending} {t("toReview")}
           </p>
         </div>
       </section>
@@ -197,7 +231,7 @@ export default function PaymentsPage() {
               >
                 {f.label}
                 {f.key !== "all" && (
-                  <span className="filter-pill__count">{payments.filter(p => p.status === f.key).length}</span>
+                  <span className="filter-pill__count">{counts[f.key as PaymentStatus] || 0}</span>
                 )}
               </button>
             ))}
@@ -277,20 +311,50 @@ export default function PaymentsPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
               <input className="input" type="number" placeholder={t("amountPlaceholder")}
                 value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
-              <select className="input" value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
-                <option value="">{t("paymentMethod")}</option>
-                {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
-                <option value="pending">{t("toPay")}</option>
-                <option value="paid">{t("statusPaid")}</option>
-              </select>
+              
               <select className="input" value={form.appointmentId}
                 onChange={e => setForm({ ...form, appointmentId: e.target.value })}>
                 <option value="">{t("selectReservation")}</option>
                 {appointments.map(a => (
                   <option key={a.id} value={a.id}>#{a.id} — {a.date} {a.time} · {a.serviceName}</option>
                 ))}
+              </select>
+
+              <select className="input" value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
+                <option value="">{t("paymentMethod")}</option>
+                {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+
+              {/* INTERFAZ VISUAL DE LA PASARELA DE TARJETA (NO FUNCIONAL) */}
+              {form.method === "Tarjeta" && (
+                <div style={{ 
+                  background: "#f8f9fa", 
+                  padding: "12px", 
+                  borderRadius: "8px", 
+                  border: "1px dashed #cbd5e1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px"
+                }}>
+                  <p style={{ fontSize: "11px", fontWeight: "bold", color: "#64748b", textTransform: "uppercase", margin: 0 }}>
+                    💳 Interfaz de Pasarela de Pago
+                  </p>
+                  <input className="input" type="text" placeholder="Nombre del titular"
+                    value={cardForm.name} onChange={e => setCardForm({ ...cardForm, name: e.target.value })} />
+                  <input className="input" type="text" maxLength={16} placeholder="0000 0000 0000 0000"
+                    value={cardForm.number} onChange={e => setCardForm({ ...cardForm, number: e.target.value })} />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input className="input" type="text" maxLength={5} placeholder="MM/AA" style={{ textAlign: "center" }}
+                      value={cardForm.expiry} onChange={e => setCardForm({ ...cardForm, expiry: e.target.value })} />
+                    <input className="input" type="password" maxLength={3} placeholder="CVV" style={{ textAlign: "center" }}
+                      value={cardForm.cvv} onChange={e => setCardForm({ ...cardForm, cvv: e.target.value })} />
+                  </div>
+                </div>
+              )}
+
+              <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value as PaymentStatus })} disabled={form.method === "Tarjeta"}>
+                <option value="pending">{t("toPay")}</option>
+                <option value="paid">{t("statusPaid")}</option>
               </select>
             </div>
             <div className="modal-actions">
