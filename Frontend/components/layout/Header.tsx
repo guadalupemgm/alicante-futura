@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/context/ThemeContext";
 import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
 import { useAuth } from "@/components/context/AuthContext";
@@ -12,12 +13,14 @@ interface Notification {
   desc: string;
   time: string;
   read: boolean;
+  type?: string;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 const INITIAL_NOTIFICATIONS: Notification[] = [];
 
 export default function Header() {
+  const router                        = useRouter();
   const { theme, toggleTheme }        = useTheme();
   const { lang, setLang, t }          = useLanguage();
   const { logout, user, token }       = useAuth();
@@ -37,7 +40,7 @@ export default function Header() {
     }
     return [];
   });
-  const [toast, setToast]             = useState<{ title: string; desc: string } | null>(null);
+  const [toast, setToast]             = useState<Notification | null>(null);
   const menuRef                       = useRef<HTMLDivElement>(null);
   const notifRef                      = useRef<HTMLDivElement>(null);
 
@@ -108,7 +111,8 @@ export default function Header() {
                 ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr || appt.date} a las ${appt.time} ${isConfirmed ? "está confirmada" : "está pendiente"}.`
                 : `${appt.serviceName || "Servicio"} programado para el ${dateStr || appt.date} a las ${appt.time}`,
               time: `Hace ${idx * 20 + 5} min`,
-              read: false
+              read: false,
+              type: "appointment"
             });
           });
         }
@@ -143,14 +147,17 @@ export default function Header() {
       let title = "Nuevo Registro de Negocio";
       let desc = "El negocio 'Alicante Tech Center' ha completado su registro.";
       let icon = "bi-lightning-charge-fill";
+      let type = "system";
 
       if (isBusiness) {
         title = "Nueva Cita Recibida";
         desc = "Un cliente ha solicitado una cita para 'Asesoría VIP' mañana.";
+        type = "appointment";
       } else if (isCustomer) {
         title = "Recordatorio de Cita";
         desc = "Recuerda que tienes una cita programada para mañana a las 10:00.";
         icon = "bi-clock-fill";
+        type = "appointment";
       }
 
       const liveNotif: Notification = {
@@ -159,12 +166,13 @@ export default function Header() {
         title,
         desc,
         time: "Ahora mismo",
-        read: false
+        read: false,
+        type
       };
       
       setNotifications(prev => {
         if (prev.some(n => n.title === liveNotif.title)) return prev;
-        setToast({ title: liveNotif.title, desc: liveNotif.desc });
+        setToast(liveNotif);
         setTimeout(() => setToast(null), 5000);
         return [liveNotif, ...prev];
       });
@@ -181,6 +189,31 @@ export default function Header() {
 
   const deleteOne = (id: number) =>
     setNotifications(prev => prev.filter(n => n.id !== id));
+
+  const handleNotificationClick = (n: Notification) => {
+    markOneRead(n.id);
+    setNotifOpen(false);
+
+    // Determine if it is appointment-related
+    const isAppointmentNotif = 
+      n.type === "appointment" || 
+      n.title.toLowerCase().includes("cita") || 
+      n.title.toLowerCase().includes("reserva") || 
+      n.title.toLowerCase().includes("appointment") || 
+      n.title.toLowerCase().includes("booking") ||
+      n.icon.includes("calendar") ||
+      n.icon.includes("clock");
+
+    if (isAppointmentNotif) {
+      if (user?.role === "business") {
+        router.push("/business-bookings");
+      } else if (user?.role === "customer") {
+        router.push("/reservas");
+      } else {
+        router.push("/bookings");
+      }
+    }
+  };
 
   return (
     <header className="admin-header">
@@ -234,7 +267,7 @@ export default function Header() {
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => markOneRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 10,
                       padding: "8px 10px", borderRadius: "var(--r)", cursor: "pointer",
@@ -361,28 +394,38 @@ export default function Header() {
       `}</style>
 
       {toast && (
-        <div style={{
-          position: "fixed",
-          top: "20px",
-          right: "20px",
-          background: "var(--paper)",
-          borderLeft: "4px solid var(--primary)",
-          padding: "12px 16px",
-          borderRadius: "var(--r-md)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-          zIndex: 1000,
-          display: "flex",
-          gap: "10px",
-          alignItems: "center",
-          animation: "slideIn 0.3s ease-out"
-        }}>
+        <div 
+          onClick={() => {
+            handleNotificationClick(toast);
+            setToast(null);
+          }}
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            background: "var(--paper)",
+            borderLeft: "4px solid var(--primary)",
+            padding: "12px 16px",
+            borderRadius: "var(--r-md)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+            zIndex: 1000,
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            animation: "slideIn 0.3s ease-out",
+            cursor: "pointer"
+          }}
+        >
           <i className="bi bi-bell-fill" style={{ color: "var(--primary)", fontSize: "1.2rem" }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--ink)" }}>{toast.title}</div>
             <div style={{ fontSize: "0.8rem", color: "var(--ink-3)", marginTop: "2px" }}>{toast.desc}</div>
           </div>
           <button 
-            onClick={() => setToast(null)} 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              setToast(null); 
+            }} 
             style={{ 
               background: "transparent", 
               border: "none", 
