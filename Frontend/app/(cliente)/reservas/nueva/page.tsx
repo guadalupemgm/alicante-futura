@@ -84,11 +84,21 @@ function NuevaReservaForm() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          // Backward compatibility support
+          return parsed.map((item: any) => {
+            if (typeof item === "string") {
+              return { name: item, price: 35 };
+            }
+            return {
+              name: item.name || "Servicio",
+              price: typeof item.price === "number" ? item.price : 35
+            };
+          });
         }
       } catch (_) {}
     }
 
+    // Default initial services if not in localStorage
     return [];
   }, [form.businessId]);
 
@@ -96,7 +106,7 @@ function NuevaReservaForm() {
   useEffect(() => {
     if (step === 2) {
       if (form.serviceName) {
-        if (businessServices.includes(form.serviceName)) {
+        if (businessServices.some(s => s.name === form.serviceName)) {
           setSelectedOption(form.serviceName);
         } else {
           setSelectedOption("Otro");
@@ -190,6 +200,13 @@ function NuevaReservaForm() {
     return businesses.find(b => b.id === form.businessId);
   }, [businesses, form.businessId]);
 
+  const selectedServiceObj = useMemo(() => {
+    if (selectedOption === "Otro" || !form.serviceName) return null;
+    return businessServices.find(s => s.name === form.serviceName) || null;
+  }, [businessServices, form.serviceName, selectedOption]);
+
+  const servicePrice = selectedServiceObj ? selectedServiceObj.price : 0;
+
   const filteredBusinesses = useMemo(() => {
     return businesses.filter(b => 
       b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -246,16 +263,24 @@ function NuevaReservaForm() {
       return;
     }
 
-    if (!cardNumber || !cardName || !cardExpiry || cardCvc.length < 3) {
-      setError(lang.code === "es" ? "Por favor rellena los datos de pago válidos." : "Please fill in valid payment details.");
-      return;
+    const isPending = selectedOption === "Otro";
+
+    if (!isPending) {
+      if (!cardNumber || !cardName || !cardExpiry || cardCvc.length < 3) {
+        setError(lang.code === "es" ? "Por favor rellena los datos de pago válidos." : "Please fill in valid payment details.");
+        return;
+      }
     }
 
     setLoading(true);
     setError("");
     
-    // Simulate Stripe payment request delay (2s)
-    await new Promise(r => setTimeout(r, 2000));
+    // Simulate Stripe payment request delay (2s) if not pending
+    if (!isPending) {
+      await new Promise(r => setTimeout(r, 2000));
+    } else {
+      await new Promise(r => setTimeout(r, 800));
+    }
 
     try {
       const res = await fetch(API_URL + "/appointments", {
@@ -267,11 +292,12 @@ function NuevaReservaForm() {
           serviceName: form.serviceName,
           date:        form.date,
           time:        form.time,
-          status:      "paid", // Prepaid reservation!
+          status:      isPending ? "pending" : "paid", // "pending" if custom service, "paid" if prepaid!
+          price:       isPending ? 0 : servicePrice,
         }),
       });
       if (!res.ok) throw new Error();
-      setPaymentSuccess(true);
+      setPaymentSuccess(!isPending);
       setSuccess(true);
     } catch {
       setError(t("errorCrearReserva"));
@@ -281,7 +307,37 @@ function NuevaReservaForm() {
   };
 
   const handleDownloadReceipt = () => {
-    const receiptContent = `
+    const isPending = selectedOption === "Otro";
+    const subtotal = servicePrice / 1.21;
+    const tax = servicePrice - subtotal;
+
+    const receiptContent = isPending ? `
+==================================================
+        CONFIRMACIÓN DE RESERVA BookFlow
+==================================================
+Código de Reserva:     BF-RES-${Math.random().toString(36).substring(2, 8).toUpperCase()}
+Fecha de Confirmación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}
+Estado del Pago:       PENDIENTE DE PRESUPUESTAR
+Monto a Pagar:         Por determinar en el local
+--------------------------------------------------
+DATOS DEL CLIENTE:
+Nombre de Usuario:    ${user?.email?.split("@")[0] ?? "Usuario"}
+Email de Contacto:    ${user?.email ?? ""}
+--------------------------------------------------
+DATOS DE LA RESERVA:
+Negocio:              ${selectedBusinessObj?.name ?? "Negocio"}
+Categoría:            ${selectedBusinessObj?.category ?? "Servicios"}
+Dirección:            ${selectedBusinessObj?.address ?? "Local física"}
+--------------------------------------------------
+DETALLES DEL SERVICIO:
+Servicio Solicitado:  ${form.serviceName}
+Fecha Programada:     ${form.date.split("-").reverse().join("/")}
+Hora Programada:      ${form.time} hs
+==================================================
+¡Gracias por tu reserva en BookFlow! Presenta 
+este comprobante el día de tu cita.
+==================================================
+` : `
 ==================================================
            COMPROBANTE DE PAGO BookFlow
 ==================================================
@@ -299,13 +355,13 @@ Negocio:              ${selectedBusinessObj?.name ?? "Negocio"}
 Categoría:            ${selectedBusinessObj?.category ?? "Servicios"}
 Dirección:            ${selectedBusinessObj?.address ?? "Local física"}
 Servicio Solicitado:  ${form.serviceName}
-Fecha Programada:     ${new Date(form.date).toLocaleDateString("es-ES", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+Fecha Programada:     ${form.date.split("-").reverse().join("/")}
 Hora Programada:      ${form.time} hs
 --------------------------------------------------
 DETALLES DEL COBRO:
-Subtotal:             28.93 €
-I.V.A (21%):          6.07 €
-Total Cobrado:        35.00 € (Pago Anticipado)
+Subtotal:             ${subtotal.toFixed(2)} €
+I.V.A (21%):          ${tax.toFixed(2)} €
+Total Cobrado:        ${servicePrice.toFixed(2)} € (Pago Anticipado)
 Método de Pago:       Tarjeta de Crédito (•••• ${cardNumber.slice(-4) || "4242"})
 ==================================================
 ¡Gracias por tu reserva en BookFlow! Presenta 
@@ -316,7 +372,7 @@ este comprobante el día de tu cita.
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Recibo_Reserva_${form.date}_BookFlow.txt`;
+    link.download = isPending ? `Confirmacion_Reserva_${form.date}_BookFlow.txt` : `Recibo_Reserva_${form.date}_BookFlow.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -333,9 +389,15 @@ este comprobante el día de tu cita.
           </div>
           <h3 style={{ marginBottom: "0.5rem", fontWeight: 700 }}>{t("reservaCreada")}</h3>
           <p style={{ color: "var(--muted)", marginBottom: "1.5rem", fontSize: 14 }}>
-            {lang.code === "es" 
-              ? "Tu cita ha sido prepagada con éxito a través de Stripe y guardada en tu panel de control." 
-              : "Your appointment was successfully prepaid via Stripe and saved to your dashboard."}
+            {selectedOption === "Otro" ? (
+              lang.code === "es"
+                ? "Tu cita ha sido guardada en tu panel de control. El pago ha quedado pendiente de presupuestar por la empresa."
+                : "Your appointment has been saved to your dashboard. The payment is pending quotation by the business."
+            ) : (
+              lang.code === "es" 
+                ? "Tu cita ha sido prepagada con éxito a través de Stripe y guardada en tu panel de control." 
+                : "Your appointment was successfully prepaid via Stripe and saved to your dashboard."
+            )}
           </p>
           
           <button 
@@ -344,7 +406,11 @@ este comprobante el día de tu cita.
             style={{ width: "100%", padding: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: "1.5rem", border: "1px dashed var(--border)" }}
           >
             <i className="bi bi-file-earmark-arrow-down-fill"></i>
-            {lang.code === "es" ? "Descargar Recibo de Compra" : "Download Purchase Receipt"}
+            {selectedOption === "Otro" ? (
+              lang.code === "es" ? "Descargar Confirmación de Reserva" : "Download Booking Confirmation"
+            ) : (
+              lang.code === "es" ? "Descargar Recibo de Compra" : "Download Purchase Receipt"
+            )}
           </button>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
@@ -460,16 +526,16 @@ este comprobante el día de tu cita.
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "1.25rem" }}>
                   {businessServices.map((srv) => (
                     <button
-                      key={srv}
+                      key={srv.name}
                       type="button"
                       onClick={() => {
-                        setSelectedOption(srv);
-                        setForm({ ...form, serviceName: srv });
+                        setSelectedOption(srv.name);
+                        setForm({ ...form, serviceName: srv.name });
                       }}
-                      className={`filter-pill ${selectedOption === srv ? "active" : ""}`}
-                      style={{ border: "1px solid var(--border)", background: selectedOption === srv ? "var(--primary)" : "transparent" }}
+                      className={`filter-pill ${selectedOption === srv.name ? "active" : ""}`}
+                      style={{ border: "1px solid var(--border)", background: selectedOption === srv.name ? "var(--primary)" : "transparent" }}
                     >
-                      {srv}
+                      {srv.name} ({srv.price.toFixed(2)} €)
                     </button>
                   ))}
                   <button
@@ -657,8 +723,20 @@ este comprobante el día de tu cita.
                 </div>
               </div>
               <div style={{ borderTop: "1px dashed var(--border)", marginTop: "1rem", paddingTop: "0.75rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "12px", color: "var(--muted)" }}>Total a pagar (prepago):</span>
-                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--primary)" }}>35,00 €</span>
+                <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                  {selectedOption === "Otro" ? (
+                    lang.code === "es" ? "Estado del cobro:" : "Payment status:"
+                  ) : (
+                    lang.code === "es" ? "Total a pagar (prepago):" : "Total to pay (prepayment):"
+                  )}
+                </span>
+                <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--primary)" }}>
+                  {selectedOption === "Otro" ? (
+                    lang.code === "es" ? "Pendiente de presupuestar" : "Pending quotation"
+                  ) : (
+                    `${servicePrice.toFixed(2)} €`
+                  )}
+                </span>
               </div>
             </div>
 
@@ -666,85 +744,101 @@ este comprobante el día de tu cita.
             <form onSubmit={handleSubmit}>
               <div className="page-stack">
                 
-                {/* Credit Card Graphic mockup */}
-                <div className="cc-card-graphic">
-                  <div className="cc-card-header">
-                    <span className="cc-card-logo">BookFlow Pay</span>
-                    <i className="bi bi-wifi-2" style={{ fontSize: "20px" }} />
-                  </div>
-                  <div className="cc-card-chip" />
-                  <div className="cc-card-number">
-                    {cardNumber || "•••• •••• •••• ••••"}
-                  </div>
-                  <div className="cc-card-footer">
-                    <div className="cc-card-field">
-                      <span className="cc-card-label">CARDHOLDER</span>
-                      <span className="cc-card-value">{cardName.toUpperCase() || "NOMBRE DEL TITULAR"}</span>
+                {selectedOption !== "Otro" ? (
+                  <>
+                    {/* Credit Card Graphic mockup */}
+                    <div className="cc-card-graphic">
+                      <div className="cc-card-header">
+                        <span className="cc-card-logo">BookFlow Pay</span>
+                        <i className="bi bi-wifi-2" style={{ fontSize: "20px" }} />
+                      </div>
+                      <div className="cc-card-chip" />
+                      <div className="cc-card-number">
+                        {cardNumber || "•••• •••• •••• ••••"}
+                      </div>
+                      <div className="cc-card-footer">
+                        <div className="cc-card-field">
+                          <span className="cc-card-label">CARDHOLDER</span>
+                          <span className="cc-card-value">{cardName.toUpperCase() || "NOMBRE DEL TITULAR"}</span>
+                        </div>
+                        <div className="cc-card-field">
+                          <span className="cc-card-label">EXPIRES</span>
+                          <span className="cc-card-value">{cardExpiry || "MM/AA"}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="cc-card-field">
-                      <span className="cc-card-label">EXPIRES</span>
-                      <span className="cc-card-value">{cardExpiry || "MM/AA"}</span>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", marginBottom: 8, justifyContent: "center" }}>
+                      <i className="bi bi-lock-fill" style={{ color: "var(--success-text)" }} />
+                      <span>Pasarela de Pago Stripe simulada (Entorno seguro de pruebas)</span>
+                    </div>
+
+                    <div>
+                      <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Titular de la tarjeta</label>
+                      <input
+                        className="input"
+                        type="text"
+                        placeholder="Ej. Juan Pérez"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Número de tarjeta</label>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          className="input"
+                          type="text"
+                          placeholder="4242 4242 4242 4242"
+                          value={cardNumber}
+                          onChange={(e) => handleCardNumberChange(e.target.value)}
+                          required
+                          style={{ paddingRight: "40px" }}
+                        />
+                        <i className="bi bi-credit-card-2-front" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "18px" }} />
+                      </div>
+                    </div>
+
+                    <div className="form-grid">
+                      <div>
+                        <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Fecha de caducidad</label>
+                        <input
+                          className="input"
+                          type="text"
+                          placeholder="MM/AA"
+                          value={cardExpiry}
+                          onChange={(e) => handleExpiryChange(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Código CVC</label>
+                        <input
+                          className="input"
+                          type="password"
+                          placeholder="123"
+                          value={cardCvc}
+                          onChange={(e) => handleCvcChange(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ padding: "1.25rem", background: "var(--paper-2)", borderRadius: "var(--r)", border: "1px dashed var(--border)", display: "flex", gap: "12px", alignItems: "flex-start", margin: "0.5rem 0 1rem 0" }}>
+                    <i className="bi bi-info-circle-fill" style={{ color: "var(--primary)", fontSize: "18px", marginTop: "2px" }} />
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: "13px", fontWeight: 600 }}>{lang.code === "es" ? "Reserva con pago pendiente" : "Booking with pending payment"}</h4>
+                      <p style={{ margin: "4px 0 0", fontSize: "12px", color: "var(--muted)", lineHeight: 1.4 }}>
+                        {lang.code === "es"
+                          ? "Al haber seleccionado un servicio personalizado ('Otro'), no se requiere pago anticipado. El precio final será presupuestado por la empresa y el pago se abonará directamente en el local."
+                          : "Because you selected a custom service ('Other'), no prepayment is required. The final price will be quoted by the business and paid directly at the location."}
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted)", marginBottom: 8, justifyContent: "center" }}>
-                  <i className="bi bi-lock-fill" style={{ color: "var(--success-text)" }} />
-                  <span>Pasarela de Pago Stripe simulada (Entorno seguro de pruebas)</span>
-                </div>
-
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Titular de la tarjeta</label>
-                  <input
-                    className="input"
-                    type="text"
-                    placeholder="Ej. Juan Pérez"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Número de tarjeta</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      className="input"
-                      type="text"
-                      placeholder="4242 4242 4242 4242"
-                      value={cardNumber}
-                      onChange={(e) => handleCardNumberChange(e.target.value)}
-                      required
-                      style={{ paddingRight: "40px" }}
-                    />
-                    <i className="bi bi-credit-card-2-front" style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: "18px" }} />
-                  </div>
-                </div>
-
-                <div className="form-grid">
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Fecha de caducidad</label>
-                    <input
-                      className="input"
-                      type="text"
-                      placeholder="MM/AA"
-                      value={cardExpiry}
-                      onChange={(e) => handleExpiryChange(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="kpi-card__label" style={{ fontSize: 11, marginBottom: 4 }}>Código CVC</label>
-                    <input
-                      className="input"
-                      type="password"
-                      placeholder="123"
-                      value={cardCvc}
-                      onChange={(e) => handleCvcChange(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
+                )}
 
                 {error && <p style={{ color: "#b91c1c", fontSize: 13, margin: "8px 0 0" }}>{error}</p>}
 
@@ -756,10 +850,12 @@ este comprobante el día de tu cita.
                     {loading ? (
                       <span style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center" }}>
                         <span className="btn-spinner" />
-                        {lang.code === "es" ? "Procesando en Stripe..." : "Processing Stripe..."}
+                        {lang.code === "es" ? "Procesando..." : "Processing..."}
                       </span>
+                    ) : selectedOption === "Otro" ? (
+                      `${lang.code === "es" ? "Confirmar Reserva" : "Confirm Booking"}`
                     ) : (
-                      `${lang.code === "es" ? "Pagar 35,00 € y Reservar" : "Pay 35.00 € & Book"}`
+                      `${lang.code === "es" ? `Pagar ${servicePrice.toFixed(2)} € y Reservar` : `Pay ${servicePrice.toFixed(2)} € & Book`}`
                     )}
                   </button>
                 </div>

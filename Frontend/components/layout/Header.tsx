@@ -51,9 +51,21 @@ export default function Header() {
 
   // Obtenemos de forma limpia la etiqueta de rol correcta para la interfaz
   const getRoleLabel = () => {
-    if (user?.role === "particular") return "Particular";
-    if (user?.role === "business") return "Negocio";
-    return "Admin";
+    const role = user?.role;
+    if (lang.code === "es") {
+      if (role === "customer") return "Cliente";
+      if (role === "business") return "Empresa";
+      return "Administrador";
+    }
+    if (lang.code === "fr") {
+      if (role === "customer") return "Client";
+      if (role === "business") return "Entreprise";
+      return "Administrateur";
+    }
+    // Default to English
+    if (role === "customer") return "Customer";
+    if (role === "business") return "Business";
+    return "Administrator";
   };
 
   const roleLabel = getRoleLabel();

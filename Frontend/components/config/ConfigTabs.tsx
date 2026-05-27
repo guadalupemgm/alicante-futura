@@ -226,44 +226,8 @@ function AdminConfig() {
 }
 
 function BusinessConfig() {
-  const { t, lang } = useLanguage();
-  const { user } = useAuth();
+  const { t } = useLanguage();
   
-  const [services, setServices] = useState<string[]>([]);
-  const [newService, setNewService] = useState("");
-
-  const storageKey = user?.businessId ? `bf_services_by_business_${user.businessId}` : null;
-
-  useEffect(() => {
-    if (!storageKey) return;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      setServices(JSON.parse(saved));
-    } else {
-      // Default initial services based on General recommendations
-      const defaults = ["Servicio Estándar", "Consulta General", "Asesoría Premium"];
-      setServices(defaults);
-      localStorage.setItem(storageKey, JSON.stringify(defaults));
-    }
-  }, [storageKey]);
-
-  const handleAddService = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newService.trim() || !storageKey) return;
-    if (services.includes(newService.trim())) return;
-    const updated = [...services, newService.trim()];
-    setServices(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    setNewService("");
-  };
-
-  const handleDeleteService = (srv: string) => {
-    if (!storageKey) return;
-    const updated = services.filter(s => s !== srv);
-    setServices(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-  };
-
   return (
     <div className="config-section" style={{ padding: "1rem", animation: "fadeIn 0.4s ease" }}>
       <h3 style={{ marginBottom: "1rem", color: "var(--ink)" }}>{t("configBusinessSettingsTitle" as TranslationKey)}</h3>
@@ -297,61 +261,154 @@ function BusinessConfig() {
           </div>
         </div>
 
-        <div style={{ borderTop: "1px solid var(--line)", paddingTop: "1.5rem" }}>
-          <h4 style={{ color: "var(--ink-2)", marginBottom: "0.5rem" }}>
-            {lang.code === "es" ? "Gestión de Servicios" : "Manage Services"}
-          </h4>
-          <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "1rem" }}>
-            {lang.code === "es"
-              ? "Define los servicios que ofreces para que tus clientes puedan seleccionarlos al reservar."
-              : "Define the services you offer so your clients can select them when booking."}
-          </p>
-
-          <form onSubmit={handleAddService} style={{ display: "flex", gap: "8px", marginBottom: "1rem" }}>
-            <input
-              type="text"
-              className="input"
-              placeholder={lang.code === "es" ? "Ej: Corte caballero, Tinte, Masaje..." : "E.g. Haircut, Massage..."}
-              value={newService}
-              onChange={e => setNewService(e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <button type="submit" className="primary-btn" style={{ marginTop: 0 }}>
-              {lang.code === "es" ? "Añadir" : "Add"}
-            </button>
-          </form>
-
-          {services.length === 0 ? (
-            <p style={{ fontSize: "13px", color: "var(--muted)", textAlign: "center", padding: "1rem" }}>
-              {lang.code === "es" ? "No tienes servicios creados." : "No services created."}
-            </p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {services.map(s => (
-                <div key={s} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "8px 12px", background: "var(--paper-2)", borderRadius: "var(--r)",
-                  border: "1px solid var(--border)"
-                }}>
-                  <span style={{ fontSize: "13.5px", fontWeight: 500, color: "var(--ink)" }}>{s}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteService(s)}
-                    style={{
-                      background: "none", border: "none", color: "#ef4444", cursor: "pointer",
-                      fontSize: "12px", fontWeight: 600, padding: "2px 6px"
-                    }}
-                  >
-                    {lang.code === "es" ? "Eliminar" : "Delete"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
       <SaveButton />
+    </div>
+  );
+}
+
+function BusinessServicesConfig() {
+  const { lang } = useLanguage();
+  const { user } = useAuth();
+  
+  interface BusinessService {
+    name: string;
+    price: number;
+  }
+
+  const [services, setServices] = useState<BusinessService[]>([]);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServicePrice, setNewServicePrice] = useState("");
+
+  const storageKey = user?.businessId ? `bf_services_by_business_${user.businessId}` : null;
+
+  useEffect(() => {
+    if (!storageKey) return;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const validated = parsed.map((item: any) => {
+            if (typeof item === "string") {
+              return { name: item, price: 35 };
+            }
+            return {
+              name: item.name || "Servicio",
+              price: typeof item.price === "number" ? item.price : 35
+            };
+          });
+          setServices(validated);
+        } else {
+          setServices([]);
+        }
+      } catch (_) {
+        setServices([]);
+      }
+    } else {
+      setServices([]);
+      localStorage.setItem(storageKey, JSON.stringify([]));
+    }
+  }, [storageKey]);
+
+  const handleAddService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newServiceName.trim() || !storageKey) return;
+    const priceNum = parseFloat(newServicePrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert(lang.code === "es" ? "Por favor, introduce un precio válido mayor que 0." : "Please enter a valid price greater than 0.");
+      return;
+    }
+    if (services.some(s => s.name.toLowerCase() === newServiceName.trim().toLowerCase())) {
+      alert(lang.code === "es" ? "Este servicio ya existe." : "This service already exists.");
+      return;
+    }
+    
+    const newItem = { name: newServiceName.trim(), price: priceNum };
+    const updated = [...services, newItem];
+    setServices(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    setNewServiceName("");
+    setNewServicePrice("");
+  };
+
+  const handleDeleteService = (name: string) => {
+    if (!storageKey) return;
+    const updated = services.filter(s => s.name !== name);
+    setServices(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+  };
+
+  return (
+    <div className="config-section" style={{ padding: "1rem", animation: "fadeIn 0.4s ease" }}>
+      <h3 style={{ marginBottom: "1rem", color: "var(--ink)" }}>
+        {lang.code === "es" ? "Gestión de Servicios" : "Manage Services"}
+      </h3>
+      <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "1.25rem" }}>
+        {lang.code === "es"
+          ? "Define los servicios que ofreces y sus precios correspondientes para tus clientes."
+          : "Define the services you offer and their corresponding prices for your clients."}
+      </p>
+
+      <form onSubmit={handleAddService} style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "1.5rem" }}>
+        <input
+          type="text"
+          className="input"
+          placeholder={lang.code === "es" ? "Ej: Corte caballero, Tinte, Masaje..." : "E.g. Haircut, Massage..."}
+          value={newServiceName}
+          onChange={e => setNewServiceName(e.target.value)}
+          style={{ flex: 2, minWidth: "150px" }}
+          required
+        />
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1, minWidth: "100px" }}>
+          <input
+            type="number"
+            className="input"
+            placeholder={lang.code === "es" ? "Precio" : "Price"}
+            value={newServicePrice}
+            onChange={e => setNewServicePrice(e.target.value)}
+            min="0.01"
+            step="0.01"
+            style={{ width: "100%" }}
+            required
+          />
+          <span style={{ fontSize: "14px", fontWeight: 600 }}>€</span>
+        </div>
+        <button type="submit" className="primary-btn" style={{ marginTop: 0, padding: "8px 16px" }}>
+          {lang.code === "es" ? "Añadir" : "Add"}
+        </button>
+      </form>
+
+      {services.length === 0 ? (
+        <p style={{ fontSize: "13px", color: "var(--muted)", textAlign: "center", padding: "2rem", border: "1px dashed var(--border)", borderRadius: "var(--r)" }}>
+          {lang.code === "es" ? "No tienes servicios creados." : "No services created."}
+        </p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {services.map(s => (
+            <div key={s.name} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 12px", background: "var(--paper-2)", borderRadius: "var(--r)",
+              border: "1px solid var(--border)"
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontSize: "13.5px", fontWeight: 600, color: "var(--ink)" }}>{s.name}</span>
+                <span style={{ fontSize: "11px", color: "var(--primary)", fontWeight: 700 }}>{s.price.toFixed(2)} €</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleDeleteService(s.name)}
+                style={{
+                  background: "none", border: "none", color: "#ef4444", cursor: "pointer",
+                  fontSize: "12px", fontWeight: 600, padding: "2px 6px"
+                }}
+              >
+                {lang.code === "es" ? "Eliminar" : "Delete"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -396,15 +453,21 @@ interface ConfigTabsProps {
 }
 
 export default function ConfigTabs({ role }: ConfigTabsProps) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   
   const tabs = [
     { key: "admin", label: t("configTabAdmin" as TranslationKey), component: <AdminConfig /> },
     { key: "business", label: t("configTabBusiness" as TranslationKey), component: <BusinessConfig /> },
+    { key: "services", label: lang.code === "es" ? "Servicios" : lang.code === "fr" ? "Services" : "Services", component: <BusinessServicesConfig /> },
     { key: "customer", label: t("configTabCustomer" as TranslationKey), component: <CustomerConfig /> },
   ];
 
-  const visibleTabs = tabs.filter((tab) => tab.key === role);
+  const visibleTabs = tabs.filter((tab) => {
+    if (role === "business") {
+      return tab.key === "business" || tab.key === "services";
+    }
+    return tab.key === role;
+  });
   const [active, setActive] = React.useState(visibleTabs[0]?.key ?? "admin");
   const activeComponent = visibleTabs.find((tab) => tab.key === active)?.component;
 
