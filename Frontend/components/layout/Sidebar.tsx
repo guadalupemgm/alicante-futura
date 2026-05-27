@@ -28,8 +28,6 @@ export default function Sidebar() {
   
   const isBusinessUser   = user?.role === "business";
   const menuItems       = isBusinessUser ? businessMenu : adminMenu;
-  const initial         = (user?.email?.[0] ?? "U").toUpperCase();
-  const displayName     = user?.email?.split("@")[0] ?? "Usuario";
 
   return (
     <aside className="bf-sidebar">
@@ -99,19 +97,6 @@ export default function Sidebar() {
               );
             })}
             <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
-            {adminMenu.slice(4).map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`bf-nav-item${active ? " active" : ""}`}
-                >
-                  <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>{t(item.key)}</span>
-                </Link>
-              );
-            })}
             {/* Configuración */}
             <Link
               href="/configuracion"
@@ -124,20 +109,7 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* User pill at bottom */}
-      <div className="bf-sidebar-bottom">
-        <div className="bf-user-pill">
-          <div className={`bf-user-avatar${isBusinessUser ? " bf-user-avatar--biz" : ""}`}>
-            {initial}
-          </div>
-          <div>
-            <div className="bf-user-name">{displayName}</div>
-            <div className="bf-user-role">
-              {isBusinessUser ? "Negocio verificado" : "Administrador"}
-            </div>
-          </div>
-        </div>
-      </div>
+
     </aside>
   );
 }

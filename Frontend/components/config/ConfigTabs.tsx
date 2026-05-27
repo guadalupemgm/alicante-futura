@@ -26,7 +26,7 @@ function SaveButton() {
 }
 
 function AdminConfig() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { token, user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,8 +121,8 @@ function AdminConfig() {
       </div>
 
       {filteredUsers.length === 0 ? (
-        <p style={{ color: "var(--ink-3)" }}>
-          {searchQuery ? "No se encontraron usuarios que coincidan con la búsqueda." : (t("adminNoUsers" as TranslationKey) as string)}
+        <p style={{ color: "var(--ink-3)", padding: "1rem 0" }}>
+          {lang.code === "es" ? "No se han encontrado usuarios" : lang.code === "fr" ? "Aucun utilisateur trouvé" : "No users found"}
         </p>
       ) : (
         <>
