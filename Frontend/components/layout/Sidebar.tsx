@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
 import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 
-// Mantenemos tu menú de admin intacto tal cual lo tenías
+// Menú de administrador
 const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
   { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
   { key: "bookings",   href: "/bookings",   icon: "bi-calendar2-check" },
@@ -14,7 +14,7 @@ const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
   { key: "business",   href: "/business",   icon: "bi-shop-window" },
 ];
 
-// Menú de negocio actualizado con tus nuevas rutas
+// Menú de negocio (Business)
 const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
   { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
 ];
@@ -24,7 +24,7 @@ export default function Sidebar() {
   const { user }        = useAuth();
   const { t }           = useLanguage();
   
-  const isBusinessUser  = user?.role === "business";
+  const isBusinessUser   = user?.role === "business";
   const menuItems       = isBusinessUser ? businessMenu : adminMenu;
   const initial         = (user?.email?.[0] ?? "U").toUpperCase();
   const displayName     = user?.email?.split("@")[0] ?? "Usuario";
@@ -40,7 +40,7 @@ export default function Sidebar() {
           <div>
             <div className="bf-sidebar-name">BookFlow</div>
             <div className="bf-sidebar-role">
-              {isParticularUser ? "Zona Cliente" : isBusinessUser ? t("business") : t("adminWorkspace")}
+              {isBusinessUser ? t("business") : t("adminWorkspace")}
             </div>
           </div>
         </div>
@@ -48,39 +48,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="bf-sidebar-nav">
-        {isParticularUser ? (
-          /* ==========================================
-             VISTA CLIENTE PARTICULAR
-             ========================================== */
-          <>
-            <div className="bf-nav-label">Panel de Usuario</div>
-            {particularMenu.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`bf-nav-item${active ? " active" : ""}`}
-                >
-                  <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>
-                    {item.href === "/dashboard" && "Buscar Servicio"}
-                    {item.href === "/dashboard/citas" && "Mis Citas"}
-                    {item.href === "/dashboard/perfil" && "Mi Perfil"}
-                  </span>
-                </Link>
-              );
-            })}
-            <div className="bf-nav-label" style={{ marginTop: 8 }}>Sistema</div>
-            <Link
-              href="/configuracion"
-              className={`bf-nav-item${pathname === "/configuracion" ? " active" : ""}`}
-            >
-              <i className="bi bi-gear-fill" aria-hidden="true" />
-              <span>Configuración</span>
-            </Link>
-          </>
-        ) : isBusinessUser ? (
+        {isBusinessUser ? (
           /* ==========================================
              VISTA NEGOCIO (BUSINESS)
              ========================================== */
@@ -116,7 +84,7 @@ export default function Sidebar() {
           </>
         ) : (
           /* ==========================================
-             VISTA ADMINISTRADOR ORIGINAL (CON TUS SLICES)
+             VISTA ADMINISTRADOR ORIGINAL
              ========================================== */
           <>
             <div className="bf-nav-label">{t("sidebarManagement")}</div>
