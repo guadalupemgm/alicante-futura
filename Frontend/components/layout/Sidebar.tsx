@@ -3,7 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
-import { useLanguage } from "@/components/context/LanguageContext";
+import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
+
+// Menú de administrador
+const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
+  { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
+  { key: "bookings",   href: "/bookings",   icon: "bi-calendar2-check" },
+  { key: "customers",  href: "/customers",  icon: "bi-people-fill" },
+  { key: "payments",   href: "/payments",   icon: "bi-credit-card-2-front-fill" },
+  { key: "business",   href: "/business",   icon: "bi-shop-window" },
+];
+
+// Menú de negocio (Business)
+const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
+  { key: "dashboard",          href: "/dashboard",          icon: "bi-speedometer2" },
+  { key: "myBusinessBookings", href: "/business-bookings",  icon: "bi-calendar2-check" },
+  { key: "payments",           href: "/payments",           icon: "bi-credit-card-2-front-fill" },
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -69,13 +85,13 @@ export default function Sidebar() {
       {/* User pill at bottom */}
       <div className="bf-sidebar-bottom">
         <div className="bf-user-pill">
-          <div className={`bf-user-avatar${role === "business" ? " bf-user-avatar--biz" : ""}`}>
+          <div className={`bf-user-avatar${isBusinessUser ? " bf-user-avatar--biz" : ""}`}>
             {initial}
           </div>
           <div>
             <div className="bf-user-name">{displayName}</div>
             <div className="bf-user-role">
-              {role === "admin" ? "Administrador" : role === "business" ? "Negocio verificado" : "Cliente particular"}
+              {isBusinessUser ? "Negocio verificado" : "Administrador"}
             </div>
           </div>
         </div>

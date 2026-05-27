@@ -63,7 +63,7 @@ export default function BusinessesPage() {
   const [editTarget, setEditTarget] = useState<Business | null>(null);
   const [editForm, setEditForm]     = useState(emptyEditForm);
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const authHeaders = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

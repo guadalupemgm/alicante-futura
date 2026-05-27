@@ -10,7 +10,7 @@ async function bootstrap() {
 
   
   const SWAGGER_USER = process.env.SWAGGER_USER ?? 'admin';
-  const SWAGGER_PASS = process.env.SWAGGER_PASS ?? 'alicante2025';
+  const SWAGGER_PASS = process.env.SWAGGER_PASS ?? 'admin';
 
   app.use(['/api', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
     const auth = req.headers['authorization'];

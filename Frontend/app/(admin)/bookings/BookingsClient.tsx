@@ -6,7 +6,7 @@ import { createAppointment, deleteAppointment, updateAppointment, getBusinesses,
 import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function BookingsClient({ initialBookings }: { initialBookings: Booking[] }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [bookings, setBookings]           = useState<Booking[]>(initialBookings);
   const [businesses, setBusinesses]       = useState<Business[]>([]);
   const [customers, setCustomers]         = useState<Customer[]>([]);
@@ -51,6 +51,27 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const filtered = useMemo(() =>
     statusFilter === "all" ? bookings : bookings.filter(b => b.status === statusFilter)
   , [bookings, statusFilter]);
+
+  const conflictIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (let i = 0; i < bookings.length; i++) {
+      const b1 = bookings[i];
+      if (b1.status === "cancelled") continue;
+      for (let j = i + 1; j < bookings.length; j++) {
+        const b2 = bookings[j];
+        if (b2.status === "cancelled") continue;
+        if (
+          b1.date === b2.date &&
+          b1.time === b2.time &&
+          b1.businessId === b2.businessId
+        ) {
+          ids.add(b1.id);
+          ids.add(b2.id);
+        }
+      }
+    }
+    return ids;
+  }, [bookings]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +187,32 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         ))}
       </div>
 
+      {conflictIds.size > 0 && (
+        <div style={{
+          background: "rgba(239, 68, 68, 0.08)",
+          border: "1px solid rgba(239, 68, 68, 0.2)",
+          borderRadius: "var(--r-md)",
+          padding: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          color: "#b91c1c",
+          marginBottom: "16px"
+        }}>
+          <i className="bi bi-exclamation-triangle-fill" style={{ fontSize: "20px" }} />
+          <div>
+            <h4 style={{ margin: 0, fontWeight: 700, fontSize: "14px" }}>
+              {lang.code === "es" ? "Conflictos detectados" : "Conflicts detected"}
+            </h4>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", color: "rgba(185, 28, 28, 0.85)" }}>
+              {lang.code === "es"
+                ? `Se han detectado ${conflictIds.size} citas programadas a la misma hora en el mismo negocio.`
+                : `We detected ${conflictIds.size} appointments scheduled at the same time in the same business.`}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="section-card">
         <div className="panel-title-row">
           <h3 className="panel-title">{t("upcomingAppointmentsPanel")}</h3>
@@ -203,7 +250,28 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
                   <div style={{ fontSize: "12px", color: "var(--muted)" }}>{t("clientId")}: #{b.customerId}</div>
                 </td>
                 <td>
-                  <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div>{new Date(b.date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</div>
+                    {conflictIds.has(b.id) && (
+                      <span 
+                        title={lang.code === "es" ? "Conflicto: Hay otra cita a esta misma hora" : "Conflict: Another appointment is at the same time"}
+                        style={{
+                          background: "#ef4444",
+                          color: "#fff",
+                          borderRadius: "4px",
+                          padding: "2px 6px",
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "3px"
+                        }}
+                      >
+                        <i className="bi bi-exclamation-circle-fill" />
+                        {lang.code === "es" ? "Conflicto" : "Conflict"}
+                      </span>
+                    )}
+                  </div>
                   <div style={{ fontSize: "12px", color: "var(--muted)" }}>{b.time} hs</div>
                 </td>
                 <td>

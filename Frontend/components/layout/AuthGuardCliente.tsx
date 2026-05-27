@@ -24,8 +24,7 @@ export default function AuthGuardCliente({
     }
 
     if (user.role !== "customer") {
-      if (user.role === "admin") router.push("/dashboard");
-      else if (user.role === "business") router.push("/business-bookings");
+      router.push("/dashboard");
       return;
     }
 

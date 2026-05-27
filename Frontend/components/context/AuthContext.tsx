@@ -37,7 +37,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
   if (role === "customer") router.push("/empresas");
-  else if (role === "business") router.push("/business-bookings");
   else router.push("/dashboard");
 }
 
