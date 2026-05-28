@@ -24,26 +24,36 @@ export default function ParticularSearch() {
   // Estados para los datos de la API
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Estado para capturar fallos de red
 
-  // Simulación de carga de datos (Sustituir por llamada real a la API en el futuro)
+  // LLAMADA REAL A LA API
   useEffect(() => {
-    setLoading(true);
-    
-    const mockBusinesses: Business[] = [
-      { id: 1, name: "Barbería El Estilo", category: "beauty", rating: 4.8, address: "Calle Mayor 12" },
-      { id: 2, name: "FisioSalud", category: "health", rating: 4.9, address: "Av. de la Constitución 5" },
-      { id: 3, name: "Gimnasio Zeus", category: "sports", rating: 4.5, address: "Plaza España 3" },
-    ];
-    
-    const timer = setTimeout(() => {
-      setBusinesses(mockBusinesses);
-      setLoading(false);
-    }, 400);
+    const fetchBusinesses = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Sustituye esta URL por tu endpoint real (ej. "https://api.tuservidor.com/businesses" o "/api/businesses")
+        const response = await fetch("http://localhost:3000/api/business");
+        
+        if (!response.ok) {
+          throw new Error("Error al cargar los negocios");
+        }
+        
+        const data: Business[] = await response.json();
+        setBusinesses(data);
+      } catch (err) {
+        console.error("Error fetching businesses:", err);
+        setError(t("errorLoadingBusinesses") || "No se pudieron cargar los negocios. Inténtalo de nuevo.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    fetchBusinesses();
+  }, [t]); // Se añade 't' si las traducciones cambian dinámicamente
 
-  // Filtrado en tiempo real en el cliente
+  // Filtrado en tiempo real en el cliente (mantiene tu lógica actual)
   const filteredBusinesses = businesses.filter((biz) => {
     const matchesCategory = categoryFilter === "all" || biz.category === categoryFilter;
     const matchesSearch = biz.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -61,7 +71,7 @@ export default function ParticularSearch() {
         </h3>
         
         <div className="search-form-layout" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          {/* Input de texto de búsqueda utilizando tu clave existente */}
+          {/* Input de texto de búsqueda */}
           <input
             type="text"
             placeholder={t("searchBusinessPlaceholder")}
@@ -86,11 +96,15 @@ export default function ParticularSearch() {
         </div>
       </div>
 
-      {/* 2. GRID DE NEGOCIOS RESULTANTES */}
+      {/* 2. CONTROL DE ESTADOS (LOADING, ERROR Y GRID) */}
       {loading ? (
         <p style={{ textAlign: "center", color: "var(--muted)", padding: "2rem" }}>
           {t("loadingBusinesses")}
         </p>
+      ) : error ? (
+        <div className="section-card" style={{ textAlign: "center", padding: "3rem", color: "red" }}>
+          <p>{error}</p>
+        </div>
       ) : filteredBusinesses.length === 0 ? (
         <div className="section-card" style={{ textAlign: "center", padding: "3rem", color: "var(--muted)" }}>
           <p>{t("noBusinessesFound")}</p>

@@ -23,7 +23,8 @@ export const translations = {
     changeLanguage:      "Cambiar idioma",
     logout:              "Cerrar sesión",
     headerSubtitle:      "Plataforma de gestión de reservas y cobros",
-
+    errorLoadingBusinesses: "Hubo un error al cargar los negocios. Por favor, inténtalo de nuevo.",
+  
     // Sidebar
     dashboard:           "Dashboard",
     bookings:            "Reservas",
