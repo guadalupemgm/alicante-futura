@@ -17,11 +17,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const allowedBusinessPaths = ["/admin", "/business-bookings", "/dashboard", "/payments", "/configuracion", "/settings"];
-    if (user.role === "business" && !allowedBusinessPaths.some((p) => pathname.startsWith(p))) {
-      router.push("/dashboard");
-    }
+    // admin y business tienen acceso libre a todas las rutas /admin/*
+    if (user.role === "admin" || user.role === "business") return;
 
+    // Los clientes solo pueden estar en sus rutas
     if (
       user.role === "customer" &&
       !pathname.startsWith("/empresas") &&
