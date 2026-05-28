@@ -1,208 +1,166 @@
 "use client";
 
-import { useState } from "react";
-import { useAuth } from "@/components/context/AuthContext";
-import { useTheme } from "@/components/context/ThemeContext";
-import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useLanguage } from "@/components/context/LanguageContext";
 
-export default function SettingsPage() {
-  const { user, logout, changePassword } = useAuth();
-  const { theme, toggleTheme }           = useTheme();
-  const { lang, setLang, t }             = useLanguage();
+// Interface para tipar los datos que vienen del backend
+interface Business {
+  id: number;
+  name: string;
+  category: string;
+  rating: number;
+  address: string;
+  imageUrl?: string;
+}
 
-  const [pwForm, setPwForm]       = useState({ current: "", nueva: "", confirmar: "" });
-  const [pwMsg, setPwMsg]         = useState<{ text: string; ok: boolean } | null>(null);
-  const [pwLoading, setPwLoading] = useState(false);
-  const [twoFA, setTwoFA]         = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
+export default function ParticularSearch() {
+  const { t } = useLanguage();
+  
+  // Estados para filtros y búsqueda
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Estados para los datos de la API
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Estado para capturar fallos de red
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwForm.nueva !== pwForm.confirmar) {
-      setPwMsg({ text: t("settingsPwMismatch"), ok: false });
-      return;
-    }
-    if (pwForm.nueva.length < 6) {
-      setPwMsg({ text: t("settingsPwMinLen"), ok: false });
-      return;
-    }
-    setPwLoading(true);
-    try {
-      await changePassword(pwForm.current, pwForm.nueva);
-      setPwMsg({ text: t("settingsPwUpdated"), ok: true });
-      setPwForm({ current: "", nueva: "", confirmar: "" });
-    } catch {
-      setPwMsg({ text: t("settingsPwError"), ok: false });
-    } finally {
-      setPwLoading(false);
-    }
-  };
+  // LLAMADA REAL A LA API
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Usamos la URL completa del backend
+        const response = await fetch("http://localhost:3000/business");
+        
+        if (!response.ok) {
+          throw new Error("Error al cargar los negocios");
+        }
+        
+        const data: Business[] = await response.json();
+        setBusinesses(data);
+      } catch (err) {
+        console.error("Error fetching businesses:", err);
+        setError(t("errorLoadingBusinesses") || "No se pudieron cargar los negocios.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [t]);
+  
+  // Filtrado en tiempo real en el cliente (mantiene tu lógica actual)
+  const filteredBusinesses = businesses.filter((biz) => {
+    const matchesCategory = categoryFilter === "all" || biz.category === categoryFilter;
+    const matchesSearch = biz.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          biz.address.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="page-stack" style={{ maxWidth: 600, margin: "0 auto" }}>
-      <section className="page-hero">
-        <div>
-          <h2>{t("settingsTitle")}</h2>
-          <p>{t("settingsSubtitle")}</p>
-        </div>
-      </section>
-
-      {/* Idioma */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-translate" style={{ marginRight: 8 }} />
-          {t("settingsLanguage")}
+    <div className="search-container">
+      
+      {/* 1. SECCIÓN DE FILTROS Y BÚSQUEDA */}
+      <div className="section-card search-filters-card" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
+        <h3 style={{ marginBottom: "1rem", fontSize: "1.25rem", fontWeight: 600 }}>
+          {t("businessTitle")}
         </h3>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => setLang(l)}
-              className={lang.code === l.code ? "primary-btn" : "secondary-btn"}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <span>{l.flag}</span>
-              <span>{l.label}</span>
-              {lang.code === l.code && <i className="bi bi-check-lg" />}
-            </button>
+        
+        <div className="search-form-layout" style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          {/* Input de texto de búsqueda */}
+          <input
+            type="text"
+            placeholder={t("searchBusinessPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="form-control"
+            style={{ flex: 1, padding: "0.75rem", borderRadius: "6px", border: "1px solid var(--border)" }}
+          />
+
+          {/* Selector de Categorías */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="form-select"
+            style={{ padding: "0.75rem", borderRadius: "6px", border: "1px solid var(--border)", minWidth: "180px" }}
+          >
+            <option value="all">{t("filterAll")}</option>
+            <option value="beauty">Belleza y Estética</option>
+            <option value="health">Salud y Bienestar</option>
+            <option value="sports">Deportes y Fitness</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 2. CONTROL DE ESTADOS (LOADING, ERROR Y GRID) */}
+      {loading ? (
+        <p style={{ textAlign: "center", color: "var(--muted)", padding: "2rem" }}>
+          {t("loadingBusinesses")}
+        </p>
+      ) : error ? (
+        <div className="section-card" style={{ textAlign: "center", padding: "3rem", color: "red" }}>
+          <p>{error}</p>
+        </div>
+      ) : filteredBusinesses.length === 0 ? (
+        <div className="section-card" style={{ textAlign: "center", padding: "3rem", color: "var(--muted)" }}>
+          <p>{t("noBusinessesFound")}</p>
+        </div>
+      ) : (
+        <div className="business-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
+          {filteredBusinesses.map((biz) => (
+            <div key={biz.id} className="section-card business-card" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+              
+              {/* Encabezado visual de la tarjeta */}
+              <div style={{ height: "140px", backgroundColor: "var(--border-subtle, #f3f4f6)", borderRadius: "6px 6px 0 0", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>
+                🖼️ {biz.category.toUpperCase()}
+              </div>
+              
+              {/* Contenido de la tarjeta informativa */}
+              <div style={{ padding: "1rem", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                    <span className="badge badge--subtle" style={{ fontSize: "0.75rem" }}>
+                      {biz.category}
+                    </span>
+                    <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#eab308" }}>
+                      ⭐ {biz.rating}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: "0 0 0.25rem 0", fontSize: "1.1rem", fontWeight: 600 }}>
+                    {biz.name}
+                  </h4>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)" }}>
+                    📍 {biz.address}
+                  </p>
+                </div>
+
+                {/* Enlace dinámico hacia el portal de reservas del negocio */}
+                <Link 
+                  href={`/booking/${biz.id}`} 
+                  className="btn-primary" 
+                  style={{ 
+                    marginTop: "1rem", 
+                    width: "100%", 
+                    padding: "0.6rem", 
+                    borderRadius: "6px", 
+                    textAlign: "center",
+                    display: "block",
+                    textDecoration: "none"
+                  }}
+                >
+                  {t("bookNow")}
+                </Link>
+              </div>
+
+            </div>
           ))}
         </div>
-      </div>
-
-      {/* Tema */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-moon-stars-fill" style={{ marginRight: 8 }} />
-          {t("settingsAppearance")}
-        </h3>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>{t("settingsDarkMode")}</span>
-          <button
-            className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
-            onClick={toggleTheme}
-          >
-            <span className="toggle-switch__knob" />
-          </button>
-        </div>
-      </div>
-
-      {/* Cambiar contraseña */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-lock-fill" style={{ marginRight: 8 }} />
-          {t("settingsPassword")}
-        </h3>
-        <form onSubmit={handleChangePassword}>
-          <div className="page-stack">
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsCurrentPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder="••••••••"
-                value={pwForm.current}
-                onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsNewPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder={t("settingsNewPwMin")}
-                value={pwForm.nueva}
-                onChange={(e) => setPwForm({ ...pwForm, nueva: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsConfirmPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder={t("settingsRepeatPw")}
-                value={pwForm.confirmar}
-                onChange={(e) => setPwForm({ ...pwForm, confirmar: e.target.value })}
-                required
-              />
-            </div>
-            {pwMsg && (
-              <p style={{ fontSize: 13, margin: 0, color: pwMsg.ok ? "#15803d" : "#b91c1c" }}>
-                {pwMsg.text}
-              </p>
-            )}
-            <div>
-              <button type="submit" className="primary-btn" disabled={pwLoading}>
-                {pwLoading ? t("settingsSaving") : t("settingsUpdatePw")}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* 2FA */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
-          <i className="bi bi-shield-lock-fill" style={{ marginRight: 8 }} />
-          {t("settings2FA")}
-        </h3>
-        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          {t("settings2FADesc")}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 14 }}>
-            {t("settings2FAStatus")} <strong style={{ color: twoFA ? "#15803d" : "var(--muted)" }}>
-              {twoFA ? t("settings2FAActive") : t("settings2FAInactive")}
-            </strong>
-          </span>
-          <button
-            className={twoFA ? "secondary-btn" : "primary-btn"}
-            onClick={() => setShow2FAModal(true)}
-          >
-            {twoFA ? t("settings2FADisable") : t("settings2FAEnable")}
-          </button>
-        </div>
-      </div>
-
-      {/* Cerrar sesión */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
-          <i className="bi bi-box-arrow-right" style={{ marginRight: 8 }} />
-          {t("settingsSession")}
-        </h3>
-        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          {t("settingsSessionDesc")}
-        </p>
-        <button className="danger-btn" onClick={logout}>
-          {t("settingsLogout")}
-        </button>
-      </div>
-
-      {/* Modal 2FA */}
-      {show2FAModal && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3 className="modal-title">
-              {twoFA ? t("modal2FADisableTitle") : t("modal2FAEnableTitle")} {t("modal2FATitle")}
-            </h3>
-            <p className="modal-text">
-              {twoFA ? t("modal2FADisableMsg") : t("modal2FAEnableMsg")}
-            </p>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShow2FAModal(false)}>
-                {t("cancel")}
-              </button>
-              <button
-                className={twoFA ? "danger-btn" : "primary-btn"}
-                onClick={() => { setTwoFA(!twoFA); setShow2FAModal(false); }}
-              >
-                {twoFA ? t("modal2FAConfirmDisable") : t("modal2FAConfirmEnable")}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
+
     </div>
   );
 }

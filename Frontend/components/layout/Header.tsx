@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/context/ThemeContext";
 import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
 import { useAuth } from "@/components/context/AuthContext";
@@ -18,31 +18,30 @@ interface Notification {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export default function Header() {
-  const router = useRouter(); 
+export default function Header({ role = "particular" }: { role?: "admin" | "particular" | "business" }) {
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
   const { logout, user, token } = useAuth();
-  
+
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [toast, setToast] = useState<{ title: string; desc: string } | null>(null);
-  
+
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const unread = notifications.filter(n => !n.read).length;
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
   const initial = displayName[0]?.toUpperCase() ?? "U";
 
-  // Obtenemos de forma limpia la etiqueta de rol correcta para la interfaz
   const getRoleLabel = () => {
-    if (user?.role === "customer") return "Particular";
-    if (user?.role === "business") return "Negocio";
-    return "Admin";
-  };
+  if (user?.role === "business") return "Negocio";
+  if (user?.role === "customer") return "Cliente";
+  return "Admin";
+};
 
   const roleLabel = getRoleLabel();
 
@@ -60,15 +59,18 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Save to localStorage when notifications change
   useEffect(() => {
     if (!user) return;
     localStorage.setItem(`bf_notifications_${user.id}`, JSON.stringify(notifications));
   }, [notifications, user]);
 
-  // Load from backend on mount if localStorage is empty or cleared
   useEffect(() => {
     if (!user || !token) return;
+
+    // ✅ Guardia: no hacer fetch si faltan los IDs necesarios
+    if (user.role === "business" && !user.businessId) return;
+    if (user.role === "customer" && !user.customerId) return;
+
     const storageKey = `bf_notifications_${user.id}`;
     const saved = localStorage.getItem(storageKey);
     if (saved && JSON.parse(saved).length > 0) return;
@@ -76,35 +78,32 @@ export default function Header() {
     const loadInitialData = async () => {
       try {
         let url = `${API_URL}/appointments`;
-        
         if (user.role === "business" && user.businessId) {
           url = `${API_URL}/appointments/business/${user.businessId}`;
         } else if (user.role === "customer" && user.customerId) {
           url = `${API_URL}/appointments/customer/${user.customerId}`;
-        } else {
-          return;
         }
 
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         if (!res.ok) throw new Error("Failed to fetch appointments");
         const appts = await res.json();
-        
+
         const initialNotifs: Notification[] = [];
-        
+
         if (Array.isArray(appts)) {
           appts.slice(0, 4).forEach((appt: any, idx: number) => {
             const dateStr = appt.date ? new Date(appt.date).toLocaleDateString() : "";
             const isConfirmed = appt.status === "confirmed" || appt.status === "paid";
             const isCustomer = user.role === "customer";
-            
+
             initialNotifs.push({
               id: Date.now() - idx * 60000,
               icon: isConfirmed ? "bi-calendar2-check-fill" : "bi-calendar-event-fill",
-              title: isCustomer 
-                ? (isConfirmed ? "Cita Confirmada" : "Cita Solicitada") 
+              title: isCustomer
+                ? (isConfirmed ? "Cita Confirmada" : "Cita Solicitada")
                 : (isConfirmed ? "Reserva Confirmada" : "Reserva Pendiente"),
               desc: isCustomer
                 ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr || appt.date} a las ${appt.time} ${isConfirmed ? "está confirmada" : "está pendiente"}.`
@@ -114,34 +113,26 @@ export default function Header() {
             });
           });
         }
-        
-        if (initialNotifs.length === 0) {
-          initialNotifs.push({
-            id: Date.now(),
-            icon: "bi-info-circle-fill",
-            title: "Sistema inicializado",
-            desc: "No hay reservas recientes registradas en tu panel.",
-            time: "Hace unos instantes",
-            read: false
-          });
+
+        if (initialNotifs.length > 0) {
+          setNotifications(initialNotifs);
         }
-        
-        setNotifications(initialNotifs);
+
       } catch (err) {
-        console.error("Failed to generate initial notifications:", err);
+        // ✅ Si el backend falla, no romper el render
+        console.warn("No se pudieron cargar las notificaciones:", err);
       }
     };
 
     loadInitialData();
   }, [user, token]);
 
-  // Simulate a live notification arriving after 10 seconds
   useEffect(() => {
     if (!user) return;
     const timer = setTimeout(() => {
       const isBusiness = user.role === "business";
       const isCustomer = user.role === "customer";
-      
+
       let title = "Nuevo Registro de Negocio";
       let desc = "El negocio 'Alicante Tech Center' ha completado su registro.";
       let icon = "bi-lightning-charge-fill";
@@ -163,7 +154,7 @@ export default function Header() {
         time: "Ahora mismo",
         read: false
       };
-      
+
       setNotifications(prev => {
         if (prev.some(n => n.title === liveNotif.title)) return prev;
         setToast({ title: liveNotif.title, desc: liveNotif.desc });
@@ -184,14 +175,38 @@ export default function Header() {
   const deleteOne = (id: number) =>
     setNotifications(prev => prev.filter(n => n.id !== id));
 
+  const handleNotificationClick = (n: Notification) => {
+    markOneRead(n.id);
+    setNotifOpen(false);
+
+    const isAppointmentNotif =
+      n.type === "appointment" ||
+      n.title.toLowerCase().includes("cita") ||
+      n.title.toLowerCase().includes("reserva") ||
+      n.title.toLowerCase().includes("appointment") ||
+      n.title.toLowerCase().includes("booking") ||
+      n.icon.includes("calendar") ||
+      n.icon.includes("clock");
+
+    if (isAppointmentNotif) {
+      if (user?.role === "business") {
+        router.push("/business-bookings");
+      } else if (user?.role === "customer") {
+        router.push("/reservas");
+      } else {
+        router.push("/bookings");
+      }
+    }
+  };
+
   return (
     <header className="admin-header">
       <div>
         <h2 className="admin-header__title">
-          {user?.role === "customer" ? "Panel de Usuario" : "BookFlow"}
+          {role === "particular" ? "Panel de Usuario" : "BookFlow"}
         </h2>
         <p className="admin-header__subtitle">
-          {user?.role === "customer" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
+          {role === "particular" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
         </p>
       </div>
 
@@ -234,16 +249,7 @@ export default function Header() {
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => {
-                      markOneRead(n.id);
-                      setNotifOpen(false);
-                      const isAppointmentNotif = n.type === "appointment" || n.title.toLowerCase().includes("cita") || n.title.toLowerCase().includes("reserva") || n.icon.includes("calendar");
-                      if (isAppointmentNotif) {
-                        if (user?.role === "business") router.push("/business-bookings");
-                        else if (user?.role === "customer") router.push("/reservas");
-                        else router.push("/bookings");
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(n)}
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 10,
                       padding: "8px 10px", borderRadius: "var(--r)", cursor: "pointer",
@@ -257,16 +263,16 @@ export default function Header() {
                     }}>
                       <i className={`bi ${n.icon}`} style={{ fontSize: 14, color: "var(--accent)" }} />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{n.title}</div>
-                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>{n.desc}</div>
-                      <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 4 }}>{n.time}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)", marginBottom: 2 }}>{n.title}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.desc}</div>
+                      <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 3 }}>{n.time}</div>
                     </div>
-                    <button 
+                    <button
                       onClick={e => { e.stopPropagation(); deleteOne(n.id); }}
-                      style={{ background: "transparent", border: "none", color: "var(--ink-4)", cursor: "pointer", padding: 2 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", padding: "2px 4px", flexShrink: 0 }}
                     >
-                      <i className="bi bi-x-lg" style={{ fontSize: 10 }} />
+                      <i className="bi bi-x-lg" style={{ fontSize: 11 }} />
                     </button>
                   </div>
                 ))}
@@ -275,13 +281,13 @@ export default function Header() {
           )}
         </div>
 
-        {/* Avatar Menu Completo */}
+        {/* Avatar Menu */}
         <div className="avatar-menu" ref={menuRef}>
           <button className="user-pill" onClick={() => { setOpen(!open); setLangOpen(false); setNotifOpen(false); }}>
             <div className="user-pill__avatar">{initial}</div>
             <div className="user-pill__info">
               <span className="user-pill__name">{displayName}</span>
-              <span className="user-pill__role">{roleLabel}</span>
+              <span className="user-pill__role">{role === "particular" ? "Particular" : roleLabel}</span>
             </div>
             <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`} />
           </button>
@@ -296,7 +302,7 @@ export default function Header() {
                 </div>
               </div>
               <div className="avatar-menu__divider" />
-              
+
               <div className="avatar-menu__item avatar-menu__item--toggle">
                 <i className="bi bi-moon-stars-fill" />
                 <span>{t("darkMode")}</span>
@@ -330,25 +336,44 @@ export default function Header() {
       </div>
 
       <style>{`
-        @keyframes slideIn { 
-          from { transform: translateX(120%); opacity: 0; } 
-          to { transform: translateX(0); opacity: 1; } 
+        @keyframes slideIn {
+          from { transform: translateX(120%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
 
       {toast && (
         <div style={{
-          position: "fixed", top: "20px", right: "20px", background: "var(--paper)",
-          borderLeft: "4px solid var(--primary)", padding: "12px 16px", borderRadius: "var(--r-md)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)", zIndex: 1000, display: "flex", gap: "10px",
-          alignItems: "center", animation: "slideIn 0.3s ease-out"
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "var(--paper)",
+          borderLeft: "4px solid var(--primary)",
+          padding: "12px 16px",
+          borderRadius: "var(--r-md)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          animation: "slideIn 0.3s ease-out"
         }}>
           <i className="bi bi-bell-fill" style={{ color: "var(--primary)", fontSize: "1.2rem" }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--ink)" }}>{toast.title}</div>
             <div style={{ fontSize: "0.8rem", color: "var(--ink-3)", marginTop: "2px" }}>{toast.desc}</div>
           </div>
-          <button onClick={() => setToast(null)} style={{ background: "transparent", border: "none", color: "var(--ink-3)", cursor: "pointer", fontSize: "1.1rem", paddingLeft: "10px" }}>
+          <button
+            onClick={() => setToast(null)}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--ink-3)",
+              cursor: "pointer",
+              fontSize: "1.1rem",
+              paddingLeft: "10px"
+            }}
+          >
             <i className="bi bi-x-lg" />
           </button>
         </div>
