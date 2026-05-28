@@ -10,6 +10,7 @@ import {
   Request,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,8 +20,15 @@ import { Roles } from '../auth/roles.decorator';
 import { UserRole } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 
+<<<<<<< HEAD
 @Controller('users')
 @UseGuards(JwtAuthGuard)
+=======
+@ApiTags('users')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('users')
+>>>>>>> d7be664c788f348ad8fb349dab42835df3c40de6
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
