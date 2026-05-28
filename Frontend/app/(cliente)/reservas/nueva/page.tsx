@@ -24,7 +24,7 @@ type Business = { id: number; name: string; category: string; address: string };
 function NuevaReservaForm() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const { user }     = useAuth();
+  const { user, token } = useAuth();
   const { t, lang }  = useLanguage();
 
   const preBusinessId   = Number(searchParams.get("businessId") ?? 0);
@@ -300,9 +300,13 @@ function NuevaReservaForm() {
     const appointmentStatus = isPayingNow ? "paid" : "pending";
 
     try {
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
       const res = await fetch(API_URL + "/appointments", {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        },
         body: JSON.stringify({
           businessId:   form.businessId,
           customerId:   user?.customerId ?? 0,

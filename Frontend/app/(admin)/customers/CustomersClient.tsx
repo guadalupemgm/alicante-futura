@@ -51,10 +51,10 @@ export default function CustomersClient() {
   };
 
   useEffect(() => {
-    fetch(`${API_URL}/customers`)
+    fetch(`${API_URL}/customers`, { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => setCustomers(Array.isArray(data) ? data : []));
-    fetch(`${API_URL}/appointments`)
+    fetch(`${API_URL}/appointments`, { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => setAppointments(Array.isArray(data) ? data : []));
   }, []);

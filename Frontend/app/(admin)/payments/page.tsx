@@ -37,7 +37,7 @@ function Badge({ status, label }: { status: PaymentStatus; label: string }) {
 }
 
 export default function PaymentsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { t } = useLanguage();
 
   const [payments, setPayments]         = useState<Payment[]>([]);
@@ -75,9 +75,15 @@ export default function PaymentsPage() {
     const endpointPayments = user?.role === "business" ? `${API_URL}/payments/business/${user.businessId}` : `${API_URL}/payments`;
     const endpointAppointments = user?.role === "business" ? `${API_URL}/appointments/business/${user.businessId}` : `${API_URL}/appointments`;
 
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
+    const headers = {
+      "Content-Type": "application/json",
+      ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+    };
+
     Promise.all([
-      fetch(endpointPayments).then(r => r.json()),
-      fetch(endpointAppointments).then(r => r.json())
+      fetch(endpointPayments, { headers }).then(r => r.json()),
+      fetch(endpointAppointments, { headers }).then(r => r.json())
     ]).then(([paymentsData, appointmentsData]) => {
       if (!ignore) {
         setPayments(Array.isArray(paymentsData) ? paymentsData : []);
@@ -88,7 +94,7 @@ export default function PaymentsPage() {
     return () => {
       ignore = true;
     };
-  }, [user]);
+  }, [user, token]);
 
   useEffect(() => { setPage(1); }, [statusFilter]);
 
@@ -105,9 +111,13 @@ export default function PaymentsPage() {
       return;
     }
 
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
     const res = await fetch(`${API_URL}/payments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
       body: JSON.stringify({
         amount: parseFloat(form.amount),
         method: form.method,
@@ -127,9 +137,13 @@ export default function PaymentsPage() {
 
   // Cambio rápido de estado (botón en tabla)
   const handleStatusChange = async (id: number, newStatus: PaymentStatus) => {
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
     const res = await fetch(`${API_URL}/payments/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
       body: JSON.stringify({ status: newStatus }),
     });
     if (res.ok) {
@@ -147,9 +161,13 @@ export default function PaymentsPage() {
   // Guardar edición completa
   const handleEdit = async () => {
     if (!editTarget) return;
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
     const res = await fetch(`${API_URL}/payments/${editTarget.id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
       body: JSON.stringify({
         amount: parseFloat(editForm.amount),
         method: editForm.method,
