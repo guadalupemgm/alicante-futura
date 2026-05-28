@@ -29,6 +29,7 @@ export default function Sidebar() {
   const role = user?.role ?? "particular"; // admin | business | particular
   const initial = (user?.email?.[0] ?? "U").toUpperCase();
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
+  const isBusinessUser = role === "business";
 
   // Definición de menús centralizada
   const getMenuItems = () => {
