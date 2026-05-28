@@ -9,17 +9,14 @@ interface User {
   role: "admin" | "business" | "customer";
   businessId?: number;
   customerId?: number;
-  name?: string;
-  phone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: any) => Promise<void>;
   logout: () => void;
-  changePassword: (newPassword: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -27,7 +24,6 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   login: async () => {},
-  register: async () => {},
   logout: () => {},
   changePassword: async () => {},
   isLoading: true,
@@ -35,22 +31,17 @@ const AuthContext = createContext<AuthContextType>({
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-function redirectByRole(role: string, router: ReturnType<typeof useRouter>) {
-  if (role === "customer") router.push("/empresas");
-  else router.push("/dashboard");
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser]       = useState<User | null>(null);
+  const [token, setToken]     = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("auth_token");
-    const storedUser = localStorage.getItem("auth_user");
-    if (stored && storedUser) {
-      setToken(stored);
+    const storedToken = localStorage.getItem("auth_token");
+    const storedUser  = localStorage.getItem("auth_user");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
@@ -62,7 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
-
     if (!res.ok) throw new Error("Credenciales incorrectas");
 
     const data = await res.json();
@@ -70,31 +60,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
     localStorage.setItem("auth_token", data.access_token);
     localStorage.setItem("auth_user", JSON.stringify(data.user));
-    redirectByRole(data.user.role, router);
-  };
 
-  const register = async (userData: any) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Error al crear la cuenta");
-    }
-
-    const data = await res.json();
-
-    if (data.access_token && data.user) {
-      setToken(data.access_token);
-      setUser(data.user);
-      localStorage.setItem("auth_token", data.access_token);
-      localStorage.setItem("auth_user", JSON.stringify(data.user));
-      redirectByRole(data.user.role, router);
+    if (data.user.role === "customer") {
+      router.push("/reservas");
     } else {
-      await login(userData.email, userData.password);
+      router.push("/dashboard");
     }
   };
 
@@ -106,20 +76,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
-  const changePassword = async (newPassword: string) => {
-    const res = await fetch(`${API_URL}/users/change-password`, {
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const res = await fetch(`${API_URL}/auth/change-password`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ newPassword }),
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
-    if (!res.ok) throw new Error("Error al cambiar la contraseña");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Error al cambiar la contraseña");
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, changePassword, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, logout, changePassword, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
