@@ -29,11 +29,12 @@ export class AppointmentsService {
   }
 
   findByCustomer(customerId: number) {
-    return this.appointmentsRepository.find({
-      where: { customerId },
-      order: { date: 'ASC', time: 'ASC' },
-    });
-  }
+  return this.appointmentsRepository.find({
+    where: { customerId },
+    relations: ['business'], // <--- Esto le dice a TypeORM: "trae también el objeto relacionado"
+    order: { date: 'ASC', time: 'ASC' },
+  });
+}
 
   findOne(id: number) {
     return this.appointmentsRepository.findOneBy({ id });

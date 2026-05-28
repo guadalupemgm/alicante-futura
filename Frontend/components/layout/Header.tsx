@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; 
 import { useTheme } from "@/components/context/ThemeContext";
 import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
 import { useAuth } from "@/components/context/AuthContext";
@@ -18,7 +18,8 @@ interface Notification {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export default function Header({ role = "particular" }: { role?: "admin" | "particular" | "business" }) {
+export default function Header() {
+  const router = useRouter(); 
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
   const { logout, user, token } = useAuth();
@@ -38,7 +39,7 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
 
   // Obtenemos de forma limpia la etiqueta de rol correcta para la interfaz
   const getRoleLabel = () => {
-    if (user?.role === "particular") return "Particular";
+    if (user?.role === "customer") return "Particular";
     if (user?.role === "business") return "Negocio";
     return "Admin";
   };
@@ -75,10 +76,13 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
     const loadInitialData = async () => {
       try {
         let url = `${API_URL}/appointments`;
+        
         if (user.role === "business" && user.businessId) {
           url = `${API_URL}/appointments/business/${user.businessId}`;
         } else if (user.role === "customer" && user.customerId) {
           url = `${API_URL}/appointments/customer/${user.customerId}`;
+        } else {
+          return;
         }
 
         const res = await fetch(url, {
@@ -180,39 +184,14 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
   const deleteOne = (id: number) =>
     setNotifications(prev => prev.filter(n => n.id !== id));
 
-  const handleNotificationClick = (n: Notification) => {
-    markOneRead(n.id);
-    setNotifOpen(false);
-
-    // Determine if it is appointment-related
-    const isAppointmentNotif = 
-      n.type === "appointment" || 
-      n.title.toLowerCase().includes("cita") || 
-      n.title.toLowerCase().includes("reserva") || 
-      n.title.toLowerCase().includes("appointment") || 
-      n.title.toLowerCase().includes("booking") ||
-      n.icon.includes("calendar") ||
-      n.icon.includes("clock");
-
-    if (isAppointmentNotif) {
-      if (user?.role === "business") {
-        router.push("/business-bookings");
-      } else if (user?.role === "customer") {
-        router.push("/reservas");
-      } else {
-        router.push("/bookings");
-      }
-    }
-  };
-
   return (
     <header className="admin-header">
       <div>
         <h2 className="admin-header__title">
-          {role === "particular" ? "Panel de Usuario" : "BookFlow"}
+          {user?.role === "customer" ? "Panel de Usuario" : "BookFlow"}
         </h2>
         <p className="admin-header__subtitle">
-          {role === "particular" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
+          {user?.role === "customer" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
         </p>
       </div>
 
@@ -255,7 +234,16 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => markOneRead(n.id)}
+                    onClick={() => {
+                      markOneRead(n.id);
+                      setNotifOpen(false);
+                      const isAppointmentNotif = n.type === "appointment" || n.title.toLowerCase().includes("cita") || n.title.toLowerCase().includes("reserva") || n.icon.includes("calendar");
+                      if (isAppointmentNotif) {
+                        if (user?.role === "business") router.push("/business-bookings");
+                        else if (user?.role === "customer") router.push("/reservas");
+                        else router.push("/bookings");
+                      }
+                    }}
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 10,
                       padding: "8px 10px", borderRadius: "var(--r)", cursor: "pointer",
@@ -269,7 +257,17 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
                     }}>
                       <i className={`bi ${n.icon}`} style={{ fontSize: 14, color: "var(--accent)" }} />
                     </div>
-                    <button onClick={e => { e.stopPropagation(); deleteOne(n.id); }}><i className="bi bi-x-lg" /></button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink)" }}>{n.title}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 2 }}>{n.desc}</div>
+                      <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 4 }}>{n.time}</div>
+                    </div>
+                    <button 
+                      onClick={e => { e.stopPropagation(); deleteOne(n.id); }}
+                      style={{ background: "transparent", border: "none", color: "var(--ink-4)", cursor: "pointer", padding: 2 }}
+                    >
+                      <i className="bi bi-x-lg" style={{ fontSize: 10 }} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -283,7 +281,7 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
             <div className="user-pill__avatar">{initial}</div>
             <div className="user-pill__info">
               <span className="user-pill__name">{displayName}</span>
-              <span className="user-pill__role">{role === "particular" ? "Particular" : "Admin"}</span>
+              <span className="user-pill__role">{roleLabel}</span>
             </div>
             <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`} />
           </button>
@@ -340,36 +338,17 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
 
       {toast && (
         <div style={{
-          position: "fixed",
-          top: "20px",
-          right: "20px",
-          background: "var(--paper)",
-          borderLeft: "4px solid var(--primary)",
-          padding: "12px 16px",
-          borderRadius: "var(--r-md)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-          zIndex: 1000,
-          display: "flex",
-          gap: "10px",
-          alignItems: "center",
-          animation: "slideIn 0.3s ease-out"
+          position: "fixed", top: "20px", right: "20px", background: "var(--paper)",
+          borderLeft: "4px solid var(--primary)", padding: "12px 16px", borderRadius: "var(--r-md)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.15)", zIndex: 1000, display: "flex", gap: "10px",
+          alignItems: "center", animation: "slideIn 0.3s ease-out"
         }}>
           <i className="bi bi-bell-fill" style={{ color: "var(--primary)", fontSize: "1.2rem" }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--ink)" }}>{toast.title}</div>
             <div style={{ fontSize: "0.8rem", color: "var(--ink-3)", marginTop: "2px" }}>{toast.desc}</div>
           </div>
-          <button 
-            onClick={() => setToast(null)} 
-            style={{ 
-              background: "transparent", 
-              border: "none", 
-              color: "var(--ink-3)", 
-              cursor: "pointer", 
-              fontSize: "1.1rem", 
-              paddingLeft: "10px" 
-            }}
-          >
+          <button onClick={() => setToast(null)} style={{ background: "transparent", border: "none", color: "var(--ink-3)", cursor: "pointer", fontSize: "1.1rem", paddingLeft: "10px" }}>
             <i className="bi bi-x-lg" />
           </button>
         </div>

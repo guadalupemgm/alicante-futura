@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -19,7 +20,7 @@ import { UserRole } from './entities/user.entity';
 
 @ApiTags('users')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard) // <-- Estos protegen a todo el controlador
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -35,6 +36,14 @@ export class UsersController {
   findAll() {
     return this.usersService.findAll();
   }
+
+  // --- AQUÍ ESTÁ EL CAMBIO DEFINITIVO ---
+  @Patch('profile/me')
+  @UseGuards(JwtAuthGuard) // <-- Al poner esto aquí, NestJS IGNORA el RolesGuard global solo para este método
+  updateOwnProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto) { 
+    return this.usersService.update(req.user.id, updateUserDto); 
+  }
+  // --------------------------------------
 
   @Get(':id')
   @Roles(UserRole.ADMIN)
