@@ -34,7 +34,7 @@ export default function ParticularSearch() {
         setError(null);
         
         // Sustituye esta URL por tu endpoint real (ej. "https://api.tuservidor.com/businesses" o "/api/businesses")
-        const response = await fetch("http://localhost:3000/api/business");
+        const response = await fetch("http://localhost:3000/business");
         
         if (!response.ok) {
           throw new Error("Error al cargar los negocios");

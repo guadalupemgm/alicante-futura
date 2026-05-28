@@ -48,7 +48,7 @@ export class AppointmentsController {
 
   /** GET /appointments/customer/:customerId — admin o el propio cliente */
   @Get('customer/:customerId')
-  @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
+  @UseGuards(JwtAuthGuard) // <-- Pisa el RolesGuard de la clase para que el cliente pueda ver sus propias citas
   @ApiOkResponse({ description: 'Reservas de un cliente' })
   findByCustomer(@Param('customerId', ParseIntPipe) customerId: number) {
     return this.appointmentsService.findByCustomer(customerId);
