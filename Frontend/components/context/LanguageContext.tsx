@@ -23,7 +23,8 @@ export const translations = {
     changeLanguage:      "Cambiar idioma",
     logout:              "Cerrar sesión",
     headerSubtitle:      "Plataforma de gestión de reservas y cobros",
-
+    errorLoadingBusinesses: "Hubo un error al cargar los negocios. Por favor, inténtalo de nuevo.",
+  
     // Sidebar
     dashboard:           "Dashboard",
     bookings:            "Reservas",
@@ -165,10 +166,12 @@ export const translations = {
     mySpace:                  "Mi espacio",
     myBusinesses:             "Empresas",
     myBookings:               "Mis Reservas",
+    myProfile:                "Mi perfil",
     account:                  "Cuenta",
     settings:                 "Ajustes",
     clientRole:               "Cliente",
     bookingPortal:            "Portal de reservas",
+    search:                    "Buscar",
 
     // Mis Reservas (página cliente)
     misReservasTitle:         "Mis Reservas",
@@ -547,6 +550,8 @@ export const translations = {
     settings:                 "Settings",
     clientRole:               "Client",
     bookingPortal:            "Booking portal",
+    search:                   "Search",
+    myProfile:                "My profile",
 
     // Mis Reservas (página cliente)
     misReservasTitle:         "My Bookings",
@@ -1197,7 +1202,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: TranslationKey): string =>
-    translations[lang.code][key] ?? translations.es[key] ?? key;
+    (translations[lang.code] as any)[key] ?? translations.es[key] ?? key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

@@ -12,22 +12,22 @@ async function bootstrap() {
   const SWAGGER_USER = process.env.SWAGGER_USER ?? 'admin';
   const SWAGGER_PASS = process.env.SWAGGER_PASS ?? 'admin';
 
-  app.use(['/api', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
-    const auth = req.headers['authorization'];
-    if (auth) {
-      const [type, credentials] = auth.split(' ');
-      if (type === 'Basic') {
-        const [user, pass] = Buffer.from(credentials, 'base64')
-          .toString()
-          .split(':');
-        if (user === SWAGGER_USER && pass === SWAGGER_PASS) {
-          return next();
-        }
+ app.use(['/api/index.html', '/api/swagger-ui.css', '/api/swagger-ui-bundle.js', '/api/swagger-ui-standalone-preset.js', '/api-json'], (req: Request, res: Response, next: NextFunction) => {
+  const auth = req.headers['authorization'];
+  if (auth) {
+    const [type, credentials] = auth.split(' ');
+    if (type === 'Basic') {
+      const [user, pass] = Buffer.from(credentials, 'base64')
+        .toString()
+        .split(':');
+      if (user === SWAGGER_USER && pass === SWAGGER_PASS) {
+        return next();
       }
     }
-    res.setHeader('WWW-Authenticate', 'Basic realm="Swagger"');
-    res.status(401).send('Acceso no autorizado');
-  });
+  }
+  res.setHeader('WWW-Authenticate', 'Basic realm="Swagger"');
+  res.status(401).send('Acceso no autorizado a la documentación');
+});
 
   // Swagger
   const config = new DocumentBuilder()
@@ -42,6 +42,11 @@ async function bootstrap() {
   // Seed admin user on first start
   const usersService = app.get(UsersService);
   await usersService.seedAdmin();
+
+  //Activa los CORS para permitir peticiones desde el frontend (ajusta el origen según tu configuración)
+  app.enableCors({
+  origin: 'http://localhost:3001',
+});
 
   await app.listen(3000);
   console.log('🚀 Backend running on http://localhost:3000');

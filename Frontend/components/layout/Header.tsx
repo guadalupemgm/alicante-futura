@@ -17,55 +17,30 @@ interface Notification {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-const INITIAL_NOTIFICATIONS: Notification[] = [];
 
-export default function Header() {
-  const router                        = useRouter();
-  const { theme, toggleTheme }        = useTheme();
-  const { lang, setLang, t }          = useLanguage();
-  const { logout, user, token }       = useAuth();
-  const [open, setOpen]               = useState(false);
-  const [langOpen, setLangOpen]       = useState(false);
-  const [notifOpen, setNotifOpen]     = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("auth_user");
-      if (storedUser) {
-        try {
-          const u = JSON.parse(storedUser);
-          const saved = localStorage.getItem(`bf_notifications_${u.id}`);
-          if (saved) return JSON.parse(saved);
-        } catch (_) {}
-      }
-    }
-    return [];
-  });
-  const [toast, setToast]             = useState<Notification | null>(null);
-  const menuRef                       = useRef<HTMLDivElement>(null);
-  const notifRef                      = useRef<HTMLDivElement>(null);
+export default function Header({ role = "particular" }: { role?: "admin" | "particular" | "business" }) {
+  const { theme, toggleTheme } = useTheme();
+  const { lang, setLang, t } = useLanguage();
+  const { logout, user, token } = useAuth();
+  
+  const [open, setOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [toast, setToast] = useState<{ title: string; desc: string } | null>(null);
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const unread = notifications.filter(n => !n.read).length;
-
   const displayName = user?.email?.split("@")[0] ?? "Usuario";
-  const initial     = displayName[0]?.toUpperCase() ?? "U";
+  const initial = displayName[0]?.toUpperCase() ?? "U";
 
   // Obtenemos de forma limpia la etiqueta de rol correcta para la interfaz
   const getRoleLabel = () => {
-    const role = user?.role;
-    if (lang.code === "es") {
-      if (role === "customer") return "Cliente";
-      if (role === "business") return "Empresa";
-      return "Administrador";
-    }
-    if (lang.code === "fr") {
-      if (role === "customer") return "Client";
-      if (role === "business") return "Entreprise";
-      return "Administrateur";
-    }
-    // Default to English
-    if (role === "customer") return "Customer";
-    if (role === "business") return "Business";
-    return "Administrator";
+    if (user?.role === "particular") return "Particular";
+    if (user?.role === "business") return "Negocio";
+    return "Admin";
   };
 
   const roleLabel = getRoleLabel();
@@ -131,8 +106,7 @@ export default function Header() {
                 ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr || appt.date} a las ${appt.time} ${isConfirmed ? "está confirmada" : "está pendiente"}.`
                 : `${appt.serviceName || "Servicio"} programado para el ${dateStr || appt.date} a las ${appt.time}`,
               time: `Hace ${idx * 20 + 5} min`,
-              read: false,
-              type: "appointment"
+              read: false
             });
           });
         }
@@ -167,17 +141,14 @@ export default function Header() {
       let title = "Nuevo Registro de Negocio";
       let desc = "El negocio 'Alicante Tech Center' ha completado su registro.";
       let icon = "bi-lightning-charge-fill";
-      let type = "system";
 
       if (isBusiness) {
         title = "Nueva Cita Recibida";
         desc = "Un cliente ha solicitado una cita para 'Asesoría VIP' mañana.";
-        type = "appointment";
       } else if (isCustomer) {
         title = "Recordatorio de Cita";
         desc = "Recuerda que tienes una cita programada para mañana a las 10:00.";
         icon = "bi-clock-fill";
-        type = "appointment";
       }
 
       const liveNotif: Notification = {
@@ -186,13 +157,12 @@ export default function Header() {
         title,
         desc,
         time: "Ahora mismo",
-        read: false,
-        type
+        read: false
       };
       
       setNotifications(prev => {
         if (prev.some(n => n.title === liveNotif.title)) return prev;
-        setToast(liveNotif);
+        setToast({ title: liveNotif.title, desc: liveNotif.desc });
         setTimeout(() => setToast(null), 5000);
         return [liveNotif, ...prev];
       });
@@ -202,10 +172,10 @@ export default function Header() {
   }, [user]);
 
   const markAllRead = () =>
-    setNotifications([]);
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
   const markOneRead = (id: number) =>
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
 
   const deleteOne = (id: number) =>
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -238,20 +208,18 @@ export default function Header() {
   return (
     <header className="admin-header">
       <div>
-        <h1 className="admin-header__title">BookFlow</h1>
-        <p className="admin-header__subtitle">{t("headerSubtitle")}</p>
+        <h2 className="admin-header__title">
+          {role === "particular" ? "Panel de Usuario" : "BookFlow"}
+        </h2>
+        <p className="admin-header__subtitle">
+          {role === "particular" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
+        </p>
       </div>
 
       <div className="admin-header__actions">
-        {/* Search removed by user request */}
-
-        {/* Notifications */}
+        {/* Notificaciones */}
         <div style={{ position: "relative" }} ref={notifRef}>
-          <button
-            className="bf-badge-btn"
-            aria-label="Notificaciones"
-            onClick={() => { setNotifOpen(v => !v); setOpen(false); }}
-          >
+          <button className="bf-badge-btn" aria-label="Notificaciones" onClick={() => { setNotifOpen(!notifOpen); setOpen(false); }}>
             <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
             {unread > 0 && <div className="bf-notif-dot" />}
           </button>
@@ -273,7 +241,7 @@ export default function Header() {
                 </span>
                 {unread > 0 && (
                   <button onClick={markAllRead} style={{ fontSize: 11, color: "var(--accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}>
-                    Eliminar todas
+                    Marcar todas leídas
                   </button>
                 )}
               </div>
@@ -287,7 +255,7 @@ export default function Header() {
                 ) : notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => handleNotificationClick(n)}
+                    onClick={() => markOneRead(n.id)}
                     style={{
                       display: "flex", alignItems: "flex-start", gap: 10,
                       padding: "8px 10px", borderRadius: "var(--r)", cursor: "pointer",
@@ -301,25 +269,7 @@ export default function Header() {
                     }}>
                       <i className={`bi ${n.icon}`} style={{ fontSize: 14, color: "var(--accent)" }} />
                     </div>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12.5, fontWeight: n.read ? 400 : 600, color: "var(--ink)", display: "flex", alignItems: "center", gap: 5 }}>
-                        {n.title}
-                        {!n.read && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, display: "inline-block" }} />}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {n.desc}
-                      </div>
-                      <div style={{ fontSize: 10.5, color: "var(--ink-3)", marginTop: 3 }}>{n.time}</div>
-                    </div>
-
-                    <button
-                      onClick={e => { e.stopPropagation(); deleteOne(n.id); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-3)", padding: "2px 4px", flexShrink: 0, fontSize: 12 }}
-                      aria-label="Eliminar notificación"
-                    >
-                      <i className="bi bi-x-lg" />
-                    </button>
+                    <button onClick={e => { e.stopPropagation(); deleteOne(n.id); }}><i className="bi bi-x-lg" /></button>
                   </div>
                 ))}
               </div>
@@ -327,17 +277,13 @@ export default function Header() {
           )}
         </div>
 
-        {/* Avatar menu */}
+        {/* Avatar Menu Completo */}
         <div className="avatar-menu" ref={menuRef}>
-          <button
-            className="user-pill"
-            onClick={() => { setOpen(!open); setLangOpen(false); setNotifOpen(false); }}
-            aria-label="Menú de usuario"
-          >
+          <button className="user-pill" onClick={() => { setOpen(!open); setLangOpen(false); setNotifOpen(false); }}>
             <div className="user-pill__avatar">{initial}</div>
             <div className="user-pill__info">
               <span className="user-pill__name">{displayName}</span>
-              <span className="user-pill__role">{roleLabel}</span>
+              <span className="user-pill__role">{role === "particular" ? "Particular" : "Admin"}</span>
             </div>
             <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`} />
           </button>
@@ -348,58 +294,37 @@ export default function Header() {
                 <div className="avatar-menu__header-avatar">{initial}</div>
                 <div>
                   <p className="avatar-menu__header-name">{displayName}</p>
-                  <p className="avatar-menu__header-email">{user?.email ?? ""}</p>
+                  <p className="avatar-menu__header-email">{user?.email}</p>
                 </div>
               </div>
-
               <div className="avatar-menu__divider" />
-
+              
               <div className="avatar-menu__item avatar-menu__item--toggle">
-                <i className="bi bi-moon-stars-fill avatar-menu__item-icon" />
+                <i className="bi bi-moon-stars-fill" />
                 <span>{t("darkMode")}</span>
-                <button
-                  className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
-                  onClick={toggleTheme}
-                  aria-label="Cambiar tema"
-                >
+                <button className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`} onClick={toggleTheme}>
                   <span className="toggle-switch__knob" />
                 </button>
               </div>
 
-              <div
-                className="avatar-menu__item avatar-menu__item--toggle"
-                onClick={() => setLangOpen(!langOpen)}
-                style={{ cursor: "pointer" }}
-              >
-                <span className="avatar-menu__item-icon">{lang.flag}</span>
-                <span>{t("changeLanguage")}</span>
-                <i
-                  className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"}`}
-                  style={{ marginLeft: "auto", fontSize: 10, color: "var(--ink-3)" }}
-                />
+              <div className="avatar-menu__item" onClick={() => setLangOpen(!langOpen)}>
+                <span>{lang.flag} {t("changeLanguage")}</span>
+                <i className={`bi ${langOpen ? "bi-chevron-up" : "bi-chevron-down"}`} />
               </div>
 
               {langOpen && (
                 <div className="avatar-menu__submenu">
                   {LANGUAGES.map((l) => (
-                    <button
-                      key={l.code}
-                      className={`avatar-menu__item ${lang.code === l.code ? "avatar-menu__item--active" : ""}`}
-                      onClick={() => { setLang(l); setLangOpen(false); setOpen(false); }}
-                    >
-                      <span className="avatar-menu__item-icon">{l.flag}</span>
-                      <span>{l.label}</span>
-                      {lang.code === l.code && <i className="bi bi-check-lg avatar-menu__check" />}
+                    <button key={l.code} className="avatar-menu__item" onClick={() => { setLang(l); setOpen(false); }}>
+                      {l.flag} {l.label}
                     </button>
                   ))}
                 </div>
               )}
 
               <div className="avatar-menu__divider" />
-
               <button className="avatar-menu__item avatar-menu__item--danger" onClick={logout}>
-                <i className="bi bi-box-arrow-right avatar-menu__item-icon" />
-                <span>{t("logout")}</span>
+                <i className="bi bi-box-arrow-right" /> {t("logout")}
               </button>
             </div>
           )}
@@ -414,38 +339,28 @@ export default function Header() {
       `}</style>
 
       {toast && (
-        <div 
-          onClick={() => {
-            handleNotificationClick(toast);
-            setToast(null);
-          }}
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            background: "var(--paper)",
-            borderLeft: "4px solid var(--primary)",
-            padding: "12px 16px",
-            borderRadius: "var(--r-md)",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-            zIndex: 1000,
-            display: "flex",
-            gap: "10px",
-            alignItems: "center",
-            animation: "slideIn 0.3s ease-out",
-            cursor: "pointer"
-          }}
-        >
+        <div style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "var(--paper)",
+          borderLeft: "4px solid var(--primary)",
+          padding: "12px 16px",
+          borderRadius: "var(--r-md)",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+          zIndex: 1000,
+          display: "flex",
+          gap: "10px",
+          alignItems: "center",
+          animation: "slideIn 0.3s ease-out"
+        }}>
           <i className="bi bi-bell-fill" style={{ color: "var(--primary)", fontSize: "1.2rem" }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--ink)" }}>{toast.title}</div>
             <div style={{ fontSize: "0.8rem", color: "var(--ink-3)", marginTop: "2px" }}>{toast.desc}</div>
           </div>
           <button 
-            onClick={(e) => { 
-              e.stopPropagation(); 
-              setToast(null); 
-            }} 
+            onClick={() => setToast(null)} 
             style={{ 
               background: "transparent", 
               border: "none", 
