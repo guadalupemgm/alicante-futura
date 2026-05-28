@@ -1,208 +1,103 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/context/AuthContext";
-import { useTheme } from "@/components/context/ThemeContext";
-import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
+import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 
-export default function SettingsPage() {
-  const { user, logout, changePassword } = useAuth();
-  const { theme, toggleTheme }           = useTheme();
-  const { lang, setLang, t }             = useLanguage();
+// Menú de administrador
+const adminMenu: { key: TranslationKey; href: string; icon: string }[] = [
+  { key: "dashboard",  href: "/dashboard",  icon: "bi-speedometer2" },
+  { key: "bookings",   href: "/bookings",   icon: "bi-calendar2-check" },
+  { key: "customers",  href: "/customers",  icon: "bi-people-fill" },
+  { key: "payments",   href: "/payments",   icon: "bi-credit-card-2-front-fill" },
+  { key: "business",   href: "/business",   icon: "bi-shop-window" },
+];
 
-  const [pwForm, setPwForm]       = useState({ current: "", nueva: "", confirmar: "" });
-  const [pwMsg, setPwMsg]         = useState<{ text: string; ok: boolean } | null>(null);
-  const [pwLoading, setPwLoading] = useState(false);
-  const [twoFA, setTwoFA]         = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
+// Menú de negocio (Business)
+const businessMenu: { key: TranslationKey; href: string; icon: string }[] = [
+  { key: "dashboard",          href: "/dashboard",          icon: "bi-speedometer2" },
+  { key: "myBusinessBookings", href: "/business-bookings",  icon: "bi-calendar2-check" },
+  { key: "payments",           href: "/payments",           icon: "bi-credit-card-2-front-fill" },
+];
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwForm.nueva !== pwForm.confirmar) {
-      setPwMsg({ text: t("settingsPwMismatch"), ok: false });
-      return;
-    }
-    if (pwForm.nueva.length < 6) {
-      setPwMsg({ text: t("settingsPwMinLen"), ok: false });
-      return;
-    }
-    setPwLoading(true);
-    try {
-      await changePassword(pwForm.nueva);
-      setPwMsg({ text: t("settingsPwUpdated"), ok: true });
-      setPwForm({ current: "", nueva: "", confirmar: "" });
-    } catch {
-      setPwMsg({ text: t("settingsPwError"), ok: false });
-    } finally {
-      setPwLoading(false);
-    }
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const { t } = useLanguage();
+
+  const role = user?.role ?? "particular"; // admin | business | particular
+  const initial = (user?.email?.[0] ?? "U").toUpperCase();
+  const displayName = user?.email?.split("@")[0] ?? "Usuario";
+  const isBusinessUser = role === "business";
+
+  // Definición de menús centralizada
+  const getMenuItems = () => {
+    if (role === "admin") return [
+      { key: "dashboard", href: "/dashboard", icon: "bi-speedometer2" },
+      { key: "bookings", href: "/bookings", icon: "bi-calendar2-check" },
+      { key: "customers", href: "/customers", icon: "bi-people-fill" },
+      { key: "payments", href: "/payments", icon: "bi-credit-card-2-front-fill" },
+      { key: "business", href: "/business", icon: "bi-shop-window" },
+    ];
+    if (role === "business") return [
+      { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
+      { key: "configuracion", href: "/configuracion", icon: "bi-gear-fill" },
+      { key: "settings", href: "/settings", icon: "bi-person-lock" },
+    ];
+    return [ // particular
+      { key: "search", href: "/buscar", icon: "bi-search" },
+      { key: "myBookings", href: "/mis-reservas", icon: "bi-calendar2-check" },
+      { key: "myProfile", href: "/perfil", icon: "bi-person-fill" },
+    ];
   };
 
   return (
-    <div className="page-stack" style={{ maxWidth: 600, margin: "0 auto" }}>
-      <section className="page-hero">
-        <div>
-          <h2>{t("settingsTitle")}</h2>
-          <p>{t("settingsSubtitle")}</p>
-        </div>
-      </section>
-
-      {/* Idioma */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-translate" style={{ marginRight: 8 }} />
-          {t("settingsLanguage")}
-        </h3>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {LANGUAGES.map((l) => (
-            <button
-              key={l.code}
-              onClick={() => setLang(l)}
-              className={lang.code === l.code ? "primary-btn" : "secondary-btn"}
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <span>{l.flag}</span>
-              <span>{l.label}</span>
-              {lang.code === l.code && <i className="bi bi-check-lg" />}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Tema */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-moon-stars-fill" style={{ marginRight: 8 }} />
-          {t("settingsAppearance")}
-        </h3>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>{t("settingsDarkMode")}</span>
-          <button
-            className={`toggle-switch ${theme === "dark" ? "toggle-switch--on" : ""}`}
-            onClick={toggleTheme}
-          >
-            <span className="toggle-switch__knob" />
-          </button>
-        </div>
-      </div>
-
-      {/* Cambiar contraseña */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "1rem" }}>
-          <i className="bi bi-lock-fill" style={{ marginRight: 8 }} />
-          {t("settingsPassword")}
-        </h3>
-        <form onSubmit={handleChangePassword}>
-          <div className="page-stack">
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsCurrentPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder="••••••••"
-                value={pwForm.current}
-                onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsNewPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder={t("settingsNewPwMin")}
-                value={pwForm.nueva}
-                onChange={(e) => setPwForm({ ...pwForm, nueva: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("settingsConfirmPw")}</label>
-              <input
-                className="input"
-                type="password"
-                placeholder={t("settingsRepeatPw")}
-                value={pwForm.confirmar}
-                onChange={(e) => setPwForm({ ...pwForm, confirmar: e.target.value })}
-                required
-              />
-            </div>
-            {pwMsg && (
-              <p style={{ fontSize: 13, margin: 0, color: pwMsg.ok ? "#15803d" : "#b91c1c" }}>
-                {pwMsg.text}
-              </p>
-            )}
-            <div>
-              <button type="submit" className="primary-btn" disabled={pwLoading}>
-                {pwLoading ? t("settingsSaving") : t("settingsUpdatePw")}
-              </button>
-            </div>
+    <aside className="bf-sidebar">
+      {/* Brand */}
+      <div className="bf-sidebar-brand">
+        <div className="bf-sidebar-logo">
+          <div className="bf-sidebar-mark">
+            <img src="/favicon.ico" style={{ width: "28px", height: "28px" }} alt="logo" />
           </div>
-        </form>
-      </div>
-
-      {/* 2FA */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
-          <i className="bi bi-shield-lock-fill" style={{ marginRight: 8 }} />
-          {t("settings2FA")}
-        </h3>
-        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          {t("settings2FADesc")}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 14 }}>
-            {t("settings2FAStatus")} <strong style={{ color: twoFA ? "#15803d" : "var(--muted)" }}>
-              {twoFA ? t("settings2FAActive") : t("settings2FAInactive")}
-            </strong>
-          </span>
-          <button
-            className={twoFA ? "secondary-btn" : "primary-btn"}
-            onClick={() => setShow2FAModal(true)}
-          >
-            {twoFA ? t("settings2FADisable") : t("settings2FAEnable")}
-          </button>
-        </div>
-      </div>
-
-      {/* Cerrar sesión */}
-      <div className="section-card">
-        <h3 className="panel-title" style={{ marginBottom: "0.5rem" }}>
-          <i className="bi bi-box-arrow-right" style={{ marginRight: 8 }} />
-          {t("settingsSession")}
-        </h3>
-        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: "1rem" }}>
-          {t("settingsSessionDesc")}
-        </p>
-        <button className="danger-btn" onClick={logout}>
-          {t("settingsLogout")}
-        </button>
-      </div>
-
-      {/* Modal 2FA */}
-      {show2FAModal && (
-        <div className="modal-backdrop">
-          <div className="modal-card">
-            <h3 className="modal-title">
-              {twoFA ? t("modal2FADisableTitle") : t("modal2FAEnableTitle")} {t("modal2FATitle")}
-            </h3>
-            <p className="modal-text">
-              {twoFA ? t("modal2FADisableMsg") : t("modal2FAEnableMsg")}
-            </p>
-            <div className="modal-actions">
-              <button className="secondary-btn" onClick={() => setShow2FAModal(false)}>
-                {t("cancel")}
-              </button>
-              <button
-                className={twoFA ? "danger-btn" : "primary-btn"}
-                onClick={() => { setTwoFA(!twoFA); setShow2FAModal(false); }}
-              >
-                {twoFA ? t("modal2FAConfirmDisable") : t("modal2FAConfirmEnable")}
-              </button>
+          <div>
+            <div className="bf-sidebar-name">BookFlow</div>
+            <div className="bf-sidebar-role" style={{ color: "var(--accent)" }}>
+              {role === "admin" ? "Admin Workspace" : role === "business" ? "Negocio" : "Espacio Cliente"}
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+
+      {/* Navegación dinámica */}
+      <nav className="bf-sidebar-nav">
+        <div className="bf-nav-label">Menú principal</div>
+        {getMenuItems().map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`bf-nav-item${pathname === item.href ? " active" : ""}`}
+          >
+            <i className={`bi ${item.icon}`} aria-hidden="true" />
+            <span>{t(item.key as any)}</span>
+          </Link>
+        ))}
+      </nav>
+
+      {/* User pill at bottom */}
+      <div className="bf-sidebar-bottom">
+        <div className="bf-user-pill">
+          <div className={`bf-user-avatar${role === "business" ? " bf-user-avatar--biz" : ""}`}>
+            {initial}
+          </div>
+          <div>
+            <div className="bf-user-name">{displayName}</div>
+            <div className="bf-user-role">
+              {role === "admin" ? "Administrador" : role === "business" ? "Negocio verificado" : "Cliente particular"}
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }

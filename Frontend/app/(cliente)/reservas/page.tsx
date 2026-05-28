@@ -21,7 +21,7 @@ type Booking = {
 
 export default function MisReservasPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -35,14 +35,16 @@ export default function MisReservasPage() {
 
   useEffect(() => {
     if (!user?.customerId) return;
-    fetch(API_URL + "/appointments/customer/" + user.customerId)
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
+    const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+    fetch(API_URL + "/appointments/customer/" + user.customerId, { headers })
       .then((r) => r.json())
       .then((d) => {
         setBookings(Array.isArray(d) ? d : []);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, token]);
 
   return (
     <div className="page-stack">

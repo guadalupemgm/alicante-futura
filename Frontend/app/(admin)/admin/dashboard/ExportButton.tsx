@@ -9,8 +9,12 @@ export default function ExportButton() {
   const { t } = useLanguage();
 
   const handleExport = useCallback(async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
     const res = await fetch(`${API_URL}/appointments`, {
       cache: "no-store",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
     const bookings = await res.json();
 

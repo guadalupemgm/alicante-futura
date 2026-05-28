@@ -9,7 +9,7 @@ import { getCustomers, updateAppointment, createAppointment } from "@/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function BusinessBookingsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { t, lang } = useLanguage();
 
   const STATUS_LABELS: Record<BookingStatus | "all", string> = {
@@ -48,9 +48,12 @@ export default function BusinessBookingsPage() {
 
   useEffect(() => {
     if (!user?.businessId) return;
+    const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
+    const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+
     Promise.all([
-      fetch(`${API_URL}/appointments/business/${user.businessId}`).then((r) => r.json()),
-      getCustomers(),
+      fetch(`${API_URL}/appointments/business/${user.businessId}`, { headers }).then((r) => r.json()),
+      getCustomers(activeToken || undefined),
     ])
       .then(([appts, custs]) => {
         setBookings(Array.isArray(appts) ? appts : []);
@@ -61,7 +64,7 @@ export default function BusinessBookingsPage() {
         setError(e.message);
         setLoading(false);
       });
-  }, [user]);
+  }, [user, token]);
 
   const showMsg = (text: string, type: "success" | "error") => {
     setMessage({ text, type });
@@ -82,9 +85,13 @@ export default function BusinessBookingsPage() {
     if (!newCustomer.name.trim()) return;
     setSavingCustomer(true);
     try {
+      const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
       const res = await fetch(`${API_URL}/customers`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+        },
         body: JSON.stringify({
           name: newCustomer.name,
           phone: newCustomer.phone || "-",

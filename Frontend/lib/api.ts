@@ -45,18 +45,27 @@ export interface Customer {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
-export async function getAppointments(): Promise<Booking[]> {
+function getHeaders(token?: string): HeadersInit {
+  const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
+  return {
+    "Content-Type": "application/json",
+    ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+  };
+}
+
+export async function getAppointments(token?: string): Promise<Booking[]> {
   const res = await fetch(`${API_URL}/appointments`, {
     cache: "no-store",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al obtener las reservas");
   return res.json();
 }
 
-export async function createAppointment(data: CreateBookingDto): Promise<Booking> {
+export async function createAppointment(data: CreateBookingDto, token?: string): Promise<Booking> {
   const res = await fetch(`${API_URL}/appointments`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -67,34 +76,37 @@ export async function createAppointment(data: CreateBookingDto): Promise<Booking
   return res.json();
 }
 
-export async function updateAppointment(id: number, data: UpdateBookingDto): Promise<Booking> {
+export async function updateAppointment(id: number, data: UpdateBookingDto, token?: string): Promise<Booking> {
   const res = await fetch(`${API_URL}/appointments/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al editar la reserva");
   return res.json();
 }
 
-export async function deleteAppointment(id: number): Promise<void> {
+export async function deleteAppointment(id: number, token?: string): Promise<void> {
   const res = await fetch(`${API_URL}/appointments/${id}`, {
     method: "DELETE",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al eliminar la reserva");
 }
 
-export async function getBusinesses(): Promise<Business[]> {
+export async function getBusinesses(token?: string): Promise<Business[]> {
   const res = await fetch(`${API_URL}/business`, {
     cache: "no-store",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al obtener los negocios");
   return res.json();
 }
 
-export async function getCustomers(): Promise<Customer[]> {
+export async function getCustomers(token?: string): Promise<Customer[]> {
   const res = await fetch(`${API_URL}/customers`, {
     cache: "no-store",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al obtener los clientes");
   return res.json();
@@ -107,10 +119,10 @@ export interface CreateCustomerDto {
   business?: string;
 }
 
-export async function createCustomer(data: CreateCustomerDto): Promise<Customer> {
+export async function createCustomer(data: CreateCustomerDto, token?: string): Promise<Customer> {
   const res = await fetch(`${API_URL}/customers`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -131,10 +143,10 @@ export interface CreateBusinessDto {
   ownerPassword: string;
 }
 
-export async function createBusiness(data: CreateBusinessDto): Promise<Business> {
+export async function createBusiness(data: CreateBusinessDto, token?: string): Promise<Business> {
   const res = await fetch(`${API_URL}/business`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) {
@@ -144,6 +156,7 @@ export async function createBusiness(data: CreateBusinessDto): Promise<Business>
   }
   return res.json();
 }
+
 // ─── Admin: editar usuario (cliente) ────────────────────────────────────────
 export interface UpdateCustomerDto {
   name?: string;
@@ -155,10 +168,7 @@ export interface UpdateCustomerDto {
 export async function updateCustomer(id: number, data: UpdateCustomerDto, token?: string): Promise<Customer> {
   const res = await fetch(`${API_URL}/customers/${id}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al actualizar el cliente");
@@ -178,10 +188,7 @@ export interface UpdateBusinessDto {
 export async function updateBusiness(id: number, data: UpdateBusinessDto, token?: string): Promise<Business> {
   const res = await fetch(`${API_URL}/business/${id}`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: getHeaders(token),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Error al actualizar el negocio");
@@ -196,18 +203,20 @@ export interface Payment {
   appointmentId: number;
 }
 
-export async function getAppointmentsByBusiness(businessId: number): Promise<Booking[]> {
+export async function getAppointmentsByBusiness(businessId: number, token?: string): Promise<Booking[]> {
   const res = await fetch(`${API_URL}/appointments/business/${businessId}`, {
     cache: "no-store",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al obtener las reservas del negocio");
   return res.json();
 }
 
-export async function getPaymentsByBusiness(businessId: number): Promise<Payment[]> {
+export async function getPaymentsByBusiness(businessId: number, token?: string): Promise<Payment[]> {
   const res = await fetch(`${API_URL}/payments/business/${businessId}`, {
     cache: "no-store",
+    headers: getHeaders(token),
   });
   if (!res.ok) throw new Error("Error al obtener los pagos del negocio");
   return res.json();
-}
+}
