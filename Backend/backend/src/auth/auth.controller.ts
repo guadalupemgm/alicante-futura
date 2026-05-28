@@ -1,9 +1,11 @@
 import { Controller, Post, Patch, Body, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -12,17 +14,51 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email', 'password'],
+      properties: {
+        email: { type: 'string', example: 'admin@alicante.com' },
+        password: { type: 'string', example: 'admin123' },
+      },
+    },
+  })
   login(@Body() body: { email: string; password: string }) {
     return this.authService.login(body.email, body.password);
   }
 
   @Post('register')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['email', 'password', 'name', 'phone'],
+      properties: {
+        email: { type: 'string', example: 'usuario@ejemplo.com' },
+        password: { type: 'string', example: 'mipassword123' },
+        name: { type: 'string', example: 'Juan García' },
+        phone: { type: 'string', example: '600123456' },
+        role: { type: 'string', example: 'customer' },
+      },
+    },
+  })
   register(@Body() body: { email: string; password: string; name: string; phone: string; role: string }) {
     return this.authService.register(body);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('change-password')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['currentPassword', 'newPassword'],
+      properties: {
+        currentPassword: { type: 'string', example: 'admin123' },
+        newPassword: { type: 'string', example: 'nuevaPassword456' },
+      },
+    },
+  })
   async changePassword(
     @Request() req: any,
     @Body() body: { currentPassword: string; newPassword: string },
