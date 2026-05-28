@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,8 +17,10 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from './entities/user.entity';
 
-@Controller('users')
+@ApiTags('users')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -39,7 +42,6 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
-  /** PATCH /users/:id  — solo admins pueden editar usuarios */
   @Patch(':id')
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
