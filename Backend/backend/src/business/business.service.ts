@@ -22,9 +22,10 @@ export class BusinessService {
     await this.usersService.create({
       email: createBusinessDto.ownerEmail,
       password: createBusinessDto.ownerPassword,
+      username: createBusinessDto.ownerEmail, // ✅ evita conflicto de unique null
       role: UserRole.BUSINESS,
       businessId: saved.id,
-    });
+    } as any);
 
     return saved;
   }

@@ -11,10 +11,19 @@ interface User {
   customerId?: number;
 }
 
+interface RegisterData {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   isLoading: boolean;
@@ -24,16 +33,17 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
   login: async () => {},
+  register: async () => {},
   logout: () => {},
   changePassword: async () => {},
   isLoading: true,
 });
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]       = useState<User | null>(null);
-  const [token, setToken]     = useState<string | null>(null);
+  const [user, setUser]   = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -68,6 +78,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const register = async (data: RegisterData) => {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Error al crear la cuenta");
+    }
+
+    const result = await res.json();
+    setToken(result.access_token);
+    setUser(result.user);
+    localStorage.setItem("auth_token", result.access_token);
+    localStorage.setItem("auth_user", JSON.stringify(result.user));
+
+    router.push("/reservas");
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -92,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, changePassword, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, changePassword, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
