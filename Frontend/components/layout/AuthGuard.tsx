@@ -17,7 +17,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ✅ admin y business tienen acceso libre a todas las rutas /admin/*
+    // admin y business tienen acceso libre a todas las rutas /admin/*
     if (user.role === "admin" || user.role === "business") return;
 
     // Los clientes solo pueden estar en sus rutas
