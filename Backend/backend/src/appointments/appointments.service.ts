@@ -29,12 +29,12 @@ export class AppointmentsService {
   }
 
   findByCustomer(customerId: number) {
-  return this.appointmentsRepository.find({
-    where: { customerId },
-    relations: ['business'], // <--- Esto le dice a TypeORM: "trae también el objeto relacionado"
-    order: { date: 'ASC', time: 'ASC' },
-  });
-}
+    return this.appointmentsRepository.find({
+      where: { customerId },
+      relations: ['business'], // <--- Esto le dice a TypeORM: "trae también el objeto relacionado"
+      order: { date: 'ASC', time: 'ASC' },
+    });
+  }
 
   findOne(id: number) {
     return this.appointmentsRepository.findOneBy({ id });
@@ -47,11 +47,19 @@ export class AppointmentsService {
    */
   async create(createAppointmentDto: CreateAppointmentDto) {
     console.log('[Create Appointment] Payload recibido:', createAppointmentDto);
-    const appointment = this.appointmentsRepository.create(createAppointmentDto);
+    const appointment =
+      this.appointmentsRepository.create(createAppointmentDto);
     const saved = await this.appointmentsRepository.save(appointment);
 
     const isPrepaid = createAppointmentDto.status === AppointmentStatus.PAID;
-    console.log('[Create Appointment] ¿Es prepago?:', isPrepaid, '| Estado:', createAppointmentDto.status, '| Precio:', createAppointmentDto.price);
+    console.log(
+      '[Create Appointment] ¿Es prepago?:',
+      isPrepaid,
+      '| Estado:',
+      createAppointmentDto.status,
+      '| Precio:',
+      createAppointmentDto.price,
+    );
 
     // Crear pago automático vinculado a la reserva
     const payment = this.paymentRepository.create({
@@ -78,7 +86,10 @@ export class AppointmentsService {
       throw new NotFoundException(`No existe la reserva con id ${id}`);
     }
 
-    const updated = this.appointmentsRepository.merge(appointment, updateAppointmentDto);
+    const updated = this.appointmentsRepository.merge(
+      appointment,
+      updateAppointmentDto,
+    );
     const saved = await this.appointmentsRepository.save(updated);
 
     // Sincronizar pago si cambia el estado
@@ -87,8 +98,8 @@ export class AppointmentsService {
         updateAppointmentDto.status === AppointmentStatus.PAID
           ? 'paid'
           : updateAppointmentDto.status === AppointmentStatus.CANCELLED
-          ? 'cancelled'
-          : 'pending';
+            ? 'cancelled'
+            : 'pending';
 
       await this.paymentRepository.update(
         { appointmentId: id },

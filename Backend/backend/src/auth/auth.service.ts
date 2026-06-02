@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -47,7 +51,12 @@ export class AuthService {
     };
   }
 
-  async register(body: { email: string; password: string; name: string; phone: string }) {
+  async register(body: {
+    email: string;
+    password: string;
+    name: string;
+    phone: string;
+  }) {
     const { email, password, name, phone } = body;
 
     const existingUser = await this.usersService.findByEmail(email);
@@ -72,7 +81,7 @@ export class AuthService {
       role: 'customer',
       isActive: true,
       customerId: newCustomer.id,
-    } as any);
+    });
 
     const payload = {
       sub: newUser.id,

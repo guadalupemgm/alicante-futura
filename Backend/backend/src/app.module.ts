@@ -31,4 +31,4 @@ import { Config } from './config/config.entity';
     ConfigModule,
   ],
 })
-export class AppModule {}
+export class AppModule {}

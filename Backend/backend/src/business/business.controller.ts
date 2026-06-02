@@ -54,7 +54,10 @@ export class BusinessController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.BUSINESS)
-  update(@Param('id') id: string, @Body() updateBusinessDto: UpdateBusinessDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateBusinessDto: UpdateBusinessDto,
+  ) {
     return this.businessService.update(+id, updateBusinessDto);
   }
 

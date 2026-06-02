@@ -39,7 +39,7 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const data: Partial<User> = { ...updateUserDto } as any;
+    const data: Partial<User> = { ...updateUserDto };
 
     // Si se envía una nueva contraseña, la hasheamos antes de guardar
     if (updateUserDto.password) {

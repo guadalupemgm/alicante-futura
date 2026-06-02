@@ -40,8 +40,11 @@ export class UsersController {
   // --- AQUÍ ESTÁ EL CAMBIO DEFINITIVO ---
   @Patch('profile/me')
   @UseGuards(JwtAuthGuard) // <-- Al poner esto aquí, NestJS IGNORA el RolesGuard global solo para este método
-  updateOwnProfile(@Req() req: any, @Body() updateUserDto: UpdateUserDto) { 
-    return this.usersService.update(req.user.id, updateUserDto); 
+  updateOwnProfile(
+    @Req() req: { user: { id: number } },
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(req.user.id, updateUserDto);
   }
   // --------------------------------------
 
