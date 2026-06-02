@@ -24,16 +24,16 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
-  /** POST /customers — solo admin (el registro público va por /auth/register) */
+  /** POST /customers — admin o business */
   @Post()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS)
   create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customersService.create(createCustomerDto);
   }
 
-  /** GET /customers — solo admin */
+  /** GET /customers — admin o business */
   @Get()
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.BUSINESS)
   findAll() {
     return this.customersService.findAll();
   }

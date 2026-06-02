@@ -49,7 +49,7 @@ export default function SidebarCliente() {
           className={`bf-nav-item${pathname === "/settings" ? " active" : ""}`}
         >
           <i className="bi bi-gear-fill" aria-hidden="true" />
-          <span>{t("settings")}</span>
+          <span>{t("configTitle")}</span>
         </Link>
       </nav>
     </aside>

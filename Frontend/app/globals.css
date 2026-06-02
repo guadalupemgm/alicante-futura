@@ -697,3 +697,67 @@ html.dark .bf-nav-item.active { background: var(--accent); }
 .input-error {
   border-color: #dc2626 !important;
 }
+
+/* ── Stepper fields styling ── */
+.stepper-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--paper-2);
+  overflow: hidden;
+  max-width: 100%;
+  margin-top: 4px;
+}
+
+.stepper-control:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200,82,42,.1);
+}
+
+.stepper-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-2);
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s;
+  user-select: none;
+  outline: none;
+}
+
+.stepper-btn:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+.stepper-btn:active {
+  background: var(--line);
+}
+
+.stepper-input {
+  flex: 1;
+  text-align: center;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 8px 4px !important;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  min-width: 0;
+  color: var(--ink) !important;
+  -moz-appearance: textfield;
+}
+
+.stepper-input::-webkit-outer-spin-button,
+.stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
