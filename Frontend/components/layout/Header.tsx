@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/context/ThemeContext";
-import { useLanguage, LANGUAGES } from "@/components/context/LanguageContext";
+import { useLanguage, LANGUAGES, TranslationKey } from "@/components/context/LanguageContext";
 import { useAuth } from "@/components/context/AuthContext";
 
 interface Notification {
@@ -22,6 +22,8 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
   const { logout, user, token } = useAuth();
+
+  const activeRole = user ? (((user.role as string) === "customer" || (user.role as string) === "particular") ? "particular" : ((user.role as string) === "business" ? "business" : "admin")) : role;
 
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -203,10 +205,10 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
     <header className="admin-header">
       <div>
         <h2 className="admin-header__title">
-          {role === "particular" ? "Panel de Usuario" : "BookFlow"}
+          {activeRole === "particular" ? t("userPanelTitle" as TranslationKey) : "BookFlow"}
         </h2>
         <p className="admin-header__subtitle">
-          {role === "particular" ? "Gestiona tus citas y reserva en tus locales favoritos" : t("headerSubtitle")}
+          {activeRole === "particular" ? t("userPanelSubtitle" as TranslationKey) : t("headerSubtitle")}
         </p>
       </div>
 
@@ -287,7 +289,7 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
             <div className="user-pill__avatar">{initial}</div>
             <div className="user-pill__info">
               <span className="user-pill__name">{displayName}</span>
-              <span className="user-pill__role">{role === "particular" ? "Particular" : roleLabel}</span>
+              <span className="user-pill__role">{activeRole === "particular" ? "Particular" : roleLabel}</span>
             </div>
             <i className={`bi ${open ? "bi-chevron-up" : "bi-chevron-down"} user-pill__chevron`} />
           </button>

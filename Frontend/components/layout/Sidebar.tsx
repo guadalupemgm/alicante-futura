@@ -34,7 +34,7 @@ export default function Sidebar() {
   // Definición de menús centralizada
   const getMenuItems = () => {
     if (role === "admin") return [
-      { key: "dashboard", href: "/dashboard", icon: "bi-speedometer2" },
+      { key: "dashboard", href: "/admin/dashboard", icon: "bi-speedometer2" },
       { key: "bookings", href: "/bookings", icon: "bi-calendar2-check" },
       { key: "customers", href: "/customers", icon: "bi-people-fill" },
       { key: "payments", href: "/payments", icon: "bi-credit-card-2-front-fill" },

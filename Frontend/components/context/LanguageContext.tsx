@@ -479,6 +479,8 @@ export const translations = {
     introduceCurrentPw:       "Introduce tu contraseña actual",
     profileSecTitle:          "Tu cuenta es segura",
     profileSecDesc:           "Tu contraseña actual está protegida mediante encriptación hash en la base de datos. Se recomienda actualizarla de manera periódica.",
+    userPanelTitle:           "Panel de Usuario",
+    userPanelSubtitle:        "Gestiona tus citas y reserva en tus locales favoritos",
   },
 
   en: {
@@ -929,6 +931,8 @@ export const translations = {
     introduceCurrentPw:       "Enter your current password",
     profileSecTitle:          "Your account is secure",
     profileSecDesc:           "Your current password is protected by hash encryption in the database. It is recommended to update it periodically.",
+    userPanelTitle:           "User Panel",
+    userPanelSubtitle:        "Manage your appointments and bookings in your favorite venues",
   },
 
   fr: {
@@ -1377,6 +1381,8 @@ export const translations = {
     introduceCurrentPw:       "Entrez votre mot de passe actuel",
     profileSecTitle:          "Votre compte est securise",
     profileSecDesc:           "Votre mot de passe actuel est protege par un cryptage par hachage dans la base de donnees. Il est recommande de le mettre a jour periodiquement.",
+    userPanelTitle:           "Tableau de bord de l'utilisateur",
+    userPanelSubtitle:        "Gerez vos rendez-vous et reservations dans vos lieux favoris",
   },
 } satisfies Record<LangCode, Record<string, string>>;
 
