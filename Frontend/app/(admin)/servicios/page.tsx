@@ -191,7 +191,7 @@ export default function ServiciosPage() {
       <section className="page-hero" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
           <h2 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <i className="bi bi-stars" style={{ color: "var(--primary)", fontSize: 22 }} />
+            <i className="bi bi-grid-1x2-fill" style={{ color: "var(--primary)", fontSize: 22 }} />
             {labelServicesTitle}
           </h2>
           <p style={{ color: "var(--muted)", fontSize: 13, maxWidth: 560 }}>{labelServicesSubtitle}</p>
@@ -259,7 +259,7 @@ export default function ServiciosPage() {
       {/* Services Grid / Empty */}
       {services.length === 0 ? (
         <div className="section-card" style={{ textAlign: "center", padding: "3rem 2rem" }}>
-          <div style={{ fontSize: 48, marginBottom: 12, filter: "grayscale(0.3)" }}>✨</div>
+          <i className="bi bi-inbox" style={{ fontSize: 44, color: "var(--muted)", display: "block", marginBottom: 12 }} />
           <h3 style={{ fontWeight: 600, marginBottom: 8 }}>{lang.code === "es" ? "Sin servicios todavía" : lang.code === "fr" ? "Aucun service pour l'instant" : "No services yet"}</h3>
           <p style={{ color: "var(--muted)", fontSize: 13, maxWidth: 440, margin: "0 auto 1.5rem" }}>{labelEmpty}</p>
           <button className="primary-btn" onClick={openAdd} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -366,7 +366,7 @@ export default function ServiciosPage() {
             style={{ width: "100%", maxWidth: 480, padding: "2rem", animation: "slideIn 0.2s ease" }}
           >
             <h3 style={{ marginBottom: "1.5rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>
-              <i className="bi bi-stars" style={{ color: "var(--primary)" }} />
+              <i className="bi bi-briefcase-fill" style={{ color: "var(--primary)" }} />
               {labelModalTitle}
             </h3>
 

@@ -43,7 +43,7 @@ export default function Sidebar() {
     ];
     if (role === "business") return [
       { key: "myBusinessBookings", href: "/business-bookings", icon: "bi-calendar2-check" },
-      { key: "sidebarServices",    href: "/servicios",         icon: "bi-stars" },
+      { key: "sidebarServices",    href: "/servicios",         icon: "bi-grid-1x2-fill" },
       { key: "sidebarConfig",      href: "/configuracion",     icon: "bi-gear-fill" },
     ];
     return [ // particular
