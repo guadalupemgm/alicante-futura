@@ -5,6 +5,59 @@ import { useLanguage, TranslationKey, LANGUAGES } from "@/components/context/Lan
 import { useAuth } from "@/components/context/AuthContext";
 import { useTheme } from "@/components/context/ThemeContext";
 
+function StepperInput({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (val: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}) {
+  const handleDecrement = () => {
+    const next = value - step;
+    if (min !== undefined && next < min) return;
+    onChange(next);
+  };
+
+  const handleIncrement = () => {
+    const next = value + step;
+    if (max !== undefined && next > max) return;
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <label className="kpi-card__label" style={{ fontSize: 11 }}>{label}</label>
+      <div className="stepper-control">
+        <button type="button" className="stepper-btn" onClick={handleDecrement}>−</button>
+        <input
+          type="number"
+          className="stepper-input"
+          value={value}
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10);
+            if (!isNaN(val)) {
+              if (min !== undefined && val < min) return;
+              if (max !== undefined && val > max) return;
+              onChange(val);
+            }
+          }}
+          min={min}
+          max={max}
+        />
+        <button type="button" className="stepper-btn" onClick={handleIncrement}>+</button>
+      </div>
+    </div>
+  );
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 /* ============================================================
@@ -29,6 +82,11 @@ function AccountSettings() {
       return;
     }
     if (pwForm.nueva.length < 6) {
+      setPwMsg({ text: t("settingsPwMinLen" as TranslationKey), ok: false });
+      return;
+    }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
+    if (!passwordRegex.test(pwForm.nueva)) {
       setPwMsg({ text: t("settingsPwMinLen" as TranslationKey), ok: false });
       return;
     }
@@ -119,6 +177,9 @@ function AccountSettings() {
                 onChange={(e) => setPwForm({ ...pwForm, nueva: e.target.value })}
                 required
               />
+              <span style={{ display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>
+                {t("pwFormatHint" as TranslationKey)}
+              </span>
             </div>
             <div>
               <label className="kpi-card__label" style={{ fontSize: 11 }}>
@@ -255,7 +316,14 @@ function AdminConfig() {
 
   const handleSave = async (id: number) => {
     const payload: any = { email: editForm.email, role: editForm.role };
-    if (editForm.password) payload.password = editForm.password;
+    if (editForm.password) {
+      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
+      if (!passwordRegex.test(editForm.password)) {
+        alert(t("settingsPwMinLen" as TranslationKey));
+        return;
+      }
+      payload.password = editForm.password;
+    }
     const res = await fetch(`${API_URL}/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -311,7 +379,7 @@ function AdminConfig() {
                         <div style={{ display: "flex", gap: 6, flexDirection: "column" }}>
                           <input className="input" value={editForm.email}
                             onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
-                          <input className="input" type="password" placeholder="Nueva contraseña"
+                          <input className="input" type="password" placeholder={t("settingsNewPw" as TranslationKey)}
                             value={editForm.password}
                             onChange={e => setEditForm({ ...editForm, password: e.target.value })} />
                         </div>
@@ -372,6 +440,11 @@ function BusinessConfig() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
+  const [duration, setDuration] = useState(30);
+  const [margin, setMargin] = useState(10);
+  const [minAdvance, setMinAdvance] = useState(24);
+  const [maxBookings, setMaxBookings] = useState(2);
+
   interface Svc { name: string; price: number; }
   const [services, setServices] = useState<Svc[]>([]);
   const [newName, setNewName]   = useState("");
@@ -410,22 +483,32 @@ function BusinessConfig() {
       <div className="section-card">
         <h4 style={{ marginBottom: 16, color: "var(--text)" }}>{t("configHoursAndBookings" as TranslationKey)}</h4>
         <div className="form-grid">
-          <div>
-            <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("configDefaultDuration" as TranslationKey)}</label>
-            <input type="number" className="input" defaultValue={30} min={5} step={5} />
-          </div>
-          <div>
-            <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("configMarginBetween" as TranslationKey)}</label>
-            <input type="number" className="input" defaultValue={10} min={0} step={5} />
-          </div>
-          <div>
-            <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("configMinAdvance" as TranslationKey)}</label>
-            <input type="number" className="input" defaultValue={24} min={1} />
-          </div>
-          <div>
-            <label className="kpi-card__label" style={{ fontSize: 11 }}>{t("configMaxBookings" as TranslationKey)}</label>
-            <input type="number" className="input" defaultValue={2} min={1} />
-          </div>
+          <StepperInput
+            label={t("configDefaultDuration" as TranslationKey)}
+            value={duration}
+            onChange={setDuration}
+            min={5}
+            step={5}
+          />
+          <StepperInput
+            label={t("configMarginBetween" as TranslationKey)}
+            value={margin}
+            onChange={setMargin}
+            min={0}
+            step={5}
+          />
+          <StepperInput
+            label={t("configMinAdvance" as TranslationKey)}
+            value={minAdvance}
+            onChange={setMinAdvance}
+            min={1}
+          />
+          <StepperInput
+            label={t("configMaxBookings" as TranslationKey)}
+            value={maxBookings}
+            onChange={setMaxBookings}
+            min={1}
+          />
         </div>
         <button className="primary-btn" style={{ marginTop: 16 }}>Guardar cambios</button>
       </div>
@@ -512,7 +595,7 @@ export default function ConfigTabs({ role }: ConfigTabsProps) {
     },
   ];
 
-  const tabs = allTabs.filter((tab) => (tab.roles as string[]).includes(role))
+  const tabs = allTabs.filter((tab) => (tab.roles as readonly string[]).includes(role))
   const [active, setActive] = useState(tabs[0]?.key ?? "account");
   const activeComponent = tabs.find(t => t.key === active)?.component;
 

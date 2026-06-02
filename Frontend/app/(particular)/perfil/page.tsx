@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/context/AuthContext";
+import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function PerfilPage() {
   const { user, token, logout } = useAuth();
+  const { t } = useLanguage();
 
   // Estados dinámicos para los campos del formulario
   const [nombre, setNombre] = useState("");
@@ -95,7 +97,12 @@ export default function PerfilPage() {
       return;
     }
     if (newPassword.length < 6) {
-      showMessage("La nueva contraseña debe tener al menos 6 caracteres", "error");
+      showMessage(t("settingsPwMinLen" as TranslationKey), "error");
+      return;
+    }
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      showMessage(t("settingsPwMinLen" as TranslationKey), "error");
       return;
     }
     setLoading(true);
@@ -278,10 +285,10 @@ export default function PerfilPage() {
         {/* COLUMNA DERECHA: SEGURIDAD / CONTRASEÑA */}
         <div style={{ background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r-lg)", padding: "24px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", margin: 0 }}>Seguridad de la Cuenta</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink)", margin: 0 }}>{t("accountSecurity" as TranslationKey)}</h3>
             {!isChangingPassword && (
               <button onClick={() => setIsChangingPassword(true)} style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: "14px", fontWeight: 600 }}>
-                Modificar contraseña
+                {t("settingsPassword" as TranslationKey)}
               </button>
             )}
           </div>
@@ -289,19 +296,20 @@ export default function PerfilPage() {
           {isChangingPassword ? (
             <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", color: "var(--ink-4)", fontWeight: 600, marginBottom: "6px" }}>Contraseña actual</label>
-                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Introduce tu contraseña actual" style={{ width: "100%", padding: "12px", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r)", fontSize: "14px" }} />
+                <label style={{ display: "block", fontSize: "12px", color: "var(--ink-4)", fontWeight: 600, marginBottom: "6px" }}>{t("settingsCurrentPw" as TranslationKey)}</label>
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={t("introduceCurrentPw" as TranslationKey)} style={{ width: "100%", padding: "12px", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r)", fontSize: "14px" }} />
               </div>
               
               <div>
-                <label style={{ display: "block", fontSize: "12px", color: "var(--ink-4)", fontWeight: 600, marginBottom: "6px" }}>Nueva contraseña</label>
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" style={{ width: "100%", padding: "12px", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r)", fontSize: "14px" }} />
+                <label style={{ display: "block", fontSize: "12px", color: "var(--ink-4)", fontWeight: 600, marginBottom: "6px" }}>{t("settingsNewPw" as TranslationKey)}</label>
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("quickOwnerPassPlaceholder" as TranslationKey)} style={{ width: "100%", padding: "12px", background: "var(--paper)", border: "1px solid var(--line)", borderRadius: "var(--r)", fontSize: "14px" }} />
+                <span style={{ display: "block", fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{t("pwFormatHint" as TranslationKey)}</span>
               </div>
 
               <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "8px" }}>
-                <button type="button" onClick={() => { setIsChangingPassword(false); setCurrentPassword(""); setNewPassword(""); }} style={{ background: "var(--paper-3)", border: "none", padding: "10px 16px", borderRadius: "var(--r)", fontSize: "14px", cursor: "pointer", color: "var(--ink-2)" }}>Cancelar</button>
+                <button type="button" onClick={() => { setIsChangingPassword(false); setCurrentPassword(""); setNewPassword(""); }} style={{ background: "var(--paper-3)", border: "none", padding: "10px 16px", borderRadius: "var(--r)", fontSize: "14px", cursor: "pointer", color: "var(--ink-2)" }}>{t("cancel" as TranslationKey)}</button>
                 <button type="submit" disabled={loading} style={{ background: "var(--accent)", color: "#fff", border: "none", padding: "10px 16px", borderRadius: "var(--r)", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
-                  Actualizar credenciales
+                  {t("settingsUpdatePw" as TranslationKey)}
                 </button>
               </div>
             </form>
@@ -309,8 +317,8 @@ export default function PerfilPage() {
             <div style={{ display: "flex", gap: "12px", alignItems: "flex-start", background: "var(--paper-2)", padding: "16px", borderRadius: "var(--r)", border: "1px solid var(--line)" }}>
               <i className="bi bi-shield-lock-fill" style={{ fontSize: "20px", color: "var(--accent)" }} />
               <div style={{ fontSize: "13px", color: "var(--ink-3)", lineHeight: "1.5" }}>
-                <span style={{ fontWeight: 600, color: "var(--ink)", display: "block", marginBottom: "2px" }}>Tu cuenta es segura</span>
-                Tu contraseña actual está protegida mediante encriptación hash en la base de datos. Se recomienda actualizarla de manera periódica.
+                <span style={{ fontWeight: 600, color: "var(--ink)", display: "block", marginBottom: "2px" }}>{t("profileSecTitle" as TranslationKey)}</span>
+                {t("profileSecDesc" as TranslationKey)}
               </div>
             </div>
           )}

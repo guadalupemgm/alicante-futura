@@ -36,7 +36,7 @@ export default function MisReservasPage() {
   useEffect(() => {
     if (!user?.customerId) return;
     const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
-    const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+    const headers: HeadersInit = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
     fetch(API_URL + "/appointments/customer/" + user.customerId, { headers })
       .then((r) => r.json())
       .then((d) => {

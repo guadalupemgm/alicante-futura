@@ -42,8 +42,7 @@ export default function Sidebar() {
     ];
     if (role === "business") return [
       { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
-      { key: "configuracion", href: "/configuracion", icon: "bi-gear-fill" },
-      { key: "settings", href: "/settings", icon: "bi-person-lock" },
+      { key: "configTitle", href: "/configuracion", icon: "bi-gear-fill" },
     ];
     return [ // particular
       { key: "search", href: "/buscar", icon: "bi-search" },

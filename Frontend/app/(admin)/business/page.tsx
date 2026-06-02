@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useLanguage } from "@/components/context/LanguageContext";
+import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 import Pagination from "@/components/ui/Pagination";
 
 const PER_PAGE = 8;
@@ -83,7 +83,12 @@ export default function BusinessesPage() {
     if (!/^[0-9+\s()-]{6,20}$/.test(form.phone)) newErrors.phone = "Teléfono inválido";
     if (!form.address.trim()) newErrors.address = "La dirección es obligatoria";
     if (!/^\S+@\S+\.\S+$/.test(form.ownerEmail)) newErrors.ownerEmail = "Email del propietario inválido";
-    if (form.ownerPassword.length < 6) newErrors.ownerPassword = "Mínimo 6 caracteres";
+    
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
+    if (!passwordRegex.test(form.ownerPassword)) {
+      newErrors.ownerPassword = t("settingsPwMinLen" as TranslationKey);
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -266,13 +271,13 @@ export default function BusinessesPage() {
               </select>
               <div>
                 <input className={`input ${errors.ownerEmail ? "input-error" : ""}`} type="email"
-                  placeholder="Email del propietario" value={form.ownerEmail}
+                  placeholder={t("ownerEmailLabel" as TranslationKey)} value={form.ownerEmail}
                   onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} />
                 {errors.ownerEmail && <span className="error-text">{errors.ownerEmail}</span>}
               </div>
               <div>
                 <input className={`input ${errors.ownerPassword ? "input-error" : ""}`} type="password"
-                  placeholder="Contraseña del propietario" value={form.ownerPassword}
+                  placeholder={t("ownerPasswordLabel" as TranslationKey)} value={form.ownerPassword}
                   onChange={(e) => setForm({ ...form, ownerPassword: e.target.value })} />
                 {errors.ownerPassword && <span className="error-text">{errors.ownerPassword}</span>}
               </div>

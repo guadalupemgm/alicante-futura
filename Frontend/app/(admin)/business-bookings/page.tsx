@@ -17,12 +17,14 @@ export default function BusinessBookingsPage() {
     pending:   t("bbStatusPending"),
     confirmed: t("bbStatusConfirmed"),
     paid:      t("bbStatusPaid"),
+    cancelled: t("statusCancelled"),
   };
 
   const NEXT_STATUS: Record<BookingStatus, { label: string; next: BookingStatus } | null> = {
     pending:   { label: t("confirmAction"),   next: "confirmed" },
     confirmed: { label: t("markPaidAction"),  next: "paid" },
     paid:      null,
+    cancelled: null,
   };
 
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -49,7 +51,7 @@ export default function BusinessBookingsPage() {
   useEffect(() => {
     if (!user?.businessId) return;
     const activeToken = token || (typeof window !== "undefined" ? localStorage.getItem("auth_token") : null);
-    const headers = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
+    const headers: HeadersInit = activeToken ? { Authorization: `Bearer ${activeToken}` } : {};
 
     Promise.all([
       fetch(`${API_URL}/appointments/business/${user.businessId}`, { headers }).then((r) => r.json()),
