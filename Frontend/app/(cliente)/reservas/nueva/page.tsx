@@ -82,30 +82,43 @@ function NuevaReservaForm() {
 
   const businessServices = useMemo(() => {
     if (!form.businessId) return [];
-    
-    // Check if the business has services stored in localStorage
     const saved = localStorage.getItem(`bf_services_by_business_${form.businessId}`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Backward compatibility support
-          return parsed.map((item: any) => {
-            if (typeof item === "string") {
-              return { name: item, price: 35 };
-            }
-            return {
-              name: item.name || "Servicio",
-              price: typeof item.price === "number" ? item.price : 35
-            };
-          });
+          return parsed
+            .filter((item: any) => item.active !== false) // solo activos
+            .map((item: any) => {
+              if (typeof item === "string") return { name: item, price: 35, duration: null, discountType: "none", discountValue: 0, discountLabel: "", discountUntil: "" };
+              return {
+                name:          item.name          || "Servicio",
+                price:         typeof item.price === "number" ? item.price : 35,
+                duration:      item.duration === undefined ? 30 : item.duration,
+                discountType:  item.discountType  || "none",
+                discountValue: item.discountValue || 0,
+                discountLabel: item.discountLabel || "",
+                discountUntil: item.discountUntil || "",
+              };
+            });
         }
       } catch (_) {}
     }
-
-    // Default initial services if not in localStorage
     return [];
   }, [form.businessId]);
+
+  // Helpers para descuento
+  const getSvcFinalPrice = (svc: any): number => {
+    if (!svc || svc.discountType === "none" || svc.discountValue <= 0) return svc?.price ?? 0;
+    if (svc.discountUntil && new Date(svc.discountUntil) < new Date()) return svc.price;
+    if (svc.discountType === "percent") return svc.price * (1 - svc.discountValue / 100);
+    return Math.max(0, svc.price - svc.discountValue);
+  };
+  const isSvcOnSale = (svc: any): boolean => {
+    if (!svc || svc.discountType === "none" || svc.discountValue <= 0) return false;
+    if (svc.discountUntil && new Date(svc.discountUntil) < new Date()) return false;
+    return true;
+  };
 
   // Sync selectedOption when step is 2 or when form.serviceName / businessServices change
   useEffect(() => {
@@ -210,7 +223,7 @@ function NuevaReservaForm() {
     return businessServices.find(s => s.name === form.serviceName) || null;
   }, [businessServices, form.serviceName, selectedOption]);
 
-  const servicePrice = selectedServiceObj ? selectedServiceObj.price : 0;
+  const servicePrice = selectedServiceObj ? getSvcFinalPrice(selectedServiceObj) : 0;
 
   const filteredBusinesses = useMemo(() => {
     return businesses.filter(b => 
@@ -573,7 +586,10 @@ este comprobante el día de tu cita.
                   {lang.code === "es" ? "Selecciona un servicio:" : "Select a service:"}
                 </label>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "1.25rem" }}>
-                  {businessServices.map((srv) => (
+                  {businessServices.map((srv) => {
+                    const onSale = isSvcOnSale(srv);
+                    const finalP = getSvcFinalPrice(srv);
+                    return (
                     <button
                       key={srv.name}
                       type="button"
@@ -582,11 +598,24 @@ este comprobante el día de tu cita.
                         setForm({ ...form, serviceName: srv.name });
                       }}
                       className={`filter-pill ${selectedOption === srv.name ? "active" : ""}`}
-                      style={{ border: "1px solid var(--border)", background: selectedOption === srv.name ? "var(--primary)" : "transparent" }}
+                      style={{ border: "1px solid var(--border)", background: selectedOption === srv.name ? "var(--primary)" : "transparent", position: "relative", display: "flex", alignItems: "center", gap: 6 }}
                     >
-                      {srv.name} ({srv.price.toFixed(2)} €)
+                      {onSale && (
+                        <span style={{ background:"linear-gradient(135deg,#f59e0b,#ef4444)", color:"#fff", fontSize:9, fontWeight:800, padding:"1px 5px", borderRadius:3, letterSpacing:"0.03em" }}>
+                          {srv.discountType === "percent" ? `-${srv.discountValue}%` : `-${srv.discountValue.toFixed(2)}€`}
+                        </span>
+                      )}
+                      <span>{srv.name}</span>
+                      <span style={{ fontWeight:700 }}>
+                        {onSale ? (
+                          <><s style={{ opacity:0.6, fontWeight:400 }}>{srv.price.toFixed(2)} €</s>{" "}{finalP.toFixed(2)} €</>
+                        ) : (
+                          `${srv.price > 0 ? srv.price.toFixed(2) + " €" : ""}`
+                        )}
+                      </span>
                     </button>
-                  ))}
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={() => {
