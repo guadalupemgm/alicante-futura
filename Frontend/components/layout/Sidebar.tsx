@@ -42,8 +42,9 @@ export default function Sidebar() {
       { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
     if (role === "business") return [
-      { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
-      { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
+      { key: "myBusinessBookings", href: "/business-bookings", icon: "bi-calendar2-check" },
+      { key: "sidebarServices",    href: "/servicios",         icon: "bi-stars" },
+      { key: "sidebarConfig",      href: "/configuracion",     icon: "bi-gear-fill" },
     ];
     return [ // particular
       { key: "search", href: "/buscar", icon: "bi-search" },

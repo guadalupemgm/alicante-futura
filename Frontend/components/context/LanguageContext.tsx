@@ -372,6 +372,7 @@ export const translations = {
     sidebarConfig:            "Configuración",
     sidebarBusinessRole:      "Negocio verificado",
     sidebarAdminRole:         "Administrador",
+    sidebarServices:          "Mis Servicios",
 
     // ConfigTabs
     configAdminGlobal:        "Ajustes Globales (Admin)",
@@ -824,6 +825,7 @@ export const translations = {
     sidebarConfig:            "Settings",
     sidebarBusinessRole:      "Verified business",
     sidebarAdminRole:         "Administrator",
+    sidebarServices:          "My Services",
 
     // ConfigTabs
     configAdminGlobal:        "Global Settings (Admin)",
@@ -1274,6 +1276,7 @@ export const translations = {
     sidebarConfig:            "Configuration",
     sidebarBusinessRole:      "Entreprise vérifiée",
     sidebarAdminRole:         "Administrateur",
+    sidebarServices:          "Mes Services",
 
     // ConfigTabs
     configAdminGlobal:        "Paramètres Globaux (Admin)",
