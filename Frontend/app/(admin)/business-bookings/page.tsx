@@ -17,7 +17,7 @@ export default function BusinessBookingsPage() {
     pending:   t("bbStatusPending"),
     confirmed: t("bbStatusConfirmed"),
     paid:      t("bbStatusPaid"),
-    cancelled: t("statusCancelled"),
+    cancelled: t("statusCancelled") || "Cancelada",
   };
 
   const NEXT_STATUS: Record<BookingStatus, { label: string; next: BookingStatus } | null> = {
