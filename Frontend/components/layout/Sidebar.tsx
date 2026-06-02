@@ -83,21 +83,6 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
-
-      {/* User pill at bottom */}
-      <div className="bf-sidebar-bottom">
-        <div className="bf-user-pill">
-          <div className={`bf-user-avatar${role === "business" ? " bf-user-avatar--biz" : ""}`}>
-            {initial}
-          </div>
-          <div>
-            <div className="bf-user-name">{displayName}</div>
-            <div className="bf-user-role">
-              {role === "admin" ? "Administrador" : role === "business" ? "Negocio verificado" : "Cliente particular"}
-            </div>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }
