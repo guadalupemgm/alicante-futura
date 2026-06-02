@@ -438,44 +438,11 @@ function AdminConfig() {
    ============================================================ */
 function BusinessConfig() {
   const { t } = useLanguage();
-  const { user } = useAuth();
 
   const [duration, setDuration] = useState(30);
   const [margin, setMargin] = useState(10);
   const [minAdvance, setMinAdvance] = useState(24);
   const [maxBookings, setMaxBookings] = useState(2);
-
-  interface Svc { name: string; price: number; }
-  const [services, setServices] = useState<Svc[]>([]);
-  const [newName, setNewName]   = useState("");
-  const [newPrice, setNewPrice] = useState("");
-  const storageKey = user?.businessId ? `bf_services_by_business_${user.businessId}` : null;
-
-  useEffect(() => {
-    if (!storageKey) return;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try { setServices(JSON.parse(saved)); } catch { setServices([]); }
-    }
-  }, [storageKey]);
-
-  const addService = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim() || !storageKey) return;
-    const price = parseFloat(newPrice);
-    if (isNaN(price) || price <= 0) return;
-    const updated = [...services, { name: newName.trim(), price }];
-    setServices(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    setNewName(""); setNewPrice("");
-  };
-
-  const removeService = (name: string) => {
-    if (!storageKey) return;
-    const updated = services.filter(s => s.name !== name);
-    setServices(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -511,51 +478,6 @@ function BusinessConfig() {
           />
         </div>
         <button className="primary-btn" style={{ marginTop: 16 }}>Guardar cambios</button>
-      </div>
-
-      {/* Servicios */}
-      <div className="section-card">
-        <h4 style={{ marginBottom: 12, color: "var(--text)" }}>Gestión de Servicios</h4>
-        <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 16 }}>
-          Define los servicios y precios que ofreces a tus clientes.
-        </p>
-        <form onSubmit={addService} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-          <input type="text" className="input" placeholder="Nombre del servicio"
-            value={newName} onChange={e => setNewName(e.target.value)}
-            style={{ flex: 2, minWidth: 140 }} required />
-          <input type="number" className="input" placeholder="Precio €"
-            value={newPrice} onChange={e => setNewPrice(e.target.value)}
-            min="0.01" step="0.01" style={{ flex: 1, minWidth: 90 }} required />
-          <button type="submit" className="primary-btn">Añadir</button>
-        </form>
-        {services.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--muted)", textAlign: "center", padding: "1.5rem",
-            border: "1px dashed var(--border)", borderRadius: "var(--radius-md)" }}>
-            No tienes servicios creados todavía.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {services.map(s => (
-              <div key={s.name} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "10px 14px", background: "var(--surface-2)",
-                borderRadius: "var(--radius-md)", border: "1px solid var(--border)"
-              }}>
-                <div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text)" }}>{s.name}</span>
-                  <span style={{ marginLeft: 12, fontSize: 13, color: "var(--accent)", fontWeight: 700 }}>
-                    {s.price.toFixed(2)} €
-                  </span>
-                </div>
-                <button onClick={() => removeService(s.name)}
-                  style={{ background: "none", border: "none", color: "var(--danger-text)",
-                    cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                  Eliminar
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
