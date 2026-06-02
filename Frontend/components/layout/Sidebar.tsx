@@ -39,10 +39,11 @@ export default function Sidebar() {
       { key: "customers", href: "/customers", icon: "bi-people-fill" },
       { key: "payments", href: "/payments", icon: "bi-credit-card-2-front-fill" },
       { key: "business", href: "/business", icon: "bi-shop-window" },
+      { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
     if (role === "business") return [
       { key: "bookings", href: "/business-bookings", icon: "bi-calendar2-check" },
-      { key: "configTitle", href: "/configuracion", icon: "bi-gear-fill" },
+      { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
     return [ // particular
       { key: "search", href: "/buscar", icon: "bi-search" },

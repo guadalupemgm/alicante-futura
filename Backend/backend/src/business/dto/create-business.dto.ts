@@ -11,15 +11,18 @@ export class CreateBusinessDto {
   address!: string;
 
   @ApiPropertyOptional({ example: 'peluquería' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @ApiPropertyOptional({ example: '965123456' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @ApiPropertyOptional({ example: 'active' })
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @ApiProperty({ example: 'negocio@ejemplo.com' })

@@ -4,7 +4,10 @@ import { Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { Appointment, AppointmentStatus } from '../appointments/appointment.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+} from '../appointments/appointment.entity';
 
 @Injectable()
 export class PaymentsService {

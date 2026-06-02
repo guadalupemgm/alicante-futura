@@ -1,4 +1,12 @@
-import { Controller, Post, Patch, Body, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Patch,
+  Body,
+  UseGuards,
+  Request,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -42,7 +50,16 @@ export class AuthController {
       },
     },
   })
-  register(@Body() body: { email: string; password: string; name: string; phone: string; role: string }) {
+  register(
+    @Body()
+    body: {
+      email: string;
+      password: string;
+      name: string;
+      phone: string;
+      role: string;
+    },
+  ) {
     return this.authService.register(body);
   }
 
@@ -60,20 +77,25 @@ export class AuthController {
     },
   })
   async changePassword(
-    @Request() req: any,
+    @Request() req: { user: { id: number } },
     @Body() body: { currentPassword: string; newPassword: string },
   ) {
     const user = await this.usersService.findOne(req.user.id);
     if (!user) throw new UnauthorizedException('Usuario no encontrado');
 
     const valid = await bcrypt.compare(body.currentPassword, user.password);
-    if (!valid) throw new UnauthorizedException('La contraseña actual es incorrecta');
+    if (!valid)
+      throw new UnauthorizedException('La contraseña actual es incorrecta');
 
     if (!body.newPassword || body.newPassword.length < 6) {
-      throw new UnauthorizedException('La nueva contraseña debe tener al menos 6 caracteres');
+      throw new UnauthorizedException(
+        'La nueva contraseña debe tener al menos 6 caracteres',
+      );
     }
 
-    await this.usersService.update(user.id, { password: body.newPassword } as any);
+    await this.usersService.update(user.id, {
+      password: body.newPassword,
+    });
     return { message: 'Contraseña actualizada correctamente' };
   }
 }

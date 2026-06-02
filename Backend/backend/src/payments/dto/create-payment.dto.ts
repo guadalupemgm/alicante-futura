@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsInt } from 'class-validator';
 
 export class CreatePaymentDto {
-  @ApiProperty({ example: 35.00 })
+  @ApiProperty({ example: 35.0 })
   @IsNumber()
   amount!: number;
 

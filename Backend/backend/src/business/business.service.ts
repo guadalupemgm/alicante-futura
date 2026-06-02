@@ -31,7 +31,7 @@ export class BusinessService {
         username: createBusinessDto.ownerEmail, // ✅ evita conflicto de unique null
         role: UserRole.BUSINESS,
         businessId: saved.id,
-      } as any);
+      });
     } catch (error) {
       // Si por alguna razón la creación del usuario falla (ej. carrera de condiciones),
       // borramos el negocio para no dejarlo huérfano.
