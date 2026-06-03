@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/context/LanguageContext";
 
@@ -18,7 +19,7 @@ export default function SidebarCliente() {
       <div className="bf-sidebar-brand">
         <div className="bf-sidebar-logo">
           <div className="bf-sidebar-mark">
-            <img src="/favicon.ico" style={{ width: "28px", height: "28px" }} alt="logo" />
+            <Image src="/favicon.ico" width={28} height={28} alt="logo" />
           </div>
           <div>
             <div className="bf-sidebar-name">BookFlow</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/components/context/AuthContext";
 import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
 
@@ -26,18 +26,18 @@ export default function PerfilPage() {
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   // Función para sincronizar los estados con los datos reales del usuario
-  const resetFormToUserValues = () => {
+  const resetFormToUserValues = useCallback(() => {
     if (user) {
       setNombre(user.email?.split("@")[0] ?? "Usuario");
       setCorreo(user.email ?? "");
-      setTelefono((user as any)?.phone ?? "");
+      setTelefono((user as { phone?: string })?.phone ?? "");
     }
-  };
+  }, [user]);
 
   // Cargar datos iniciales al arrancar o cambiar de usuario
   useEffect(() => {
     resetFormToUserValues();
-  }, [user]);
+  }, [resetFormToUserValues]);
 
   const showMessage = (text: string, type: "success" | "error") => {
     setMessage({ text, type });
@@ -83,8 +83,9 @@ export default function PerfilPage() {
       
       showMessage("¡Perfil actualizado correctamente!", "success");
       setIsEditing(false);
-    } catch (err: any) {
-      showMessage(err.message || "Error al guardar los cambios", "error");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al guardar los cambios";
+      showMessage(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -122,8 +123,9 @@ export default function PerfilPage() {
       setCurrentPassword("");
       setNewPassword("");
       setIsChangingPassword(false);
-    } catch (err: any) {
-      showMessage(err.message || "Error al cambiar la contraseña", "error");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al cambiar la contraseña";
+      showMessage(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -145,8 +147,9 @@ export default function PerfilPage() {
 
       alert("Tu cuenta ha sido eliminada correctamente.");
       logout();
-    } catch (err: any) {
-      showMessage(err.message || "Error al intentar eliminar la cuenta", "error");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al intentar eliminar la cuenta";
+      showMessage(msg, "error");
     }
   };
 

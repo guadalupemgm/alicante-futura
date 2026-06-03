@@ -3,9 +3,15 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/context/AuthContext";
 
+interface Appointment {
+  id: number;
+  serviceName: string;
+  status: string;
+}
+
 export default function ReservasPage() {
   const { user, token } = useAuth();
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

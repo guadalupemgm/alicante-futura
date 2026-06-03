@@ -45,10 +45,10 @@ export default function CustomersClient() {
   const [page, setPage]       = useState(1);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-  const authHeaders = {
+  const authHeaders = useMemo(() => ({
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
+  }), [token]);
 
   useEffect(() => {
     fetch(`${API_URL}/customers`, { headers: authHeaders })
@@ -57,7 +57,7 @@ export default function CustomersClient() {
     fetch(`${API_URL}/appointments`, { headers: authHeaders })
       .then((res) => res.json())
       .then((data) => setAppointments(Array.isArray(data) ? data : []));
-  }, []);
+  }, [authHeaders]);
 
   useEffect(() => {
     setTimeout(() => {

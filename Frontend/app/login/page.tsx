@@ -181,9 +181,10 @@ export default function LoginPage() {
 
       // 2. Iniciar sesión automáticamente una vez confirmada la subscripción
       await login(email, password);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || t("registrationError" as TranslationKey));
+      const msg = err instanceof Error ? err.message : t("registrationError" as TranslationKey);
+      setError(msg);
       setLoading(false);
     }
   };
@@ -597,8 +598,8 @@ export default function LoginPage() {
                     value={cardNumber}
                     maxLength={19}
                     onChange={(e) => {
-                      let val = e.target.value.replace(/\D/g, "");
-                      let formatted = val.match(/.{1,4}/g)?.join(" ") || val;
+                      const val = e.target.value.replace(/\D/g, "");
+                      const formatted = val.match(/.{1,4}/g)?.join(" ") || val;
                       setCardNumber(formatted);
                     }}
                     required

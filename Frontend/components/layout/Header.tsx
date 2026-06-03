@@ -16,6 +16,14 @@ interface Notification {
   type?: string;
 }
 
+interface Appointment {
+  id: number;
+  date: string;
+  time: string;
+  status: string;
+  serviceName?: string;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Header({ role = "particular" }: { role?: "admin" | "particular" | "business" }) {
@@ -96,7 +104,7 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
         const initialNotifs: Notification[] = [];
 
         if (Array.isArray(appts)) {
-          appts.slice(0, 4).forEach((appt: any, idx: number) => {
+          appts.slice(0, 4).forEach((appt: Appointment, idx: number) => {
             const dateStr = appt.date ? new Date(appt.date).toLocaleDateString() : "";
             const isConfirmed = appt.status === "confirmed" || appt.status === "paid";
             const isCustomer = user.role === "customer";

@@ -247,19 +247,19 @@ export default function BusinessesPage() {
           <div className="modal-card">
             <h3 className="modal-title">{t("newBusinessModal")}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              {[
+              {([
                 { key: "name", placeholder: t("nameBusiness"), type: "text" },
                 { key: "category", placeholder: t("category"), type: "text" },
                 { key: "email", placeholder: t("emailPlaceholder"), type: "email" },
                 { key: "phone", placeholder: t("phonePlaceholder"), type: "tel" },
                 { key: "address", placeholder: t("address"), type: "text" },
-              ].map(({ key, placeholder, type }) => (
+              ] as const).map(({ key, placeholder, type }) => (
                 <div key={key}>
                   <input
                     className={`input ${errors[key] ? "input-error" : ""}`}
                     type={type}
                     placeholder={placeholder}
-                    value={(form as any)[key]}
+                    value={form[key]}
                     onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   />
                   {errors[key] && <span className="error-text">{errors[key]}</span>}
@@ -299,19 +299,19 @@ export default function BusinessesPage() {
               NEG-{String(editTarget.id).padStart(3, "0")} · {editTarget.name}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1.5rem" }}>
-              {[
+              {([
                 { key: "name", placeholder: t("nameBusiness"), type: "text" },
                 { key: "category", placeholder: t("category"), type: "text" },
                 { key: "email", placeholder: t("emailPlaceholder"), type: "email" },
                 { key: "phone", placeholder: t("phonePlaceholder"), type: "tel" },
                 { key: "address", placeholder: t("address"), type: "text" },
-              ].map(({ key, placeholder, type }) => (
+              ] as const).map(({ key, placeholder, type }) => (
                 <div key={key}>
                   <input
                     className={`input ${errors[key] ? "input-error" : ""}`}
                     type={type}
                     placeholder={placeholder}
-                    value={(editForm as any)[key]}
+                    value={editForm[key]}
                     onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
                   />
                   {errors[key] && <span className="error-text">{errors[key]}</span>}

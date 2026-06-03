@@ -1423,7 +1423,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: TranslationKey): string =>
-    (translations[lang.code] as any)[key] ?? translations.es[key] ?? key;
+    (translations[lang.code] as Record<string, string>)[key] ?? translations.es[key] ?? key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
