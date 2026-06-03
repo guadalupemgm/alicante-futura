@@ -278,13 +278,16 @@ function AccountSettings() {
   );
 }
 
-/* ============================================================
-   SECCIÓN: GESTIÓN DE USUARIOS (solo admin)
-   ============================================================ */
+interface User {
+  id: number;
+  email: string;
+  role: string;
+}
+
 function AdminConfig() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { token, user } = useAuth();
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ email: "", password: "", role: "" });
@@ -297,7 +300,7 @@ function AdminConfig() {
     fetch(`${API_URL}/users`, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.ok ? res.json() : [])
       .then(data => {
-        if (Array.isArray(data)) setUsers(data.filter((u: any) => u.id !== user?.id));
+        if (Array.isArray(data)) setUsers(data.filter((u: User) => u.id !== user?.id));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -309,13 +312,13 @@ function AdminConfig() {
     setUsers(users.filter(u => u.id !== id));
   };
 
-  const handleEdit = (u: any) => {
+  const handleEdit = (u: User) => {
     setEditingId(u.id);
     setEditForm({ email: u.email, password: "", role: u.role });
   };
 
   const handleSave = async (id: number) => {
-    const payload: any = { email: editForm.email, role: editForm.role };
+    const payload: Partial<User> & { password?: string } = { email: editForm.email, role: editForm.role };
     if (editForm.password) {
       const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\S]{6,}$/;
       if (!passwordRegex.test(editForm.password)) {

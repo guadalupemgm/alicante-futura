@@ -19,7 +19,18 @@ const WEEKDAY_NAMES = {
   fr: ["Lu", "Ma", "Me", "Je", "Ve", "Sa", "Di"]
 };
 
-type Business = { id: number; name: string; category: string; address: string };
+type Business = { id: number; name: string; category: string; address: string; status?: string };
+
+interface BusinessService {
+  name: string;
+  price: number;
+  duration: number | null;
+  discountType: "none" | "percent" | "fixed";
+  discountValue: number;
+  discountLabel: string;
+  discountUntil: string;
+  active?: boolean;
+}
 
 function NuevaReservaForm() {
   const router       = useRouter();
@@ -28,7 +39,6 @@ function NuevaReservaForm() {
   const { t, lang }  = useLanguage();
 
   const preBusinessId   = Number(searchParams.get("businessId") ?? 0);
-  const preBusinessName = searchParams.get("businessName") ?? "";
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,12 +74,11 @@ function NuevaReservaForm() {
   const [cardName, setCardName] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     fetch(API_URL + "/business")
       .then((r) => r.json())
-      .then((d) => setBusinesses(Array.isArray(d) ? d.filter((b: any) => b.status === "active") : []));
+      .then((d) => setBusinesses(Array.isArray(d) ? d.filter((b: Business) => b.status === "active") : []));
   }, []);
 
   // Auto-select pre-selected business and go to Step 2
@@ -80,7 +89,7 @@ function NuevaReservaForm() {
     }
   }, [preBusinessId, businesses]);
 
-  const businessServices = useMemo(() => {
+  const businessServices = useMemo<BusinessService[]>(() => {
     if (!form.businessId) return [];
     const saved = localStorage.getItem(`bf_services_by_business_${form.businessId}`);
     if (saved) {
@@ -88,33 +97,38 @@ function NuevaReservaForm() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           return parsed
-            .filter((item: any) => item.active !== false) // solo activos
-            .map((item: any) => {
-              if (typeof item === "string") return { name: item, price: 35, duration: null, discountType: "none", discountValue: 0, discountLabel: "", discountUntil: "" };
+            .filter((item: Partial<BusinessService> | string) => {
+              if (typeof item === "string") return true;
+              return item.active !== false;
+            })
+            .map((item: Partial<BusinessService> | string) => {
+              if (typeof item === "string") return { name: item, price: 35, duration: null, discountType: "none" as const, discountValue: 0, discountLabel: "", discountUntil: "" };
               return {
                 name:          item.name          || "Servicio",
                 price:         typeof item.price === "number" ? item.price : 35,
                 duration:      item.duration === undefined ? 30 : item.duration,
-                discountType:  item.discountType  || "none",
+                discountType:  (item.discountType  || "none") as "none" | "percent" | "fixed",
                 discountValue: item.discountValue || 0,
                 discountLabel: item.discountLabel || "",
                 discountUntil: item.discountUntil || "",
               };
             });
         }
-      } catch (_) {}
+      } catch {
+        // Ignored
+      }
     }
     return [];
   }, [form.businessId]);
 
   // Helpers para descuento
-  const getSvcFinalPrice = (svc: any): number => {
+  const getSvcFinalPrice = (svc: BusinessService): number => {
     if (!svc || svc.discountType === "none" || svc.discountValue <= 0) return svc?.price ?? 0;
     if (svc.discountUntil && new Date(svc.discountUntil) < new Date()) return svc.price;
     if (svc.discountType === "percent") return svc.price * (1 - svc.discountValue / 100);
     return Math.max(0, svc.price - svc.discountValue);
   };
-  const isSvcOnSale = (svc: any): boolean => {
+  const isSvcOnSale = (svc: BusinessService): boolean => {
     if (!svc || svc.discountType === "none" || svc.discountValue <= 0) return false;
     if (svc.discountUntil && new Date(svc.discountUntil) < new Date()) return false;
     return true;
@@ -233,20 +247,6 @@ function NuevaReservaForm() {
     );
   }, [businesses, searchQuery]);
 
-  const getPopularServices = (category: string) => {
-    const cat = category.toLowerCase();
-    if (cat.includes("pelu") || cat.includes("barber") || cat.includes("estil")) {
-      return ["Corte de pelo", "Lavado y peinado", "Corte + Barba", "Tinte de cabello"];
-    }
-    if (cat.includes("spa") || cat.includes("estet") || cat.includes("salud") || cat.includes("masaj")) {
-      return ["Masaje relajante", "Manicura y Pedicura", "Tratamiento facial", "Limpieza de cutis"];
-    }
-    if (cat.includes("consult") || cat.includes("asesor") || cat.includes("abogad") || cat.includes("gestor")) {
-      return ["Consulta básica", "Asesoría VIP", "Revisión de documentos", "Sesión de 1 Hora"];
-    }
-    return ["Servicio Estándar", "Consulta General", "Soporte Premium", "Asesoría Personalizada"];
-  };
-
   const timeSlots = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
     "12:00", "12:30", "13:00", "15:00", "15:30", "16:00", 
@@ -332,7 +332,6 @@ function NuevaReservaForm() {
         }),
       });
       if (!res.ok) throw new Error();
-      setPaymentSuccess(isPayingNow);
       setSuccess(true);
     } catch {
       setError(t("errorCrearReserva"));
@@ -343,7 +342,6 @@ function NuevaReservaForm() {
 
   const handleDownloadReceipt = () => {
     const isPending = selectedOption === "Otro";
-    const isPayingNow = paymentTiming === "now" && !isPending;
     const subtotal = servicePrice / 1.21;
     const tax = servicePrice - subtotal;
 
@@ -949,16 +947,16 @@ este comprobante el día de tu cita.
                           {lang.code === "es" ? "¿Cómo prefieres pagar en el local?" : "How would you like to pay at the venue?"}
                         </label>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                          {[
+                          {([
                             { key: "card",     icon: "bi-credit-card",  label: lang.code === "es" ? "Tarjeta" : "Card" },
                             { key: "bizum",    icon: "bi-phone",         label: "Bizum" },
                             { key: "transfer", icon: "bi-bank",          label: lang.code === "es" ? "Transferencia" : "Transfer" },
                             { key: "cash",     icon: "bi-cash-stack",    label: lang.code === "es" ? "Efectivo" : "Cash" },
-                          ].map(({ key, icon, label }) => (
+                          ] as const).map(({ key, icon, label }) => (
                             <button
                               key={key}
                               type="button"
-                              onClick={() => setPaymentMethod(key as any)}
+                              onClick={() => setPaymentMethod(key)}
                               className={`payment-method-btn${paymentMethod === key ? " active" : ""}`}
                             >
                               <i className={`bi ${icon}`} style={{ fontSize: 22, display: "block", marginBottom: 4 }} />

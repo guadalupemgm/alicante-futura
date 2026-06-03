@@ -1413,7 +1413,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem("lang") as LangCode | null;
     if (stored) {
       const found = LANGUAGES.find((l) => l.code === stored);
-      if (found) setLangState(found);
+      if (found) {
+        setTimeout(() => setLangState(found), 0);
+      }
     }
   }, []);
 
@@ -1424,7 +1426,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   const t = (key: TranslationKey): string =>
-    (translations[lang.code] as any)[key] ?? translations.es[key] ?? key;
+    (translations[lang.code] as Record<string, string>)[key] ?? translations.es[key] ?? key;
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>

@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 
+interface CardPaymentDetails {
+  cardName: string;
+  cardNumber: string;
+  expiry: string;
+  cvv: string;
+}
+
 interface PaymentGatewayProps {
   amount: number;
-  onSuccess: (paymentDetails: any) => void;
+  onSuccess: (paymentDetails: CardPaymentDetails) => void;
   onCancel: () => void;
 }
 

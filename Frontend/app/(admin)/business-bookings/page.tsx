@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/context/AuthContext";
-import { useLanguage, TranslationKey } from "@/components/context/LanguageContext";
+import { useLanguage } from "@/components/context/LanguageContext";
 import type { Booking, BookingStatus, Customer } from "@/lib/api";
 import { getCustomers, updateAppointment, createAppointment } from "@/lib/api";
 

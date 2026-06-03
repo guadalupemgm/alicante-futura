@@ -5,6 +5,16 @@ import { useLanguage } from "@/components/context/LanguageContext";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+interface Booking {
+  id: string | number;
+  date: string;
+  time: string;
+  serviceName: string;
+  status: string;
+  customerId: string | number;
+  businessId: string | number;
+}
+
 export default function ExportButton() {
   const { t } = useLanguage();
 
@@ -16,7 +26,7 @@ export default function ExportButton() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
-    const bookings = await res.json();
+    const bookings: Booking[] = await res.json();
 
     if (!bookings.length) {
       alert(t("noBookingsExport"));
@@ -24,7 +34,7 @@ export default function ExportButton() {
     }
 
     const headers = ["ID", t("date"), t("time"), t("service"), t("status"), t("clientId"), t("businessLabel")];
-    const rows = bookings.map((b: any) => [
+    const rows: (string | number)[][] = bookings.map((b: Booking) => [
       b.id,
       b.date,
       b.time,
@@ -35,7 +45,7 @@ export default function ExportButton() {
     ]);
 
     const csv = [headers, ...rows]
-      .map(r => r.map((v: any) => `"${v}"`).join(";"))
+      .map(r => r.map((v: string | number) => `"${v}"`).join(";"))
       .join("\n");
 
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });

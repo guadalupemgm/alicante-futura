@@ -3,9 +3,15 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/context/AuthContext";
 
+interface Appointment {
+  id: number;
+  serviceName: string;
+  status: string;
+}
+
 export default function ReservasPage() {
   const { user, token } = useAuth();
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,8 +23,10 @@ export default function ReservasPage() {
 
     // 2. Si después de cargar no hay usuario, lanzamos error
     if (!user || !token) {
-      setError("No se ha detectado una sesión activa. Por favor, inicia sesión.");
-      setLoading(false);
+      setTimeout(() => {
+        setError("No se ha detectado una sesión activa. Por favor, inicia sesión.");
+        setLoading(false);
+      }, 0);
       return;
     }
 

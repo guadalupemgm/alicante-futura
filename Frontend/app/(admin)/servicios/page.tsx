@@ -74,7 +74,7 @@ export default function ServiciosPage() {
     try {
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return;
-      const migrated: Service[] = parsed.map((item: any) => ({
+      const migrated: Service[] = parsed.map((item: Partial<Service>) => ({
         id:            item.id            || uid(),
         name:          item.name          || "",
         price:         typeof item.price === "number" ? item.price : 0,
@@ -87,8 +87,10 @@ export default function ServiciosPage() {
         discountLabel: item.discountLabel || "",
         discountUntil: item.discountUntil || "",
       }));
-      setServices(migrated);
-    } catch { setServices([]); }
+      setTimeout(() => setServices(migrated), 0);
+    } catch {
+      setTimeout(() => setServices([]), 0);
+    }
   }, [storageKey]);
 
   /* Persist */
@@ -196,7 +198,6 @@ export default function ServiciosPage() {
   const labelIrrev       = T("Esta acción no se puede deshacer.","This action cannot be undone.","Cette action est irréversible.");
   const labelSavedTxt    = T("Guardado","Saved","Enregistré");
   const labelInactive    = T("Inactivo","Inactive","Inactif");
-  const labelOnSale      = T("En oferta","On sale","En promo");
   const labelTotalSvc    = T("Total servicios","Total services","Total services");
   const labelActiveStat  = T("Activos","Active","Actifs");
   const labelOnSaleStat  = T("Con descuento","On sale","En promo");

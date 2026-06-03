@@ -16,7 +16,9 @@ export class BusinessService {
   ) {}
 
   async create(createBusinessDto: CreateBusinessDto) {
-    const existingUser = await this.usersService.findByEmail(createBusinessDto.ownerEmail);
+    const existingUser = await this.usersService.findByEmail(
+      createBusinessDto.ownerEmail,
+    );
     if (existingUser) {
       throw new BadRequestException('El correo electrónico ya está registrado');
     }

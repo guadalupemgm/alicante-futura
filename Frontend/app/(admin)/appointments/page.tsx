@@ -33,7 +33,9 @@ export default function AppointmentsPage() {
 
   // useEffect hace que la función se ejecute nada más abrir la página
   useEffect(() => {
-    fetchAppointments();
+    setTimeout(() => {
+      fetchAppointments();
+    }, 0);
   }, []);
 
   return (

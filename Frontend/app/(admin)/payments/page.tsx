@@ -57,7 +57,7 @@ export default function PaymentsPage() {
   const [editTarget, setEditTarget] = useState<Payment | null>(null);
   const [editForm, setEditForm]     = useState({ amount: "", method: "", status: "pending" as PaymentStatus });
 
-  const FILTERS = [
+  const FILTERS: { key: "all" | PaymentStatus; label: string; cls: string }[] = [
     { key: "all",       label: t("seeAll"),        cls: "filter-pill--all" },
     { key: "pending",   label: t("pendingFilter"), cls: "filter-pill--pending" },
     { key: "paid",      label: t("paidFilter"),    cls: "filter-pill--paid" },
@@ -96,7 +96,11 @@ export default function PaymentsPage() {
     };
   }, [user, token]);
 
-  useEffect(() => { setPage(1); }, [statusFilter]);
+  useEffect(() => {
+    setTimeout(() => {
+      setPage(1);
+    }, 0);
+  }, [statusFilter]);
 
   // Crear pago manualmente con validaciones e interfaz de tarjeta simulada
   const handleCreate = async () => {
@@ -244,7 +248,7 @@ export default function PaymentsPage() {
           <div className="filter-row">
             {FILTERS.map(f => (
               <button key={f.key} type="button"
-                onClick={() => setStatusFilter(f.key as any)}
+                onClick={() => setStatusFilter(f.key)}
                 className={`filter-pill ${f.cls}${statusFilter === f.key ? " active" : ""}`}
               >
                 {f.label}

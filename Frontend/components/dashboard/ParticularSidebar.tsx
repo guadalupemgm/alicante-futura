@@ -1,20 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/components/context/AuthContext";
 import { useLanguage } from "@/components/context/LanguageContext";
 
 export default function ParticularSidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
   
   // GM: Bypass para saltarnos el diccionario estricto de TypeScript en las traducciones
   const { t: translate } = useLanguage();
-  const t = translate as any;
-
-  const initial = (user?.email?.[0] ?? "U").toUpperCase();
-  const displayName = user?.email?.split("@")[0] ?? "Usuario";
+  const t = translate as (key: string) => string;
 
   return (
     <aside className="bf-sidebar">
@@ -22,7 +18,7 @@ export default function ParticularSidebar() {
       <div className="bf-sidebar-brand">
         <div className="bf-sidebar-logo">
           <div className="bf-sidebar-mark">
-            <img src="/favicon.ico" style={{ width: "28px", height: "28px" }} alt="logo" />
+            <Image src="/favicon.ico" width={28} height={28} alt="logo" />
           </div>
           <div>
             <div className="bf-sidebar-name">BookFlow</div>
