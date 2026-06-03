@@ -300,7 +300,7 @@ export default function LoginPage() {
                   id="password"
                   className={`${s.input} ${s.inputWithBtn}`}
                   type={showPassword ? "text" : "password"}
-                  placeholder={t("passwordPlaceholder" as TranslationKey)}
+                  placeholder={t("password" as TranslationKey)}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

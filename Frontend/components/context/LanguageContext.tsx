@@ -482,6 +482,7 @@ export const translations = {
     profileSecDesc:           "Tu contraseña actual está protegida mediante encriptación hash en la base de datos. Se recomienda actualizarla de manera periódica.",
     userPanelTitle:           "Panel de Usuario",
     userPanelSubtitle:        "Gestiona tus citas y reserva en tus locales favoritos",
+    password:                 "Contraseña"
   },
 
   en: {
@@ -614,6 +615,7 @@ export const translations = {
     email:               "Email",
     phone:               "Phone",
     statusBusiness:      "Status",
+    password:            "Password",
 
     // Cliente sidebar / área cliente
     mySpace:                  "My space",
@@ -1067,6 +1069,7 @@ export const translations = {
     email:               "Email",
     phone:               "Téléphone",
     statusBusiness:      "Statut",
+    password:            "Mot de passe",
 
     // Cliente sidebar / área cliente
     mySpace:                  "Mon espace",
