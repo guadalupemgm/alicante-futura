@@ -23,7 +23,7 @@ export class ConfigController {
   /** PUT /config/admin — solo admin */
   @Put('admin')
   @Roles(UserRole.ADMIN)
-  updateAdminConfig(@Body() updates: Record<string, any>) {
+  updateAdminConfig(@Body() updates: Record<string, unknown>) {
     return this.configService.updateConfig('admin', 'system', updates);
   }
 
@@ -39,7 +39,7 @@ export class ConfigController {
   @Roles(UserRole.ADMIN, UserRole.BUSINESS)
   updateBusinessConfig(
     @Param('id') businessId: string,
-    @Body() updates: Record<string, any>,
+    @Body() updates: Record<string, unknown>,
   ) {
     return this.configService.updateConfig('business', businessId, updates);
   }
@@ -56,7 +56,7 @@ export class ConfigController {
   @Roles(UserRole.ADMIN, UserRole.CUSTOMER)
   updateCustomerConfig(
     @Param('id') customerId: string,
-    @Body() updates: Record<string, any>,
+    @Body() updates: Record<string, unknown>,
   ) {
     return this.configService.updateConfig('customer', customerId, updates);
   }

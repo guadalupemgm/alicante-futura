@@ -13,7 +13,7 @@ export class ConfigService {
   async getConfig(
     entityType: string,
     entityId: string,
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     const configs = await this.configRepository.find({
       where: { entityType, entityId },
     });
@@ -21,18 +21,17 @@ export class ConfigService {
     // Convert array of key-value into a single object
     return configs.reduce(
       (acc, curr) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         acc[curr.key] = curr.value;
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<string, unknown>,
     );
   }
 
   async updateConfig(
     entityType: string,
     entityId: string,
-    updates: Record<string, any>,
+    updates: Record<string, unknown>,
   ): Promise<void> {
     for (const [key, value] of Object.entries(updates)) {
       let config = await this.configRepository.findOne({
@@ -40,14 +39,12 @@ export class ConfigService {
       });
 
       if (config) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         config.value = value;
       } else {
         config = this.configRepository.create({
           entityType,
           entityId,
           key,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           value,
         });
       }

@@ -15,5 +15,5 @@ export class Config {
   key: string; // The setting key (e.g. 'working_hours', 'timezone')
 
   @Column('simple-json', { nullable: true })
-  value: any; // The JSON payload for that config
+  value: unknown; // The JSON payload for that config
 }
