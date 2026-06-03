@@ -29,7 +29,7 @@
   --r-lg:         16px;
   --font-display: 'Fraunces', serif;
   --font-body:    'DM Sans', sans-serif;
-  --sidebar-w:    204px;
+  --sidebar-w:    212px;
 
   /* legacy aliases — mantiene páginas existentes sin cambios */
   --bg:             var(--paper);
