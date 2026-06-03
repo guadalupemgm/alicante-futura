@@ -96,7 +96,11 @@ export default function PaymentsPage() {
     };
   }, [user, token]);
 
-  useEffect(() => { setPage(1); }, [statusFilter]);
+  useEffect(() => {
+    setTimeout(() => {
+      setPage(1);
+    }, 0);
+  }, [statusFilter]);
 
   // Crear pago manualmente con validaciones e interfaz de tarjeta simulada
   const handleCreate = async () => {

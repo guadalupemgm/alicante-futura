@@ -59,7 +59,11 @@ export default function CustomersClient() {
       .then((data) => setAppointments(Array.isArray(data) ? data : []));
   }, []);
 
-  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => {
+    setTimeout(() => {
+      setPage(1);
+    }, 0);
+  }, [search]);
 
   const getNextBooking = (customerId: number) => {
     const today = new Date().toISOString().split("T")[0];

@@ -17,8 +17,10 @@ export default function ReservasPage() {
 
     // 2. Si después de cargar no hay usuario, lanzamos error
     if (!user || !token) {
-      setError("No se ha detectado una sesión activa. Por favor, inicia sesión.");
-      setLoading(false);
+      setTimeout(() => {
+        setError("No se ha detectado una sesión activa. Por favor, inicia sesión.");
+        setLoading(false);
+      }, 0);
       return;
     }
 

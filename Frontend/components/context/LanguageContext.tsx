@@ -1410,7 +1410,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem("lang") as LangCode | null;
     if (stored) {
       const found = LANGUAGES.find((l) => l.code === stored);
-      if (found) setLangState(found);
+      if (found) {
+        setTimeout(() => setLangState(found), 0);
+      }
     }
   }, []);
 

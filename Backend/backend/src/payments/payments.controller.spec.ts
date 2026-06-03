@@ -5,10 +5,24 @@ import { PaymentsService } from './payments.service';
 describe('PaymentsController', () => {
   let controller: PaymentsController;
 
+  const mockPaymentsService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findByBusiness: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PaymentsController],
-      providers: [PaymentsService],
+      providers: [
+        {
+          provide: PaymentsService,
+          useValue: mockPaymentsService,
+        },
+      ],
     }).compile();
 
     controller = module.get<PaymentsController>(PaymentsController);

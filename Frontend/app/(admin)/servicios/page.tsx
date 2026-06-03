@@ -87,8 +87,10 @@ export default function ServiciosPage() {
         discountLabel: item.discountLabel || "",
         discountUntil: item.discountUntil || "",
       }));
-      setServices(migrated);
-    } catch { setServices([]); }
+      setTimeout(() => setServices(migrated), 0);
+    } catch {
+      setTimeout(() => setServices([]), 0);
+    }
   }, [storageKey]);
 
   /* Persist */
