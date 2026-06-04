@@ -8,11 +8,13 @@
 
 /* ── Tokens light ─────────────────────────────────────── */
 :root {
+  /* Fondo cambiado de 'white' a un gris sutil profesional */
+  --paper:        #edf1f5; 
+  --paper-2:      white; /* Las tarjetas siguen siendo blancas */
+  
   --ink:          #0e0e10;
   --ink-2:        #3d3d44;
   --ink-3:        #8888a0;
-  --paper:        white;
-  --paper-2:      white;
   --paper-3:      #e4e1d7;
   --line:         rgba(14,14,16,0.10);
   --line-2:       rgba(14,14,16,0.06);
@@ -817,4 +819,29 @@ html.dark .pg-btn--active {
   color: #ffffff;
   border-color: var(--ink-3);
   font-weight: 600;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Añadimos las formas de edificios a la capa principal */
+.admin-main {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect x="120" y="80" width="40" height="120" fill="%23c8522a" opacity="0.6"/><rect x="160" y="110" width="40" height="90" fill="%23e09f7d" opacity="0.8"/><rect x="80" y="140" width="30" height="60" fill="%23f7d7c1" opacity="0.7"/></svg>');
+    background-repeat: no-repeat;
+    background-position: bottom 20px right 20px;
+    background-size: 250px;
+    background-attachment: fixed;
 }
