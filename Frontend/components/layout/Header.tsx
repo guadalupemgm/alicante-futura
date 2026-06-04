@@ -24,6 +24,15 @@ interface Appointment {
   serviceName?: string;
 }
 
+interface Payment {
+  id: number;
+  amount: number;
+  method: string;
+  status: string;
+  appointmentId?: number;
+  appointment?: Appointment;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export default function Header({ role = "particular" }: { role?: "admin" | "particular" | "business" }) {
@@ -81,100 +90,142 @@ export default function Header({ role = "particular" }: { role?: "admin" | "part
     if (user.role === "business" && !user.businessId) return;
     if (user.role === "customer" && !user.customerId) return;
 
-    const storageKey = `bf_notifications_${user.id}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved && JSON.parse(saved).length > 0) return;
-
     const loadInitialData = async () => {
       try {
-        let url = `${API_URL}/appointments`;
+        // 1. Obtener citas (appointments)
+        let urlAppts = `${API_URL}/appointments`;
         if (user.role === "business" && user.businessId) {
-          url = `${API_URL}/appointments/business/${user.businessId}`;
+          urlAppts = `${API_URL}/appointments/business/${user.businessId}`;
         } else if (user.role === "customer" && user.customerId) {
-          url = `${API_URL}/appointments/customer/${user.customerId}`;
+          urlAppts = `${API_URL}/appointments/customer/${user.customerId}`;
         }
 
-        const res = await fetch(url, {
+        const apptsRes = await fetch(urlAppts, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (!apptsRes.ok) throw new Error("Failed to fetch appointments");
+        const appts = await apptsRes.json();
 
-        if (!res.ok) throw new Error("Failed to fetch appointments");
-        const appts = await res.json();
+        // 2. Obtener pagos (payments) - Solo para Admin y Business
+        let payments: Payment[] = [];
+        if (user.role === "business" && user.businessId) {
+          const payRes = await fetch(`${API_URL}/payments/business/${user.businessId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (payRes.ok) payments = await payRes.json();
+        } else if (user.role === "admin") {
+          const payRes = await fetch(`${API_URL}/payments`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (payRes.ok) payments = await payRes.json();
+        }
 
-        const initialNotifs: Notification[] = [];
+        const serverNotifs: Notification[] = [];
 
+        // Mapear reservas reales a notificaciones
         if (Array.isArray(appts)) {
-          appts.slice(0, 4).forEach((appt: Appointment, idx: number) => {
+          appts.forEach((appt: Appointment) => {
             const dateStr = appt.date ? new Date(appt.date).toLocaleDateString() : "";
-            const isConfirmed = appt.status === "confirmed" || appt.status === "paid";
             const isCustomer = user.role === "customer";
+            
+            let title = "";
+            let desc = "";
+            let icon = "";
 
-            initialNotifs.push({
-              id: Date.now() - idx * 60000,
-              icon: isConfirmed ? "bi-calendar2-check-fill" : "bi-calendar-event-fill",
-              title: isCustomer
-                ? (isConfirmed ? "Cita Confirmada" : "Cita Solicitada")
-                : (isConfirmed ? "Reserva Confirmada" : "Reserva Pendiente"),
-              desc: isCustomer
-                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr || appt.date} a las ${appt.time} ${isConfirmed ? "está confirmada" : "está pendiente"}.`
-                : `${appt.serviceName || "Servicio"} programado para el ${dateStr || appt.date} a las ${appt.time}`,
-              time: `Hace ${idx * 20 + 5} min`,
-              read: false
+            if (appt.status === "paid") {
+              title = isCustomer ? "Cita Pagada" : "Reserva Pagada";
+              desc = isCustomer
+                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} ha sido pagada.`
+                : `Reserva para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} ha sido pagada.`;
+              icon = "bi-credit-card-fill";
+            } else if (appt.status === "confirmed") {
+              title = isCustomer ? "Cita Confirmada" : "Reserva Confirmada";
+              desc = isCustomer
+                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} está confirmada.`
+                : `Reserva para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} está confirmada.`;
+              icon = "bi-calendar2-check-fill";
+            } else if (appt.status === "cancelled") {
+              title = isCustomer ? "Cita Cancelada" : "Reserva Cancelada";
+              desc = isCustomer
+                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} ha sido cancelada.`
+                : `Reserva para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} ha sido cancelada.`;
+              icon = "bi-calendar-x-fill";
+            } else {
+              title = isCustomer ? "Cita Solicitada" : "Reserva Pendiente";
+              desc = isCustomer
+                ? `Tu cita para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} está pendiente.`
+                : `Reserva para ${appt.serviceName || "Servicio"} el ${dateStr} a las ${appt.time} está pendiente.`;
+              icon = "bi-calendar-event-fill";
+            }
+
+            serverNotifs.push({
+              id: appt.id * 1000 + 1, // namespace para citas
+              icon,
+              title,
+              desc,
+              time: "Reciente",
+              read: false,
+              type: "appointment"
             });
           });
         }
 
-        if (initialNotifs.length > 0) {
-          setNotifications(initialNotifs);
+        // Mapear pagos reales a notificaciones (solo si corresponde)
+        if (Array.isArray(payments)) {
+          payments.forEach((pay: Payment) => {
+            const payMethodStr = pay.method === "card" ? "tarjeta" : pay.method === "transfer" ? "transferencia" : "efectivo";
+            let desc = `Recibido pago de ${pay.amount}€ por ${payMethodStr}.`;
+            if (pay.appointment) {
+              const dateStr = pay.appointment.date ? new Date(pay.appointment.date).toLocaleDateString() : "";
+              desc = `Pago de ${pay.amount}€ recibido por ${pay.appointment.serviceName || "Servicio"} el ${dateStr} vía ${payMethodStr}.`;
+            }
+
+            serverNotifs.push({
+              id: pay.id * 1000 + 2, // namespace para pagos
+              icon: "bi-cash-coin",
+              title: "Pago Confirmado",
+              desc,
+              time: "Reciente",
+              read: false,
+              type: "payment"
+            });
+          });
         }
 
+        // Ordenar notificaciones por ID descendente (los más recientes primero)
+        serverNotifs.sort((a, b) => b.id - a.id);
+
+        // Reconciliar con local storage para conservar el estado leído/no leído
+        const storageKey = `bf_notifications_${user.id}`;
+        const savedStr = localStorage.getItem(storageKey);
+        const savedNotifs: Notification[] = savedStr ? JSON.parse(savedStr) : [];
+
+        const mergedNotifs: Notification[] = serverNotifs.map(sn => {
+          const match = savedNotifs.find(s => s.id === sn.id);
+          if (match) {
+            return { ...sn, read: match.read, time: match.time };
+          }
+          return sn;
+        });
+
+        // Mostrar Toast si hay notificaciones nuevas sin leer (que no estuvieran en local storage)
+        if (savedNotifs.length > 0) {
+          const newUnread = mergedNotifs.filter(mn => !mn.read && !savedNotifs.some(s => s.id === mn.id));
+          if (newUnread.length > 0) {
+            setToast({ title: newUnread[0].title, desc: newUnread[0].desc });
+            setTimeout(() => setToast(null), 5000);
+          }
+        }
+
+        setNotifications(mergedNotifs.slice(0, 10)); // Mostrar un máximo de 10
+
       } catch (err) {
-        // ✅ Si el backend falla, no romper el render
-        console.warn("No se pudieron cargar las notificaciones:", err);
+        console.warn("No se pudieron cargar las notificaciones reales:", err);
       }
     };
 
     loadInitialData();
   }, [user, token]);
-
-  useEffect(() => {
-    if (!user) return;
-    const timer = setTimeout(() => {
-      const isBusiness = user.role === "business";
-      const isCustomer = user.role === "customer";
-
-      let title = "Nuevo Registro de Negocio";
-      let desc = "El negocio 'Alicante Tech Center' ha completado su registro.";
-      let icon = "bi-lightning-charge-fill";
-
-      if (isBusiness) {
-        title = "Nueva Cita Recibida";
-        desc = "Un cliente ha solicitado una cita para 'Asesoría VIP' mañana.";
-      } else if (isCustomer) {
-        title = "Recordatorio de Cita";
-        desc = "Recuerda que tienes una cita programada para mañana a las 10:00.";
-        icon = "bi-clock-fill";
-      }
-
-      const liveNotif: Notification = {
-        id: Date.now() + 99,
-        icon,
-        title,
-        desc,
-        time: "Ahora mismo",
-        read: false
-      };
-
-      setNotifications(prev => {
-        if (prev.some(n => n.title === liveNotif.title)) return prev;
-        setToast({ title: liveNotif.title, desc: liveNotif.desc });
-        setTimeout(() => setToast(null), 5000);
-        return [liveNotif, ...prev];
-      });
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [user]);
 
   const markAllRead = () =>
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
