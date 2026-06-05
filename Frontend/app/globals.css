@@ -837,33 +837,21 @@ html.dark .pg-btn--active {
 
 
 
+/* 1. Limpiamos fondos sólidos */
+html, body, #root, #__next, .admin-main {
+    background-color: transparent !important;
+}
 
-
-/* 1. Fondo de edificios con carga permitida */
+/* 2. Fondo Modo Claro */
 body {
-    background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2500') !important;
+    background-image: url('https://i.ibb.co/2YC5bH66/fondo-Claro.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     background-attachment: fixed !important;
     background-repeat: no-repeat !important;
 }
 
-/* 2. Aseguramos que nada tape el fondo */
-main, #root, #__next, .admin-main {
-    background-color: transparent !important;
+/* 3. Fondo Modo Oscuro */
+html.dark body {
+    background-image: url('https://i.ibb.co/hFb098w4/fondo-Oscuro.png') !important;
 }
-
-/* 3. Mantenemos tus tarjetas blancas (o del color que tengas en --paper-2) */
-.surface-card, .section-card, .kpi-card, .admin-header, .bf-sidebar {
-    background: var(--paper-2) !important;
-}
-
-/* 4. Capa protectora para que el texto sea legible */
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.4); /* 40% de oscuridad */
-    z-index: -1;
-}
-
