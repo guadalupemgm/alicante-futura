@@ -23,15 +23,12 @@ export default function Sidebar() {
       { key: "business", href: "/business", icon: "bi-shop-window" },
       { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
+   // En tu archivo Sidebar.tsx
     if (role === "business") return [
+      { key: "dashboard",          href: "/admin/dashboard", icon: "bi-speedometer2" }, // <--- AÑADE ESTO
       { key: "myBusinessBookings", href: "/business-bookings", icon: "bi-calendar2-check" },
       { key: "sidebarServices",    href: "/servicios",         icon: "bi-grid-1x2-fill" },
       { key: "sidebarConfig",      href: "/configuracion",     icon: "bi-gear-fill" },
-    ];
-    return [ // particular
-      { key: "search", href: "/buscar", icon: "bi-search" },
-      { key: "myBookings", href: "/mis-reservas", icon: "bi-calendar2-check" },
-      { key: "myProfile", href: "/perfil", icon: "bi-person-fill" },
     ];
   };
 
