@@ -837,21 +837,26 @@ html.dark .pg-btn--active {
 
 
 
-/* 1. Limpiamos fondos sólidos */
-html, body, #root, #__next, .admin-main {
-    background-color: transparent !important;
+/* 1. Fuerza el fondo en todo lo que envuelve a la aplicación */
+html, body, #root, #__next, div[class*="admin"], div[class*="app"] {
+    background: transparent !important;
 }
 
-/* 2. Fondo Modo Claro */
+/* 2. Establecemos el fondo con !important y aseguramos que no se mueva */
 body {
-    background-image: url('https://i.ibb.co/2YC5bH66/fondo-Claro.jpg') !important;
+    background-image: url('/fondoClaro.jpg') !important;
     background-size: cover !important;
     background-position: center !important;
     background-attachment: fixed !important;
     background-repeat: no-repeat !important;
 }
 
-/* 3. Fondo Modo Oscuro */
 html.dark body {
-    background-image: url('https://i.ibb.co/hFb098w4/fondo-Oscuro.png') !important;
+    background-image: url('/fondoOscuro.png') !important;
+}
+
+/* 3. Evitamos que elementos internos oculten el fondo */
+/* Muchas plantillas tienen un contenedor que por defecto tiene fondo blanco */
+.admin-main, .main-container, .wrapper {
+    background-color: transparent !important;
 }
