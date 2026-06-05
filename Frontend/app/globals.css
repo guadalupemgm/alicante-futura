@@ -837,11 +837,33 @@ html.dark .pg-btn--active {
 
 
 
-/* Añadimos las formas de edificios a la capa principal */
-.admin-main {
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect x="120" y="80" width="40" height="120" fill="%23c8522a" opacity="0.6"/><rect x="160" y="110" width="40" height="90" fill="%23e09f7d" opacity="0.8"/><rect x="80" y="140" width="30" height="60" fill="%23f7d7c1" opacity="0.7"/></svg>');
-    background-repeat: no-repeat;
-    background-position: bottom 20px right 20px;
-    background-size: 250px;
-    background-attachment: fixed;
+
+
+/* 1. Fondo de edificios con carga permitida */
+body {
+    background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2500') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
 }
+
+/* 2. Aseguramos que nada tape el fondo */
+main, #root, #__next, .admin-main {
+    background-color: transparent !important;
+}
+
+/* 3. Mantenemos tus tarjetas blancas (o del color que tengas en --paper-2) */
+.surface-card, .section-card, .kpi-card, .admin-header, .bf-sidebar {
+    background: var(--paper-2) !important;
+}
+
+/* 4. Capa protectora para que el texto sea legible */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.4); /* 40% de oscuridad */
+    z-index: -1;
+}
+
