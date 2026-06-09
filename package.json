@@ -3,6 +3,7 @@
     "@nestjs-modules/mailer": "^2.3.4",
     "@nestjs/swagger": "^11.4.2",
     "@nestjs/typeorm": "^11.0.1",
+    "better-sqlite3": "^12.10.0",
     "handlebars": "^4.7.9",
     "nodemailer": "^8.0.7",
     "typeorm": "^0.3.29"
