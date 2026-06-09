@@ -23,18 +23,23 @@ export default function Sidebar() {
       { key: "business", href: "/business", icon: "bi-shop-window" },
       { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
-   // En tu archivo Sidebar.tsx
+
     if (role === "business") return [
-      { key: "dashboard",          href: "/admin/dashboard", icon: "bi-speedometer2" }, // <--- AÑADE ESTO
+      { key: "dashboard", href: "/admin/dashboard", icon: "bi-speedometer2" },
       { key: "myBusinessBookings", href: "/business-bookings", icon: "bi-calendar2-check" },
-      { key: "sidebarServices",    href: "/servicios",         icon: "bi-grid-1x2-fill" },
-      { key: "sidebarConfig",      href: "/configuracion",     icon: "bi-gear-fill" },
+      // --- AÑADIDO: ENLACE A COBROS PENDIENTES ---
+      { key: "pendingPayments" as TranslationKey, href: "/appointments/cobros", icon: "bi-cash-coin" },
+      // -------------------------------------------
+      { key: "sidebarServices", href: "/servicios", icon: "bi-grid-1x2-fill" },
+      { key: "sidebarConfig", href: "/configuracion", icon: "bi-gear-fill" },
     ];
+
+    // Fallback para particulares
+    return [];
   };
 
   return (
     <aside className="bf-sidebar">
-      {/* Brand */}
       <div className="bf-sidebar-brand">
         <div className="bf-sidebar-logo">
           <div className="bf-sidebar-mark">
@@ -49,7 +54,6 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Navegación dinámica */}
       <nav className="bf-sidebar-nav">
         <div className="bf-nav-label">Menú principal</div>
         {getMenuItems().map((item) => (

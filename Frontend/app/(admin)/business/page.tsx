@@ -55,6 +55,7 @@ export default function BusinessesPage() {
   const [success, setSuccess]       = useState("");
   const [page, setPage]             = useState(1);
   const [errors, setErrors]         = useState<Record<string, string>>({});
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Business; direction: 'asc' | 'desc' } | null>(null);
 
   // Crear
   const [form, setForm] = useState(emptyForm);
@@ -152,13 +153,32 @@ export default function BusinessesPage() {
     }
   };
 
-  const paginated = useMemo(() => {
-    const start = (page - 1) * PER_PAGE;
-    return businesses.slice(start, start + PER_PAGE);
-  }, [businesses, page]);
+ const sortedBusinesses = useMemo(() => {
+  let sortable = [...businesses];
+  if (sortConfig !== null) {
+    sortable.sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  return sortable;
+}, [businesses, sortConfig]);
+
+const paginated = useMemo(() => {
+  const start = (page - 1) * PER_PAGE;
+  return sortedBusinesses.slice(start, start + PER_PAGE);
+}, [sortedBusinesses, page]);
 
   const totalActive   = businesses.filter((b) => b.status === "active").length;
   const totalInactive = businesses.filter((b) => b.status === "inactive").length;
+  const requestSort = (key: keyof Business) => {
+  let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
 
   return (
     <div className="page-stack">
@@ -202,14 +222,28 @@ export default function BusinessesPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>{t("name")}</th>
-              <th>{t("category")}</th>
-              <th>{t("email")}</th>
-              <th>{t("phone")}</th>
-              <th>{t("address")}</th>
-              <th>{t("statusBusiness")}</th>
-              <th>Acciones</th>
+              {(['id', 'name', 'category', 'email', 'phone', 'address', 'status'] as const).map((key) => {
+                const labels: Record<string, string> = {
+                  id: "ID",
+                  name: t("name"),
+                  category: t("category"),
+                  email: t("email"),
+                  phone: t("phone"),
+                  address: t("address"),
+                  status: t("statusBusiness"),
+                };
+
+                return (
+                  <th 
+                    key={key} 
+                    onClick={() => requestSort(key)} 
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    {labels[key]} ↕
+                  </th>
+                );
+              })}
+              <th>{t("actionsTitle" as TranslationKey)}</th>
             </tr>
           </thead>
           <tbody>

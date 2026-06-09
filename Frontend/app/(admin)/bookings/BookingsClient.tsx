@@ -11,6 +11,13 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
   const [businesses, setBusinesses]       = useState<Business[]>([]);
   const [customers, setCustomers]         = useState<Customer[]>([]);
   const [statusFilter, setStatusFilter]   = useState<"all" | BookingStatus>("all");
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Booking | null; direction: "asc" | "desc" }>({ key: null, direction: "asc" });
+  const handleSort = (key: keyof Booking) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
   const [isFormOpen, setIsFormOpen]       = useState(false);
   const [editingId, setEditingId]         = useState<number | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
@@ -47,10 +54,26 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
     paid:      bookings.filter(b => b.status === "paid").length,
     cancelled: bookings.filter(b => b.status === "cancelled").length,
   }), [bookings]);
-
-  const filtered = useMemo(() =>
-    statusFilter === "all" ? bookings : bookings.filter(b => b.status === statusFilter)
-  , [bookings, statusFilter]);
+  const filtered = useMemo(() => {
+    // 1. Filtrar primero
+    let data = statusFilter === "all" 
+      ? [...bookings] 
+      : bookings.filter(b => b.status === statusFilter);
+    
+    // 2. Ordenar después
+    if (sortConfig.key) {
+      data.sort((a, b) => {
+        // Obtenemos los valores de forma segura y los convertimos a string
+        const valA = String(a[sortConfig.key!] ?? "").toLowerCase();
+        const valB = String(b[sortConfig.key!] ?? "").toLowerCase();
+        
+        if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return data;
+  }, [bookings, statusFilter, sortConfig]);
 
   const conflictIds = useMemo(() => {
     const ids = new Set<number>();
@@ -234,14 +257,20 @@ export default function BookingsClient({ initialBookings }: { initialBookings: B
         </div>
 
         <table className="data-table">
-          <thead>
-            <tr>
-              <th>{t("serviceCol")}</th>
-              <th>{t("dateTime")}</th>
-              <th>{t("statusCol")}</th>
-              <th style={{ textAlign: "right" }}>{t("actionsCol")}</th>
-            </tr>
-          </thead>
+        <thead>
+          <tr>
+            <th style={{ cursor: "pointer" }} onClick={() => handleSort("serviceName")}>
+              {t("serviceCol")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+            </th>
+            <th style={{ cursor: "pointer" }} onClick={() => handleSort("date")}>
+              {t("dateTime")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+            </th>
+            <th style={{ cursor: "pointer" }} onClick={() => handleSort("status")}>
+              {t("statusCol")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+            </th>
+            <th style={{ textAlign: "right" }}>{t("actionsCol")}</th>
+          </tr>
+        </thead>
           <tbody>
             {filtered.map(b => (
               <tr key={b.id}>

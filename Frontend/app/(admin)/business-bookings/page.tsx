@@ -12,21 +12,25 @@ export default function BusinessBookingsPage() {
   const { user, token } = useAuth();
   const { t, lang } = useLanguage();
 
+  // 1. Definimos las funciones y constantes de configuración primero
+  const customerName = (id: number) => customers.find((c) => c.id === id)?.name ?? `#${id}`;
+
   const STATUS_LABELS: Record<BookingStatus | "all", string> = {
-    all:       t("bbStatusAll"),
-    pending:   t("bbStatusPending"),
+    all:      t("bbStatusAll"),
+    pending:  t("bbStatusPending"),
     confirmed: t("bbStatusConfirmed"),
     paid:      t("bbStatusPaid"),
     cancelled: t("statusCancelled") || "Cancelada",
   };
 
   const NEXT_STATUS: Record<BookingStatus, { label: string; next: BookingStatus } | null> = {
-    pending:   { label: t("confirmAction"),   next: "confirmed" },
-    confirmed: { label: t("markPaidAction"),  next: "paid" },
+    pending:   { label: t("confirmAction"),  next: "confirmed" },
+    confirmed: { label: t("markPaidAction"), next: "paid" },
     paid:      null,
     cancelled: null,
   };
 
+  // 2. Definimos todos los estados
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,10 @@ export default function BusinessBookingsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | BookingStatus>("all");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
-
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Booking | 'customerName'; direction: 'asc' | 'desc' }>({ 
+    key: 'date', 
+    direction: 'desc' 
+  });
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     serviceName: "",
@@ -146,6 +153,30 @@ export default function BusinessBookingsPage() {
     return list;
   }, [bookings, statusFilter, search]);
 
+  const sortedData = useMemo(() => {
+  return [...filtered].sort((a, b) => {
+    let aValue: any = a[sortConfig.key as keyof Booking];
+    let bValue: any = b[sortConfig.key as keyof Booking];
+
+    // Caso especial para el nombre del cliente
+    if (sortConfig.key === 'customerName') {
+      aValue = customerName(a.customerId);
+      bValue = customerName(b.customerId);
+    }
+
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+}, [filtered, sortConfig]);
+
+  const requestSort = (key: keyof Booking | 'customerName') => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
   const conflictIds = useMemo(() => {
     const ids = new Set<number>();
     for (let i = 0; i < bookings.length; i++) {
@@ -165,8 +196,6 @@ export default function BusinessBookingsPage() {
     }
     return ids;
   }, [bookings]);
-
-  const customerName = (id: number) => customers.find((c) => c.id === id)?.name ?? `#${id}`;
 
   if (!user) return null;
 
@@ -264,18 +293,18 @@ export default function BusinessBookingsPage() {
 
         {!loading && !error && filtered.length > 0 && (
           <table className="data-table">
-            <thead>
+           <thead>
               <tr>
-                <th>{t("serviceCol2")}</th>
-                <th>{t("clientCol")}</th>
-                <th>{t("date")}</th>
-                <th>{t("time")}</th>
-                <th>{t("status")}</th>
+                <th onClick={() => requestSort('serviceName')} style={{ cursor: 'pointer' }}>{t("serviceCol2")} ↕</th>
+                <th onClick={() => requestSort('customerName')} style={{ cursor: 'pointer' }}>{t("clientCol")} ↕</th>
+                <th onClick={() => requestSort('date')} style={{ cursor: 'pointer' }}>{t("date")} ↕</th>
+                <th onClick={() => requestSort('time')} style={{ cursor: 'pointer' }}>{t("time")} ↕</th>
+                <th onClick={() => requestSort('status')} style={{ cursor: 'pointer' }}>{t("status")} ↕</th>
                 <th style={{ textAlign: "right" }}>{t("actionCol")}</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b) => {
+              {sortedData.map((b) => {
                 const nextStatus = NEXT_STATUS[b.status];
                 return (
                   <tr key={b.id}>

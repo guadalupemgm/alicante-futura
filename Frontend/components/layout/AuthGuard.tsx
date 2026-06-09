@@ -17,7 +17,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const allowedBusinessPaths = ["/admin", "/business-bookings", "/dashboard", "/payments", "/configuracion", "/settings", "/servicios"];
+    const allowedBusinessPaths = ["/admin", "/business-bookings", "/dashboard", "/payments", "/configuracion", "/settings", "/servicios", "/appointments"];
     if (user.role === "business" && !allowedBusinessPaths.some((p) => pathname.startsWith(p))) {
       router.push("/dashboard");
     }

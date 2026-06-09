@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/components/context/AuthContext";
+
 
 interface Appointment {
   id: number;
@@ -53,6 +54,26 @@ export default function ReservasPage() {
   // Pantalla de error (Solo si falla la sesión)
   if (error) return <div style={{ color: 'red' }}>{error}</div>;
 
+  // 1. Estado para el orden
+const [sortConfig, setSortConfig] = useState<{ key: keyof Appointment; direction: 'asc' | 'desc' }>({ key: 'id', direction: 'desc' });
+
+// 2. Lógica de ordenado
+const sortedAppointments = useMemo(() => {
+  return [...appointments].sort((a, b) => {
+    let aVal = a[sortConfig.key] || "";
+    let bVal = b[sortConfig.key] || "";
+    
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+}, [appointments, sortConfig]);
+
+// 3. Función de clic
+const requestSort = (key: keyof Appointment) => {
+  setSortConfig(prev => ({ key, direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc' }));
+};
+
   // Pantalla principal (Aquí es donde se ven tus reservas)
   return (
     <div style={{ padding: '20px' }}>
@@ -60,12 +81,22 @@ export default function ReservasPage() {
       {appointments.length === 0 ? (
         <p>No tienes reservas.</p>
       ) : (
-        appointments.map(appt => (
-          <div key={appt.id} style={{ border: '1px solid #ccc', margin: '10px 0', padding: '10px' }}>
-            <h3>{appt.serviceName}</h3>
-            <p>Estado: {appt.status}</p>
-          </div>
-        ))
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+  <thead>
+    <tr>
+      <th onClick={() => requestSort('serviceName')} style={{ cursor: 'pointer' }}>Servicio ↕</th>
+      <th onClick={() => requestSort('status')} style={{ cursor: 'pointer' }}>Estado ↕</th>
+    </tr>
+  </thead>
+  <tbody>
+    {sortedAppointments.map(appt => (
+      <tr key={appt.id}>
+        <td>{appt.serviceName}</td>
+        <td>{appt.status}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
       )}
     </div>
   );

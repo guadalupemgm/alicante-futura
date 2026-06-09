@@ -482,7 +482,15 @@ export const translations = {
     profileSecDesc:           "Tu contraseña actual está protegida mediante encriptación hash en la base de datos. Se recomienda actualizarla de manera periódica.",
     userPanelTitle:           "Panel de Usuario",
     userPanelSubtitle:        "Gestiona tus citas y reserva en tus locales favoritos",
-    password:                 "Contraseña"
+    password:                 "Contraseña",
+    conversionRate:           "Tasa de conversión",
+    paidVsTotal:              "Pagadas vs Total",
+    actionRequired:           "Acción requerida",
+    requireAttention:         "Requieren atención",
+    totalRevenue:             "Ingresos Totales",
+    revenueSubtitle:          "Facturación acumulada",
+    pendingCollection:        "Pendiente de cobro",
+    pendingPayments:          "Pendientes de pago",
   },
 
   en: {
@@ -937,6 +945,14 @@ export const translations = {
     profileSecDesc:           "Your current password is protected by hash encryption in the database. It is recommended to update it periodically.",
     userPanelTitle:           "User Panel",
     userPanelSubtitle:        "Manage your appointments and bookings in your favorite venues",
+    conversionRate:           "Conversion Rate",
+    paidVsTotal:              "Paid vs Total",
+    actionRequired:           "Action Required",
+    requireAttention:         "Require Attention",
+    totalRevenue:             "Total Revenue",
+    revenueSubtitle:          "Accumulated billing",
+    pendingCollection:        "Pending Collection",
+    pendingPayments:          "Pending payments",
   },
 
   fr: {
@@ -1389,6 +1405,14 @@ export const translations = {
     profileSecDesc:           "Votre mot de passe actuel est protege par un cryptage par hachage dans la base de donnees. Il est recommande de le mettre a jour periodiquement.",
     userPanelTitle:           "Tableau de bord de l'utilisateur",
     userPanelSubtitle:        "Gerez vos rendez-vous et reservations dans vos lieux favoris",
+    conversionRate:           "Taux de conversion",
+    paidVsTotal:              "Payées vs Total",
+    actionRequired:           "Action requise",
+    requireAttention:         "Nécessitent une attention",
+    totalRevenue:             "Revenu Total",
+    revenueSubtitle:          "Facturation accumulée",
+    pendingCollection:        "En attente de paiement",
+    pendingPayments:          "Paiement en attente",
   },
 } satisfies Record<LangCode, Record<string, string>>;
 

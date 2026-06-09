@@ -15,6 +15,7 @@ type Booking = {
   time: string;
   serviceName: string;
   status: string;
+  price?: number;
 };
 
 function Badge({ status, t }: { status: DashboardBookingStatus; t: (k: TranslationKey) => string }) {
@@ -25,14 +26,13 @@ function Badge({ status, t }: { status: DashboardBookingStatus; t: (k: Translati
   return <span className={`badge badge--${status}`}>{label}</span>;
 }
 
-function KpiCard({ title, value, subtitle, variant }: { title: string; value: string; subtitle: string; variant?: "positive" | "warning"; }) {
+// Actualizado para aceptar una clase de estado
+function KpiCard({ title, value, subtitle, statusClass }: { title: string; value: string; subtitle: string; statusClass?: string }) {
   return (
-    <div className="kpi-card">
+    <div className={`kpi-card ${statusClass || ""}`}>
       <p className="kpi-card__label">{title}</p>
       <h3 className="kpi-card__value">{value}</h3>
-      <p className={`kpi-card__meta ${variant === "positive" ? "kpi-card__meta--positive" : variant === "warning" ? "kpi-card__meta--warning" : ""}`}>
-        {subtitle}
-      </p>
+      <p className="kpi-card__meta">{subtitle}</p>
     </div>
   );
 }
@@ -51,15 +51,23 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  const stats = useMemo(() => {
+    const pending = bookings.filter(b => b.status === "pending").length;
+    const confirmed = bookings.filter(b => b.status === "confirmed").length;
+    const paid = bookings.filter(b => b.status === "paid").length;
+    const revenue = bookings.filter(b => b.status === "paid").reduce((sum, b) => sum + (b.price || 0), 0);
+    const pendingRevenue = bookings.filter(b => b.status === "pending" || b.status === "confirmed").reduce((sum, b) => sum + (b.price || 0), 0);
+
+    return { total: bookings.length, pending, confirmed, paid, revenue, pendingRevenue, onAgenda: pending + confirmed };
+  }, [bookings]);
+
   const sortedBookings = useMemo(() => {
     let sortableItems = [...bookings];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        const aValue = a[sortConfig.key] || "";
-        const bValue = b[sortConfig.key] || "";
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
+        const aValue = String(a[sortConfig.key] || "");
+        const bValue = String(b[sortConfig.key] || "");
+        return sortConfig.direction === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       });
     }
     return sortableItems.slice(0, 5);
@@ -72,11 +80,6 @@ export default function DashboardPage() {
     }));
   };
 
-  const total = bookings.length;
-  const pending = bookings.filter(b => b.status === "pending").length;
-  const confirmed = bookings.filter(b => b.status === "confirmed").length;
-  const paid = bookings.filter(b => b.status === "paid").length;
-
   return (
     <div className="page-stack">
       <section className="page-hero">
@@ -88,10 +91,11 @@ export default function DashboardPage() {
       </section>
 
       <section className="kpi-grid">
-        <KpiCard title={t("totalBookings")} value={String(total)} subtitle={t("totalBookingsSub")} />
-        <KpiCard title={t("pending")} value={String(pending)} subtitle={t("pendingSub")} variant="warning" />
-        <KpiCard title={t("confirmed")} value={String(confirmed)} subtitle={t("confirmedSub")} variant="positive" />
-        <KpiCard title={t("paid")} value={String(paid)} subtitle={t("paidSub")} />
+        <KpiCard title={t("totalBookings")} value={String(stats.total)} subtitle="Registros en base de datos" statusClass="status-neutral" />
+        <KpiCard title={t("pending")} value={String(stats.pending)} subtitle={t("pendingSub")} statusClass="status-pending" />
+        <KpiCard title={t("confirmed")} value={String(stats.confirmed)} subtitle={t("confirmedSub")} statusClass="status-confirmed" />
+        <KpiCard title="En agenda" value={String(stats.onAgenda)} subtitle="Citas totales próximas" statusClass="status-neutral" />
+        <KpiCard title={t("totalRevenue")} value={`$${stats.revenue.toLocaleString()}`} subtitle={t("revenueSubtitle")} statusClass="status-paid" />
       </section>
 
       <section className="dashboard-grid">
@@ -127,22 +131,17 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* AQUÍ ESTABAN TUS TARJETAS DE LA DERECHA */}
         <div className="info-stack">
-          <div className="info-box">
-            <p className="info-box__eyebrow">{t("totalBookings")}</p>
-            <p className="info-box__title">{total}</p>
-            <p className="info-box__text">{t("registeredInSystem")}</p>
+          <div className="info-box status-paid">
+            <p className="info-box__eyebrow">{t("conversionRate")}</p>
+            <p className="info-box__title">{stats.total > 0 ? Math.round((stats.paid / stats.total) * 100) : 0}%</p>
+            <p className="info-box__text">{t("paidVsTotal")}</p>
           </div>
-          <div className="info-box">
-            <p className="info-box__eyebrow">{t("pendingToConfirm")}</p>
-            <p className="info-box__title">{pending}</p>
-            <p className="info-box__text">{t("requireFollowUp")}</p>
-          </div>
-          <div className="info-box">
-            <p className="info-box__eyebrow">{t("paid")}</p>
-            <p className="info-box__title">{paid}</p>
-            <p className="info-box__text">{t("closedBookings")}</p>
+          
+          <div className="info-box status-pending">
+            <p className="info-box__eyebrow">{t("pendingCollection")}</p>
+            <p className="info-box__title">${stats.pendingRevenue.toLocaleString()}</p>
+            <p className="info-box__text">{t("requireAttention")}</p>
           </div>
         </div>
       </section>

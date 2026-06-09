@@ -27,6 +27,7 @@ export default function EmpresasClientePage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Business; direction: 'asc' | 'desc' } | null>(null);
 
   useEffect(() => {
     fetch(API_URL + "/business")
@@ -35,25 +36,40 @@ export default function EmpresasClientePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return businesses.filter(
-      (b) =>
-        b.status === "active" &&
-        (b.name.toLowerCase().includes(q) ||
-          b.category.toLowerCase().includes(q) ||
-          b.address.toLowerCase().includes(q))
-    );
-  }, [businesses, search]);
+  const processedData = useMemo(() => {
+  const q = search.toLowerCase();
+  let data = businesses.filter(
+    (b) => b.status === "active" &&
+    (b.name.toLowerCase().includes(q) || b.category.toLowerCase().includes(q) || b.address.toLowerCase().includes(q))
+  );
+
+      if (sortConfig !== null) {
+        data.sort((a, b) => {
+          const aValue = a[sortConfig.key];
+          const bValue = b[sortConfig.key];
+          if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+          if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+      return data;
+    }, [businesses, search, sortConfig]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * PER_PAGE;
-    return filtered.slice(start, start + PER_PAGE);
-  }, [filtered, page]);
+    return processedData.slice(start, start + PER_PAGE);
+  }, [processedData, page]);
 
   const handleReservar = (business: Business) => {
     router.push(`/reservas/nueva?businessId=${business.id}&businessName=${encodeURIComponent(business.name)}`);
   };
+
+  const requestSort = (key: keyof Business) => {
+  setSortConfig((prev) => ({
+    key,
+    direction: prev?.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+  }));
+};
 
   return (
     <div className="page-stack">
@@ -92,10 +108,20 @@ export default function EmpresasClientePage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>{t("businessCol")}</th>
-                <th>{t("categoryCol")}</th>
-                <th>{t("phoneCol")}</th>
-                <th>{t("addressCol")}</th>
+                {[
+                  { key: 'name', label: t("businessCol") },
+                  { key: 'category', label: t("categoryCol") },
+                  { key: 'phone', label: t("phoneCol") },
+                  { key: 'address', label: t("addressCol") }
+                ].map((col) => (
+                  <th 
+                    key={col.key} 
+                    onClick={() => requestSort(col.key as keyof Business)} 
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                  >
+                    {col.label} ↕
+                  </th>
+                ))}
                 <th style={{ textAlign: "right" }}>{t("bookCol")}</th>
               </tr>
             </thead>
@@ -125,7 +151,7 @@ export default function EmpresasClientePage() {
         )}
 
         <Pagination
-          total={filtered.length}
+          total={processedData.length}
           page={page}
           perPage={PER_PAGE}
           onPageChange={setPage}

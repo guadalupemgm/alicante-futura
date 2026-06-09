@@ -46,6 +46,7 @@ export default function PaymentsPage() {
   const [showModal, setShowModal]       = useState(false);
   const [success, setSuccess]           = useState("");
   const [page, setPage]                 = useState(1);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Payment; direction: 'asc' | 'desc' } | null>(null);
 
   // Formulario crear manualmente
   const [form, setForm] = useState({ amount: "", method: "", status: "pending" as PaymentStatus, appointmentId: "" });
@@ -197,9 +198,22 @@ export default function PaymentsPage() {
     }, { totalPaid: 0, totalPending: 0, counts: { paid: 0, pending: 0, cancelled: 0 } });
   }, [payments]);
 
-  const filtered = useMemo(() =>
-    statusFilter === "all" ? payments : payments.filter(p => p.status === statusFilter)
-  , [payments, statusFilter]);
+  const filtered = useMemo(() => {
+    let data = statusFilter === "all" ? [...payments] : payments.filter(p => p.status === statusFilter);
+    
+    if (sortConfig) {
+  data.sort((a, b) => {
+    const aValue = a[sortConfig.key];
+    const bValue = b[sortConfig.key];
+    
+    // Comparación genérica que funciona para números y strings
+    if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+    return data;
+  }, [payments, statusFilter, sortConfig]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * PER_PAGE;
@@ -209,6 +223,13 @@ export default function PaymentsPage() {
   const appointmentLabel = (id: number) => {
     const a = appointments.find(a => a.id === id);
     return a ? `#${a.id} — ${a.date} ${a.time} · ${a.serviceName}` : `#${id}`;
+  };
+
+  const requestSort = (key: keyof Payment) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev?.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   return (
@@ -268,11 +289,22 @@ export default function PaymentsPage() {
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>{t("amount")}</th>
-                <th>{t("method")}</th>
-                <th>{t("reservation")}</th>
-                <th>{t("status")}</th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort('id')}>
+                  ID <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+                </th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort('amount')}>
+                  {t("amount")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+                </th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort('method')}>
+                  {t("method")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+                </th>
+                {/* AQUÍ ESTÁ EL CAMBIO PARA LA RESERVA */}
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort('appointmentId')}>
+                  {t("reservation")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+                </th>
+                <th style={{ cursor: "pointer" }} onClick={() => requestSort('status')}>
+                  {t("status")} <span style={{ marginLeft: "8px", opacity: 0.5 }}>↕</span>
+                </th>
                 <th style={{ textAlign: "right" }}>{t("actionsCol")}</th>
               </tr>
             </thead>

@@ -364,6 +364,12 @@ html.dark .bf-nav-item.active { background: var(--accent); }
 .kpi-card__meta--positive { color: var(--green); }
 .kpi-card__meta--warning  { color: var(--warn); }
 
+/* Esto hace que cualquier tarjeta con una clase de estado reciba el borde */
+.kpi-card.status-pending { border-left: 4px solid var(--warn) !important; }
+.kpi-card.status-confirmed { border-left: 4px solid var(--blue) !important; }
+.kpi-card.status-paid { border-left: 4px solid var(--green) !important; }
+.kpi-card.status-neutral { border-left: 4px solid var(--ink-3) !important; }
+
 /* ════════════════════════════════════════════════════════
    DASHBOARD GRID / TABLES
 ════════════════════════════════════════════════════════ */
@@ -860,3 +866,19 @@ html.dark body {
 .admin-main, .main-container, .wrapper {
     background-color: transparent !important;
 }
+
+/* Aseguramos que todas las info-box tengan un borde lateral base */
+.info-box {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--ink-3); /* El borde lateral que quieres */
+  border-radius: var(--r);
+  padding: 14px 16px;
+}
+
+/* Colores específicos según el estado para el borde */
+.info-box.status-pending { border-left-color: var(--warn); }
+.info-box.status-confirmed { border-left-color: var(--blue); }
+.info-box.status-paid { border-left-color: var(--green); }
+
+.status-pending { border-left: 4px solid var(--warn); }
