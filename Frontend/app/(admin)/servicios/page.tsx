@@ -20,6 +20,23 @@ interface Service {
   discountUntil: string;   // ISO date string o ""
 }
 
+interface Reward {
+  id: number;
+
+  name: string;
+  description: string;
+
+  prize: string;
+
+  targetCount: number;
+  targetServiceId: string;
+
+  startDate: string;
+  endDate: string;
+
+  status: "draft" | "active" | "finished";
+}
+
 /* ─── Category presets ───────────────────────────────────────── */
 const CATS: Record<string, string[]> = {
   es: ["Corte de pelo","Coloración","Tratamiento","Masaje","Facial","Manicura","Pedicura","Depilación","Consulta","Asesoría","Otro"],
@@ -65,6 +82,23 @@ export default function ServiciosPage() {
   const [saved,         setSaved]         = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [discountOpen,  setDiscountOpen]  = useState(false);
+  const [showRewardModal, setShowRewardModal] = useState(false);
+  const [rewardList, setRewardList] = useState<Reward[]>([]); 
+  const [rewardForm, setRewardForm] = useState({
+    name: "",
+    description: "",
+
+    prize: "",
+
+    targetCount: 5,
+    targetServiceId: "all",
+
+    startDate: "",
+    endDate: "",
+
+    status: "draft" as "draft" | "active" | "finished"
+  });
+  const [editingRewardId, setEditingRewardId] = useState<number | null>(null);
 
   /* Load */
   useEffect(() => {
@@ -235,6 +269,35 @@ export default function ServiciosPage() {
           )}
           <button className="primary-btn" style={{ display:"flex", alignItems:"center", gap:8 }} onClick={openAdd}>
             <i className="bi bi-plus-lg" /> {labelAdd}
+          </button>
+          <button
+            className="secondary-btn"
+            onClick={() => {
+              setEditingRewardId(null);
+
+              setRewardForm({
+                name: "",
+                description: "",
+                prize: "",
+                targetCount: 5,
+                targetServiceId: "all",
+                startDate: "",
+                endDate: "",
+                status: "draft"
+              });
+
+              setShowRewardModal(true);
+            }}
+          >
+            <i
+              className="bi bi-gift"
+              style={{ marginRight: 8 }}
+            />
+            {T(
+              "Añadir sorteo",
+              "Add giveaway",
+              "Ajouter un tirage"
+            )}
           </button>
         </div>
       </section>
@@ -407,6 +470,106 @@ export default function ServiciosPage() {
         </div>
       )}
 
+      {/* ── Grid de Sorteos ── */}
+        <div style={{ marginTop: 40 }}>
+          <h3 style={{ marginBottom: 15 }}>Sorteos activos</h3>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: 14,
+            }}
+          >
+            {rewardList.map((reward) => (
+              <div
+                key={reward.id}
+                className="section-card"
+                style={{
+                  padding: "1.25rem",
+                  borderLeft:
+                    reward.status === "active"
+                      ? "4px solid #10b981"
+                      : reward.status === "finished"
+                      ? "4px solid #6b7280"
+                      : "4px solid #f59e0b",
+                }}
+              >
+                {/* contenido del card */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div>
+                    <h4>{reward.name}</h4>
+                    <p>{reward.description}</p>
+                    <p>
+                      <strong>Premio:</strong> {reward.prize}
+                    </p>
+                    <p>
+                      <strong>Participaciones:</strong> {reward.targetCount}
+                    </p>
+                    <p>
+                      <strong>Validez:</strong> {reward.startDate} - {reward.endDate}
+                    </p>
+
+                    <span>
+                      Estado:{" "}
+                      {reward.status === "draft"
+                        ? "Borrador"
+                        : reward.status === "active"
+                        ? "Activo"
+                        : "Finalizado"}
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 5 }}>
+                    {reward.status === "draft" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setRewardForm({ ...reward });
+                            setEditingRewardId(reward.id);
+                            setShowRewardModal(true);
+                          }}
+                        >
+                          <i className="bi bi-pencil-fill" />
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            setRewardList(
+                              rewardList.map((r) =>
+                                r.id === reward.id
+                                  ? { ...r, status: "active" }
+                                  : r
+                              )
+                            )
+                          }
+                        >
+                          <i className="bi bi-play-fill" />
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() =>
+                        setRewardList(
+                          rewardList.filter((r) => r.id !== reward.id)
+                        )
+                      }
+                    >
+                      <i className="bi bi-trash3-fill" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       {/* ── Add / Edit Modal ── */}
       {showModal && (
         <div style={{
@@ -581,6 +744,79 @@ export default function ServiciosPage() {
                 disabled={!form.name.trim() || form.price < 0}>
                 {labelSave}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRewardModal && (
+        <div style={{ position:"fixed", inset:0, zIndex:1200, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }} onClick={e => { if (e.target === e.currentTarget) setShowRewardModal(false); }}>
+          <div className="section-card" style={{ width:"100%", maxWidth:400, padding:"2rem" }}>
+            <h3 style={{ marginBottom: 20 }}>{editingRewardId ? "Editar Sorteo" : "Nuevo Sorteo"}</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <input className="input" placeholder="Nombre" value={rewardForm.name} onChange={e => setRewardForm({...rewardForm, name: e.target.value})} />
+              <input className="input" placeholder="Descripción" value={rewardForm.description} onChange={e => setRewardForm({...rewardForm, description: e.target.value})} />
+              <select className="input" value={rewardForm.targetServiceId} onChange={e => setRewardForm({...rewardForm, targetServiceId: e.target.value})}>
+                <option value="all">Todos los servicios</option>
+                {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+              <input
+                className="input"
+                placeholder="Premio"
+                value={rewardForm.prize}
+                onChange={e =>
+                  setRewardForm({
+                    ...rewardForm,
+                    prize: e.target.value
+                  })
+                }
+              />
+
+              <input
+                type="date"
+                className="input"
+                value={rewardForm.startDate}
+                onChange={e =>
+                  setRewardForm({
+                    ...rewardForm,
+                    startDate: e.target.value
+                  })
+                }
+              />
+
+              <input
+                type="date"
+                className="input"
+                value={rewardForm.endDate}
+                onChange={e =>
+                  setRewardForm({
+                    ...rewardForm,
+                    endDate: e.target.value
+                  })
+                }
+              />
+              <input type="number" className="input" value={rewardForm.targetCount} onChange={e => setRewardForm({...rewardForm, targetCount: parseInt(e.target.value) || 1})} />
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+              <button className="secondary-btn" style={{ flex: 1 }} onClick={() => setShowRewardModal(false)}>Cancelar</button>
+              <button className="primary-btn" style={{ flex: 1 }} onClick={() => {
+                if (editingRewardId) {
+                  setRewardList(rewardList.map(r => r.id === editingRewardId ? { ...rewardForm, id: editingRewardId } : r));
+                } else {
+                  setRewardList([...rewardList, { ...rewardForm, id: Date.now() }]);
+                }
+                setShowRewardModal(false);
+                setRewardForm({
+                  name: "",
+                  description: "",
+                  prize: "",
+                  targetCount: 5,
+                  targetServiceId: "all",
+                  startDate: "",
+                  endDate: "",
+                  status: "draft"
+                });
+              }}>Guardar</button>
             </div>
           </div>
         </div>
